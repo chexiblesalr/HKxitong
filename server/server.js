@@ -7,7 +7,7 @@ const path = require('path');
 const { getDb, initSchema, queryAll, queryOne, execute, paginate, saveDb } = require('./db/database');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
@@ -380,7 +380,7 @@ async function startServer() {
     });
     app.get('/api/tasks', (req, res) => { res.json(ok(queryAll('SELECT * FROM scheduled_tasks ORDER BY id'))); });
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`\n========================================`);
         console.log(`家宽网络质量分析平台 后端服务已启动`);
         console.log(`前端: http://localhost:${PORT}`);
