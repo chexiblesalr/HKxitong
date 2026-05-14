@@ -2,7 +2,9 @@
  * 前端API客户端 - 与后端REST API通信
  */
 var API = {
-    baseUrl: 'http://localhost:3000/api',
+    baseUrl: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000/api'
+        : window.location.origin + '/api',
 
     async get(url, params) {
         const qs = params ? '?' + Object.entries(params).filter(([,v])=>v!==undefined&&v!==null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&') : '';
