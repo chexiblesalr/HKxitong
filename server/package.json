@@ -1,0 +1,16 @@
+{
+  "name": "hk-quality-platform-server",
+  "version": "1.0.0",
+  "description": "家宽网络质量分析平台后端服务",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "init-db": "node db/seed.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "sql.js": "^1.10.0"
+  }
+}
