@@ -13,7 +13,7 @@ var MAP_CFG = {
     maxZoom: 18,
     tileUrl: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
     attribution: '&copy; 高德地图',
-    geoApiBase: 'https://geo.datav.aliyun.com/areas_v3/bound'
+    geoApiBase: './geodata'
 };
 
 /* ===== 吉林省行政区划代码 ===== */
