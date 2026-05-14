@@ -20,6 +20,13 @@ async function run() {
     console.log('=== 初始化数据库 ===');
     await initSchema();
 
+    // 检查是否已有数据，如果有则跳过
+    const existing = queryOne('SELECT COUNT(*) as c FROM cities');
+    if (existing && existing.c > 0) {
+        console.log('数据库已有数据（地市数: ' + existing.c + '），跳过seed。');
+        return;
+    }
+
     // 1. 地市
     console.log('插入地市...');
     const cities=[['CC','长春',125.3245,43.8868,906.69,96.5,1],['JL','吉林',126.5496,43.8378,362.34,94.2,2],
