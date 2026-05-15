@@ -177,7 +177,7 @@ function loadProvinceLayer() {
         }).addTo(GridMap.geoLayer);
 
         GridMap.map.fitBounds([[39.5, 121.5], [46.5, 131.5]], { padding: [15, 15] });
-        updateBreadcrumb();
+        updateMapBreadcrumb();
         updateLayerIndicator();
     });
 }
@@ -201,7 +201,7 @@ function loadCityLayer(cityFullName, cityShortName, adcode) {
         showMapLoading(false);
         if (!geojson || !geojson.features) {
             showMapToast('⚠️ 地理数据加载失败');
-            updateBreadcrumb(); updateLayerIndicator();
+            updateMapBreadcrumb(); updateLayerIndicator();
             return;
         }
 
@@ -271,7 +271,7 @@ function loadCityLayer(cityFullName, cityShortName, adcode) {
         if (minLat < Infinity) {
             GridMap.map.fitBounds([[minLat, minLng], [maxLat, maxLng]], { padding: [25, 25] });
         }
-        updateBreadcrumb();
+        updateMapBreadcrumb();
         updateLayerIndicator();
     });
 }
@@ -374,7 +374,7 @@ function loadDistrictLayer(distName, feature) {
 
     var bounds = [[bbox.minLat, bbox.minLng], [bbox.maxLat, bbox.maxLng]];
     GridMap.map.fitBounds(bounds, { padding: [25, 25] });
-    updateBreadcrumb();
+    updateMapBreadcrumb();
     updateLayerIndicator();
 }
 
@@ -441,7 +441,7 @@ function removeHealthLegend() {
 /* ============================================================
    8. 面包屑 & 图层指示器
    ============================================================ */
-function updateBreadcrumb() {
+function updateMapBreadcrumb() {
     var bc = document.getElementById('mapBreadcrumb');
     if (!bc) return;
     var html = '';

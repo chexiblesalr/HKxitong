@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,353 +11,409 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
+
 <body>
-<div class="app-container">
-    <!-- Header -->
-    <div class="header">
-        <div class="header-left">
-            <div class="header-logo">
-                <div class="header-logo-icon">U</div>
-                <span class="header-logo-text">智慧优享</span>
-            </div>
-            <span class="header-divider">|</span>
-            <div class="header-nav">
-                <span class="header-nav-item">功能介绍</span>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-logo">
+                    <div class="header-logo-icon">
+                        <img src="img/logo.png" alt="智慧优家" width="28" height="28" style="object-fit:contain;">
+                    </div>
+                    <span class="header-logo-text">智慧优家</span>
+                </div>
                 <span class="header-divider">|</span>
-                <span class="header-nav-item">帮助指南</span>
+                <div class="header-nav">
+                    <span class="header-nav-item">功能介绍</span>
+                    <span class="header-divider">|</span>
+                    <span class="header-nav-item">帮助指南</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="header-clock" id="headerClock">2025-12-02 14:30:00</span>
+                <div class="header-user">
+                    <div class="header-user-avatar">管</div>
+                    <span class="header-user-name">智慧营</span>
+                </div>
             </div>
         </div>
-        <div class="header-right">
-            <div class="header-user">
-                <div class="header-user-avatar">管</div>
-                <span class="header-user-name">智慧营</span>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <div class="tab-item"
+                onclick="loadPageContent('home');document.getElementById('activeTab').classList.remove('active');this.classList.add('active');">
+                首页</div>
+            <div class="tab-item active" id="activeTab">
+                <span id="activeTabText">宽带网络质量分析</span>
+                <span class="tab-item-close">x</span>
+            </div>
+        </div>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <select class="sidebar-select">
+                        <option>家宽质量分析</option>
+                    </select>
+                </div>
+                <div class="sidebar-menu">
+                    <!-- 全景视图 -->
+                    <div class="menu-group expanded">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                                </svg></span>
+                            <span>全景视图</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item active" data-page="broadband-quality" onclick="handleMenuClick(this)">
+                                宽带网络质量分析</div>
+                            <div class="menu-item" data-page="gis-view" onclick="handleMenuClick(this)">宽带运营GIS视图</div>
+                            <div class="menu-item" data-page="kpi-view" onclick="handleMenuClick(this)">宽带质量KPI视图</div>
+                            <div class="menu-item" data-page="con-analysis" onclick="handleMenuClick(this)">CON网络分析
+                            </div>
+                            <div class="menu-item" data-page="pon-power" onclick="handleMenuClick(this)">PON光功率异常管理
+                            </div>
+                            <div class="menu-item" data-page="optical-test" onclick="handleMenuClick(this)">光路测试上下线
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 质量画像 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                                </svg></span>
+                            <span>质量画像</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="cei-query" onclick="handleMenuClick(this)">用户和业务CEI查询
+                            </div>
+                            <div class="menu-item" data-page="cei-cluster" onclick="handleMenuClick(this)">CEI聚类分析</div>
+                            <div class="menu-item" data-page="quality-model" onclick="handleMenuClick(this)">质差模型</div>
+                            <div class="menu-item" data-page="user-quality" onclick="handleMenuClick(this)">用户质差</div>
+                            <div class="menu-item" data-page="quality-cluster" onclick="handleMenuClick(this)">质差聚类质差
+                            </div>
+                            <div class="menu-item" data-page="biz-quality" onclick="handleMenuClick(this)">业务质差</div>
+                            <div class="menu-item" data-page="biz-cluster" onclick="handleMenuClick(this)">业务聚类质差</div>
+                        </div>
+                    </div>
+
+                    <!-- 质差定界定位 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                </svg></span>
+                            <span>质差定界定位</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="ce-location" onclick="handleMenuClick(this)">CE定界定位查询
+                            </div>
+                            <div class="menu-item" data-page="dpi-capture" onclick="handleMenuClick(this)">DPI实时抓包</div>
+                            <div class="menu-item" data-page="quality-location" onclick="handleMenuClick(this)">质差定界定位
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 远程操作 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
+                                </svg></span>
+                            <span>远程操作</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="ping-test" onclick="handleMenuClick(this)">PING测试</div>
+                            <div class="menu-item" data-page="ont-power" onclick="handleMenuClick(this)">ONT光功率查询</div>
+                            <div class="menu-item" data-page="gateway-restart" onclick="handleMenuClick(this)">网关远程重启
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 工单闭环 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                                </svg></span>
+                            <span>工单闭环</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="work-order" onclick="handleMenuClick(this)">质差工单及派单管理
+                            </div>
+                            <div class="menu-item" data-page="work-order-eval" onclick="handleMenuClick(this)">质差工单后评估
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户管理 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title" data-page="user-management" onclick="handleSingleMenuClick(this)">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                                </svg></span>
+                            <span>用户管理</span>
+                        </div>
+                    </div>
+
+                    <!-- 系统管理 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                                </svg></span>
+                            <span>系统管理</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="log-management" onclick="handleMenuClick(this)">日志管理</div>
+                            <div class="menu-item" data-page="config-center" onclick="handleMenuClick(this)">配置中心</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb-bar" id="breadcrumbBar">
+                    <span class="bc-link" onclick="loadPageContent('home')">首页</span>
+                    <span class="bc-sep">›</span>
+                    <span id="bcGroup">全景视图</span>
+                    <span class="bc-sep">›</span>
+                    <span class="bc-current" id="bcPage">宽带网络质量分析</span>
+                </div>
+                <!-- 宽带网络质量分析页面 (默认页) -->
+                <div class="page-container active" id="page-broadband-quality">
+                    <!-- Query Panel -->
+                    <div class="query-panel">
+                        <div class="query-section-title">查询条件</div>
+                        <div class="query-row">
+                            <span class="query-label">时间粒度:</span>
+                            <div class="time-btn-group">
+                                <button class="time-btn active">天</button>
+                                <button class="time-btn">小时</button>
+                                <button class="time-btn">10分</button>
+                            </div>
+                            <span class="query-label" style="margin-left:16px;">时间周期:</span>
+                            <input type="date" class="date-input" value="2025-11-16">
+                            <span class="date-separator">至</span>
+                            <input type="date" class="date-input" value="2025-12-02">
+                            <div class="query-top-right">
+                                <button class="icon-btn" title="保存">S</button>
+                                <button class="icon-btn" title="收藏">F</button>
+                                <button class="icon-btn" title="刷新">R</button>
+                            </div>
+                        </div>
+                        <div class="query-row">
+                            <span class="query-label">区域选择:</span>
+                            <div class="region-tabs">
+                                <button class="region-tab active">全省</button>
+                                <button class="region-tab">长春</button>
+                                <button class="region-tab">吉林</button>
+                                <button class="region-tab">延边</button>
+                                <button class="region-tab">四平</button>
+                                <button class="region-tab">白山</button>
+                                <button class="region-tab">松原</button>
+                                <button class="region-tab">白城</button>
+                                <button class="region-tab">辽源</button>
+                                <button class="region-tab">通化</button>
+                                <button class="region-tab">长白山</button>
+                            </div>
+                        </div>
+                        <div class="query-row">
+                            <span class="query-label">业务类型:</span>
+                            <div class="biz-btn-group">
+                                <button class="biz-btn active">全部</button>
+                                <button class="biz-btn">电视</button>
+                                <button class="biz-btn">宽带</button>
+                                <button class="biz-btn">固话</button>
+                                <button class="biz-btn">融合</button>
+                            </div>
+                        </div>
+                        <div class="query-row">
+                            <span class="query-label">已选条件:</span>
+                            <div class="selected-tags" id="selectedTags">
+                                <span class="tag">全省 <span class="tag-close"
+                                        onclick="this.parentElement.remove()">x</span></span>
+                                <span class="tag">天 <span class="tag-close"
+                                        onclick="this.parentElement.remove()">x</span></span>
+                            </div>
+                            <div class="query-actions">
+                                <button class="btn btn-primary" id="btnQuery">查询展图</button>
+                                <button class="btn" id="btnReset">重置</button>
+                                <button class="btn">导出</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Tabs -->
+                    <div class="content-tabs-wrapper">
+                        <div class="content-tabs">
+                            <button class="content-tab" onclick="App.loadContentTab('整体概况')">整体概况</button>
+                            <button class="content-tab active" onclick="App.loadContentTab('用户')">用户</button>
+                            <button class="content-tab" onclick="App.loadContentTab('固关')">固关</button>
+                            <button class="content-tab" onclick="App.loadContentTab('OLT')">OLT</button>
+                            <button class="content-tab" onclick="App.loadContentTab('BRAS')">BRAS</button>
+                            <button class="content-tab" onclick="App.loadContentTab('传输')">传输</button>
+                            <button class="content-tab" onclick="App.loadContentTab('安市')">安市</button>
+                            <button class="content-tab" onclick="App.loadContentTab('终端')">终端</button>
+                            <button class="content-tab" onclick="App.loadContentTab('局端/线路')">局端/线路</button>
+                            <button class="content-tab" onclick="App.loadContentTab('基础定界')">基础定界</button>
+                            <button class="content-tab" onclick="App.loadContentTab('AI定界')">AI定界</button>
+                        </div>
+                    </div>
+
+                    <!-- Charts Area -->
+                    <div id="chartsArea"
+                        style="flex:1;display:flex;flex-direction:column;overflow:auto;min-height:0;padding:0 8px 8px;">
+                    </div>
+                </div>
+
+                <!-- 其他页面容器 -->
+                <div class="page-container" id="page-gis-view"></div>
+                <div class="page-container" id="page-kpi-view"></div>
+                <div class="page-container" id="page-con-analysis"></div>
+                <div class="page-container" id="page-pon-power"></div>
+                <div class="page-container" id="page-optical-test"></div>
+                <div class="page-container" id="page-cei-query"></div>
+                <div class="page-container" id="page-cei-cluster"></div>
+                <div class="page-container" id="page-quality-model"></div>
+                <div class="page-container" id="page-user-quality"></div>
+                <div class="page-container" id="page-quality-cluster"></div>
+                <div class="page-container" id="page-biz-quality"></div>
+                <div class="page-container" id="page-biz-cluster"></div>
+                <div class="page-container" id="page-ce-location"></div>
+                <div class="page-container" id="page-dpi-capture"></div>
+                <div class="page-container" id="page-quality-location"></div>
+                <div class="page-container" id="page-ping-test"></div>
+                <div class="page-container" id="page-ont-power"></div>
+                <div class="page-container" id="page-gateway-restart"></div>
+                <div class="page-container" id="page-work-order"></div>
+                <div class="page-container" id="page-work-order-eval"></div>
+                <div class="page-container" id="page-user-management"></div>
+                <div class="page-container" id="page-log-management"></div>
+                <div class="page-container" id="page-config-center"></div>
+                <div class="page-container" id="page-home"></div>
             </div>
         </div>
     </div>
 
-    <!-- Tab Bar -->
-    <div class="tab-bar">
-        <div class="tab-item" onclick="loadPageContent('home');document.getElementById('activeTab').classList.remove('active');this.classList.add('active');">首页</div>
-        <div class="tab-item active" id="activeTab">
-            <span id="activeTabText">宽带网络质量分析</span>
-            <span class="tab-item-close">x</span>
+    <script src="js/api.js"></script>
+    <script src="js/datasource.js"></script>
+    <!-- GIS地图容器（持久化，不随页面重绘销毁） -->
+    <div class="map-container" id="mapContainer" style="display:none">
+        <div class="map-toolbar">
+            <button class="map-back-btn" id="mapBackBtn" title="返回上级">
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" fill="none" />
+                </svg>
+            </button>
+            <div class="map-breadcrumb" id="mapBreadcrumb"></div>
         </div>
+        <div class="map-layer-indicator" id="mapLayerIndicator"></div>
+        <div id="gridMapView" class="grid-map-view"></div>
+        <div class="map-toast" id="mapToast"></div>
     </div>
 
-    <!-- Main Wrapper -->
-    <div class="main-wrapper">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <select class="sidebar-select">
-                    <option>家宽质量分析</option>
-                </select>
-            </div>
-            <div class="sidebar-menu">
-                <!-- 全景视图 -->
-                <div class="menu-group expanded">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>
-                        <span>全景视图</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item active" data-page="broadband-quality" onclick="handleMenuClick(this)">宽带网络质量分析</div>
-                        <div class="menu-item" data-page="gis-view" onclick="handleMenuClick(this)">宽带运营GIS视图</div>
-                        <div class="menu-item" data-page="kpi-view" onclick="handleMenuClick(this)">宽带质量KPI视图</div>
-                        <div class="menu-item" data-page="con-analysis" onclick="handleMenuClick(this)">CON网络分析</div>
-                        <div class="menu-item" data-page="pon-power" onclick="handleMenuClick(this)">PON光功率异常管理</div>
-                        <div class="menu-item" data-page="optical-test" onclick="handleMenuClick(this)">光路测试上下线</div>
-                    </div>
-                </div>
+    <script src="js/data.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/pages.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/mapdata.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        // Menu click handler
+        function handleMenuClick(el) {
+            document.querySelectorAll('.menu-item').forEach(function (i) { i.classList.remove('active'); });
+            el.classList.add('active');
+            var page = el.getAttribute('data-page');
+            var tabText = document.getElementById('activeTabText');
+            if (tabText) tabText.textContent = el.textContent.trim();
+            document.getElementById('activeTab').classList.add('active');
+            loadPageContent(page);
+        }
 
-                <!-- 质量画像 -->
-                <div class="menu-group">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></span>
-                        <span>质量画像</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item" data-page="cei-query" onclick="handleMenuClick(this)">用户和业务CEI查询</div>
-                        <div class="menu-item" data-page="cei-cluster" onclick="handleMenuClick(this)">CEI聚类分析</div>
-                        <div class="menu-item" data-page="quality-model" onclick="handleMenuClick(this)">质差模型</div>
-                        <div class="menu-item" data-page="user-quality" onclick="handleMenuClick(this)">用户质差</div>
-                        <div class="menu-item" data-page="quality-cluster" onclick="handleMenuClick(this)">质差聚类质差</div>
-                        <div class="menu-item" data-page="biz-quality" onclick="handleMenuClick(this)">业务质差</div>
-                        <div class="menu-item" data-page="biz-cluster" onclick="handleMenuClick(this)">业务聚类质差</div>
-                    </div>
-                </div>
+        function handleSingleMenuClick(el) {
+            document.querySelectorAll('.menu-item').forEach(function (i) { i.classList.remove('active'); });
+            var page = el.getAttribute('data-page');
+            var tabText = document.getElementById('activeTabText');
+            if (tabText) tabText.textContent = el.querySelector('span:nth-child(2)').textContent.trim();
+            document.getElementById('activeTab').classList.add('active');
+            loadPageContent(page);
+        }
 
-                <!-- 质差定界定位 -->
-                <div class="menu-group">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></span>
-                        <span>质差定界定位</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item" data-page="ce-location" onclick="handleMenuClick(this)">CE定界定位查询</div>
-                        <div class="menu-item" data-page="dpi-capture" onclick="handleMenuClick(this)">DPI实时抓包</div>
-                        <div class="menu-item" data-page="quality-location" onclick="handleMenuClick(this)">质差定界定位</div>
-                    </div>
-                </div>
+        function loadPageContent(page) {
+            // Hide GIS map if navigating away
+            if (page !== 'gis-view') { hideGisMap(); }
 
-                <!-- 远程操作 -->
-                <div class="menu-group">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg></span>
-                        <span>远程操作</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item" data-page="ping-test" onclick="handleMenuClick(this)">PING测试</div>
-                        <div class="menu-item" data-page="ont-power" onclick="handleMenuClick(this)">ONT光功率查询</div>
-                        <div class="menu-item" data-page="gateway-restart" onclick="handleMenuClick(this)">网关远程重启</div>
-                    </div>
-                </div>
+            // Hide all pages
+            document.querySelectorAll('.page-container').forEach(function (c) { c.classList.remove('active'); });
+            var container = document.getElementById('page-' + page);
+            if (!container) return;
+            container.classList.add('active');
 
-                <!-- 工单闭环 -->
-                <div class="menu-group">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
-                        <span>工单闭环</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item" data-page="work-order" onclick="handleMenuClick(this)">质差工单及派单管理</div>
-                        <div class="menu-item" data-page="work-order-eval" onclick="handleMenuClick(this)">质差工单后评估</div>
-                    </div>
-                </div>
+            // Route to correct renderer - ALL pages mapped
+            var pageMap = {
+                'broadband-quality': function () { App.loadContentTab('用户'); },
+                'home': function () { Pages.renderHome(container); },
+                'gis-view': function () { showGisMapPage(); },
+                'kpi-view': function () { Pages.renderKpiView(container); },
+                'con-analysis': function () { Pages.renderConAnalysis(container); },
+                'pon-power': function () { Pages.renderPonPower(container); },
+                'optical-test': function () { Pages.renderOpticalTest(container); },
+                'cei-query': function () { Pages.renderCeiQuery(container); },
+                'cei-cluster': function () { Pages.renderCeiCluster(container); },
+                'quality-model': function () { Pages.renderQualityModel(container); },
+                'user-quality': function () { Pages.renderUserQuality(container); },
+                'quality-cluster': function () { Pages.renderQualityCluster(container); },
+                'biz-quality': function () { Pages.renderBizQuality(container); },
+                'biz-cluster': function () { Pages.renderBizCluster(container); },
+                'ce-location': function () { Pages.renderQualityLocation(container); },
+                'dpi-capture': function () { Pages.renderDpiCapture(container); },
+                'quality-location': function () { Pages.renderQualityLocation(container); },
+                'ping-test': function () { Pages.renderPingTest(container); },
+                'ont-power': function () { Pages.renderOntPower(container); },
+                'gateway-restart': function () { Pages.renderGatewayRestart(container); },
+                'work-order': function () { Pages.renderWorkOrder(container); },
+                'work-order-eval': function () { Pages.renderWorkOrderEval(container); },
+                'user-management': function () { Pages.renderUserManagement(container); },
+                'log-management': function () { Pages.renderLogManagement(container); },
+                'config-center': function () { Pages.renderConfigCenter(container); }
+            };
 
-                <!-- 用户管理 -->
-                <div class="menu-group">
-                    <div class="menu-group-title" data-page="user-management" onclick="handleSingleMenuClick(this)">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
-                        <span>用户管理</span>
-                    </div>
-                </div>
+            // Update breadcrumb FIRST (before renderer, so it always updates even if renderer errors)
+            if (typeof updateBreadcrumb === 'function') updateBreadcrumb(page);
 
-                <!-- 系统管理 -->
-                <div class="menu-group">
-                    <div class="menu-group-title">
-                        <span class="menu-group-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
-                        <span>系统管理</span>
-                        <span class="menu-group-arrow">&#9654;</span>
-                    </div>
-                    <div class="menu-children">
-                        <div class="menu-item" data-page="log-management" onclick="handleMenuClick(this)">日志管理</div>
-                        <div class="menu-item" data-page="config-center" onclick="handleMenuClick(this)">配置中心</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            if (pageMap[page]) {
+                try { pageMap[page](); } catch(e) { console.error('Page render error:', page, e); }
+            } else {
+                Pages.renderModulePlaceholder(container, page.replace(/-/g, ' '));
+            }
+        }
 
-        <!-- Content Area -->
-        <div class="content-area">
-            <!-- 宽带网络质量分析页面 (默认页) -->
-            <div class="page-container active" id="page-broadband-quality">
-                <!-- Query Panel -->
-                <div class="query-panel">
-                    <div class="query-section-title">查询条件</div>
-                    <div class="query-row">
-                        <span class="query-label">时间粒度:</span>
-                        <div class="time-btn-group">
-                            <button class="time-btn active">天</button>
-                            <button class="time-btn">小时</button>
-                            <button class="time-btn">10分</button>
-                        </div>
-                        <span class="query-label" style="margin-left:16px;">时间周期:</span>
-                        <input type="date" class="date-input" value="2025-11-16">
-                        <span class="date-separator">至</span>
-                        <input type="date" class="date-input" value="2025-12-02">
-                        <div class="query-top-right">
-                            <button class="icon-btn" title="保存">S</button>
-                            <button class="icon-btn" title="收藏">F</button>
-                            <button class="icon-btn" title="刷新">R</button>
-                        </div>
-                    </div>
-                    <div class="query-row">
-                        <span class="query-label">区域选择:</span>
-                        <div class="region-tabs">
-                            <button class="region-tab active">全省</button>
-                            <button class="region-tab">长春</button>
-                            <button class="region-tab">吉林</button>
-                            <button class="region-tab">延边</button>
-                            <button class="region-tab">四平</button>
-                            <button class="region-tab">白山</button>
-                            <button class="region-tab">松原</button>
-                            <button class="region-tab">白城</button>
-                            <button class="region-tab">辽源</button>
-                            <button class="region-tab">通化</button>
-                            <button class="region-tab">长白山</button>
-                        </div>
-                    </div>
-                    <div class="query-row">
-                        <span class="query-label">业务类型:</span>
-                        <div class="biz-btn-group">
-                            <button class="biz-btn active">全部</button>
-                            <button class="biz-btn">电视</button>
-                            <button class="biz-btn">宽带</button>
-                            <button class="biz-btn">固话</button>
-                            <button class="biz-btn">融合</button>
-                        </div>
-                    </div>
-                    <div class="query-row">
-                        <span class="query-label">已选条件:</span>
-                        <div class="selected-tags" id="selectedTags">
-                            <span class="tag">全省 <span class="tag-close" onclick="this.parentElement.remove()">x</span></span>
-                            <span class="tag">天 <span class="tag-close" onclick="this.parentElement.remove()">x</span></span>
-                        </div>
-                        <div class="query-actions">
-                            <button class="btn btn-primary" id="btnQuery">查询展图</button>
-                            <button class="btn" id="btnReset">重置</button>
-                            <button class="btn">导出</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Content Tabs -->
-                <div class="content-tabs-wrapper">
-                    <div class="content-tabs">
-                        <button class="content-tab" onclick="App.loadContentTab('整体概况')">整体概况</button>
-                        <button class="content-tab active" onclick="App.loadContentTab('用户')">用户</button>
-                        <button class="content-tab" onclick="App.loadContentTab('固关')">固关</button>
-                        <button class="content-tab" onclick="App.loadContentTab('OLT')">OLT</button>
-                        <button class="content-tab" onclick="App.loadContentTab('BRAS')">BRAS</button>
-                        <button class="content-tab" onclick="App.loadContentTab('传输')">传输</button>
-                        <button class="content-tab" onclick="App.loadContentTab('安市')">安市</button>
-                        <button class="content-tab" onclick="App.loadContentTab('终端')">终端</button>
-                        <button class="content-tab" onclick="App.loadContentTab('局端/线路')">局端/线路</button>
-                        <button class="content-tab" onclick="App.loadContentTab('基础定界')">基础定界</button>
-                        <button class="content-tab" onclick="App.loadContentTab('AI定界')">AI定界</button>
-                    </div>
-                </div>
-
-                <!-- Charts Area -->
-                <div id="chartsArea" style="flex:1;display:flex;flex-direction:column;overflow:auto;min-height:0;padding:0 8px 8px;"></div>
-            </div>
-
-            <!-- 其他页面容器 -->
-            <div class="page-container" id="page-gis-view"></div>
-            <div class="page-container" id="page-kpi-view"></div>
-            <div class="page-container" id="page-con-analysis"></div>
-            <div class="page-container" id="page-pon-power"></div>
-            <div class="page-container" id="page-optical-test"></div>
-            <div class="page-container" id="page-cei-query"></div>
-            <div class="page-container" id="page-cei-cluster"></div>
-            <div class="page-container" id="page-quality-model"></div>
-            <div class="page-container" id="page-user-quality"></div>
-            <div class="page-container" id="page-quality-cluster"></div>
-            <div class="page-container" id="page-biz-quality"></div>
-            <div class="page-container" id="page-biz-cluster"></div>
-            <div class="page-container" id="page-ce-location"></div>
-            <div class="page-container" id="page-dpi-capture"></div>
-            <div class="page-container" id="page-quality-location"></div>
-            <div class="page-container" id="page-ping-test"></div>
-            <div class="page-container" id="page-ont-power"></div>
-            <div class="page-container" id="page-gateway-restart"></div>
-            <div class="page-container" id="page-work-order"></div>
-            <div class="page-container" id="page-work-order-eval"></div>
-            <div class="page-container" id="page-user-management"></div>
-            <div class="page-container" id="page-log-management"></div>
-            <div class="page-container" id="page-config-center"></div>
-            <div class="page-container" id="page-home"></div>
-        </div>
-    </div>
-</div>
-
-<script src="js/api.js"></script>
-<script src="js/datasource.js"></script>
-<!-- GIS地图容器（持久化，不随页面重绘销毁） -->
-<div class="map-container" id="mapContainer" style="display:none">
-    <div class="map-toolbar">
-        <button class="map-back-btn" id="mapBackBtn" title="返回上级">
-            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" fill="none"/></svg>
-        </button>
-        <div class="map-breadcrumb" id="mapBreadcrumb"></div>
-    </div>
-    <div class="map-layer-indicator" id="mapLayerIndicator"></div>
-    <div id="gridMapView" class="grid-map-view"></div>
-    <div class="map-toast" id="mapToast"></div>
-</div>
-
-<script src="js/data.js"></script>
-<script src="js/store.js"></script>
-<script src="js/pages.js"></script>
-<script src="js/app.js"></script>
-<script src="js/mapdata.js"></script>
-<script src="js/map.js"></script>
-<script>
-// Menu click handler
-function handleMenuClick(el) {
-    document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
-    el.classList.add('active');
-    var page = el.getAttribute('data-page');
-    var tabText = document.getElementById('activeTabText');
-    if (tabText) tabText.textContent = el.textContent.trim();
-    document.getElementById('activeTab').classList.add('active');
-    loadPageContent(page);
-}
-
-function handleSingleMenuClick(el) {
-    document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
-    var page = el.getAttribute('data-page');
-    var tabText = document.getElementById('activeTabText');
-    if (tabText) tabText.textContent = el.querySelector('span:nth-child(2)').textContent.trim();
-    document.getElementById('activeTab').classList.add('active');
-    loadPageContent(page);
-}
-
-function loadPageContent(page) {
-    // Hide GIS map if navigating away
-    if (page !== 'gis-view') { hideGisMap(); }
-
-    // Hide all pages
-    document.querySelectorAll('.page-container').forEach(function(c) { c.classList.remove('active'); });
-    var container = document.getElementById('page-' + page);
-    if (!container) return;
-    container.classList.add('active');
-
-    // Route to correct renderer - ALL pages mapped
-    var pageMap = {
-        'broadband-quality': function() { App.loadContentTab('用户'); },
-        'home': function() { Pages.renderHome(container); },
-        'gis-view': function() { showGisMapPage(); },
-        'kpi-view': function() { Pages.renderKpiView(container); },
-        'con-analysis': function() { Pages.renderConAnalysis(container); },
-        'pon-power': function() { Pages.renderPonPower(container); },
-        'optical-test': function() { Pages.renderOpticalTest(container); },
-        'cei-query': function() { Pages.renderCeiQuery(container); },
-        'cei-cluster': function() { Pages.renderCeiCluster(container); },
-        'quality-model': function() { Pages.renderQualityModel(container); },
-        'user-quality': function() { Pages.renderUserQuality(container); },
-        'quality-cluster': function() { Pages.renderQualityCluster(container); },
-        'biz-quality': function() { Pages.renderBizQuality(container); },
-        'biz-cluster': function() { Pages.renderBizCluster(container); },
-        'ce-location': function() { Pages.renderQualityLocation(container); },
-        'dpi-capture': function() { Pages.renderDpiCapture(container); },
-        'quality-location': function() { Pages.renderQualityLocation(container); },
-        'ping-test': function() { Pages.renderPingTest(container); },
-        'ont-power': function() { Pages.renderOntPower(container); },
-        'gateway-restart': function() { Pages.renderGatewayRestart(container); },
-        'work-order': function() { Pages.renderWorkOrder(container); },
-        'work-order-eval': function() { Pages.renderWorkOrderEval(container); },
-        'user-management': function() { Pages.renderUserManagement(container); },
-        'log-management': function() { Pages.renderLogManagement(container); },
-        'config-center': function() { Pages.renderConfigCenter(container); }
-    };
-
-    if (pageMap[page]) {
-        pageMap[page]();
-    } else {
-        Pages.renderModulePlaceholder(container, page.replace(/-/g, ' '));
-    }
-}
-
-function showGisMapPage() {
-    showGisMap();
-}
-</script>
+        function showGisMapPage() {
+            showGisMap();
+        }
+    </script>
 </body>
+
 </html>

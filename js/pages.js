@@ -3,6 +3,28 @@
  * 所有"开发中"页面已实现：筛选、图表、分页、详情
  */
 
+// SVG Icon Library - replace all emoji with professional inline SVGs
+var ICO = {
+    satellite: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    chart: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>',
+    bolt: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></svg>',
+    bell: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>',
+    clipboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
+    heart: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
+    search: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
+    user: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+    map: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>',
+    robot: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zM7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5zM16 17H8v-2h8v2zm-1-4c-.83 0-1.5-.67-1.5-1.5S14.17 10 15 10s1.5.67 1.5 1.5S15.83 13 15 13z"/></svg>',
+    wrench: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>',
+    bulb: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>',
+    antenna: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-3.87 0-7 3.13-7 7h2c0-2.76 2.24-5 5-5s5 2.24 5 5h2c0-3.87-3.13-7-7-7zm1 9.29c.88-.39 1.5-1.26 1.5-2.29 0-1.38-1.12-2.5-2.5-2.5S9.5 10.62 9.5 12c0 1.02.62 1.9 1.5 2.29v3.3L7.59 21 9 22.41l3-3 3 3L16.41 21 13 17.59v-3.3zM12 1C5.93 1 1 5.93 1 12h2c0-4.97 4.03-9 9-9s9 4.03 9 9h2c0-6.07-4.93-11-11-11z"/></svg>',
+    online: '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#27ae60"/></svg>',
+    offline: '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#ccc"/></svg>',
+    star: '<svg width="12" height="12" viewBox="0 0 24 24" fill="#f6bd16"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
+    analysis: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>',
+    locate: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>'
+};
+
 var Pages = {
     // ========== 通用分页渲染 ==========
     paginate: function(data, page, size) {
@@ -510,7 +532,7 @@ var Pages = {
         if (engineers.length === 0) engineers = JilinData.findEngineers(city, null);
         var engineerOpts = '';
         engineers.forEach(function(e, i) {
-            var statusIcon = e.online ? '🟢' : '⚪';
+            var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + statusIcon + ' ' + e.name + ' (' + e.team + ')</option>';
         });
         if (engineers.length === 0) {
@@ -1183,11 +1205,11 @@ var Pages = {
                 var success = Math.random() > 0.12;
                 var duration = Math.floor(Math.random() * 120 + 15);
                 if (success) {
-                    resultDiv.textContent += '\n✓ 重启成功！设备已恢复在线，耗时 ' + duration + 's\n';
+                    resultDiv.textContent += '\n[OK] 重启成功！设备已恢复在线，耗时 ' + duration + 's\n';
                     resultDiv.textContent += '> 设备IP: 10.' + Math.floor(Math.random()*200+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '\n';
                     resultDiv.textContent += '> 在线时间: ' + new Date().toLocaleString('zh-CN');
                 } else {
-                    resultDiv.textContent += '\n✗ 重启失败：设备响应超时，请检查设备连接状态\n';
+                    resultDiv.textContent += '\n[FAIL] 重启失败：设备响应超时，请检查设备连接状态\n';
                     resultDiv.style.color = '#ff6b6b';
                 }
                 // 添加到记录
@@ -1273,18 +1295,25 @@ var Pages = {
             { name: 'WiFi干扰模型', accuracy: 87.8, samples: 5420, lastTrain: '2025-11-15', status: '运行中' }
         ];
         var modelCards = models.map(function(m) {
-            var statusColor = m.status === '运行中' ? '#27ae60' : '#f39c12';
-            return '<div style="border:1px solid #e0e4e8;border-radius:4px;padding:12px;background:#fff;">' +
+            var statusClass = m.status === '运行中' ? 'running' : 'training';
+            var accColor = m.accuracy >= 92 ? '#27ae60' : (m.accuracy >= 90 ? '#f39c12' : '#e74c3c');
+            return '<div class="model-card-enhanced">' +
+                '<div class="model-status-bar ' + statusClass + '"></div>' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                '<span style="font-weight:600;font-size:13px;">' + m.name + '</span>' +
-                '<span style="font-size:11px;color:' + statusColor + ';">●' + m.status + '</span></div>' +
-                '<div style="font-size:11px;color:#666;line-height:1.8;">' +
-                '<div>准确率: <strong style="color:#5b8ff9;">' + m.accuracy + '%</strong></div>' +
-                '<div>样本数: ' + m.samples.toLocaleString() + '</div>' +
-                '<div>最后训练: ' + m.lastTrain + '</div></div>' +
-                '<div style="margin-top:8px;display:flex;gap:6px;">' +
-                '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.trainModel(\'' + m.name + '\')">重新训练</button>' +
-                '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.modelDetail(\'' + m.name + '\')">详情</button></div></div>';
+                    '<span style="font-weight:600;font-size:13px;">' + m.name + '</span>' +
+                    '<span style="font-size:10px;color:' + (m.status === '运行中' ? '#27ae60' : '#f39c12') + ';font-weight:600;">● ' + m.status + '</span>' +
+                '</div>' +
+                '<div class="model-accuracy-ring" style="border:3px solid ' + accColor + ';color:' + accColor + ';">' + m.accuracy + '%</div>' +
+                '<div style="text-align:center;font-size:10px;color:#999;margin-bottom:8px;">准确率</div>' +
+                '<div style="font-size:11px;color:#666;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">' +
+                    '<div>样本: <strong style="color:#333;">' + m.samples.toLocaleString() + '</strong></div>' +
+                    '<div>特征: <strong style="color:#333;">' + (15 + Math.floor(m.accuracy * 0.3)) + '维</strong></div>' +
+                    '<div style="grid-column:1/-1;">更新: ' + m.lastTrain + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;">' +
+                    '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.trainModel(\'' + m.name + '\')">重新训练</button>' +
+                    '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.modelDetail(\'' + m.name + '\')">详情</button>' +
+                '</div></div>';
         }).join('');
 
         var p = this.paginate(data, this._qmPage, 10);
@@ -1347,33 +1376,168 @@ var Pages = {
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
         if (!r) return;
+        var woId = 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000));
+        var priority = r.severity === '紧急' ? '紧急' : (r.severity === '高' ? '高' : '中');
+        // Match engineers
+        var skill = JilinData.qualityTypeToSkill ? JilinData.qualityTypeToSkill(r.primaryFactor || '') : '';
+        var engineers = JilinData.findEngineers ? JilinData.findEngineers(r.city, skill) : [];
+        var allEngineers = JilinData.findEngineers ? JilinData.findEngineers(r.city, null) : [];
+        var availableEngineers = engineers.length > 0 ? engineers : allEngineers;
+        var engineerOpts = '<option value="">暂不指派（待派单）</option>';
+        availableEngineers.forEach(function(e, i) {
+            var icon = e.online ? ICO.online : ICO.offline;
+            engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + e.name + ' - ' + e.team + ' 工单' + e.workload + '件' + (i === 0 ? ' [推荐]' : '') + '</option>';
+        });
+        var scoreColor = r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60');
+        Modal.show('从质差分析生成工单',
+            '<div style="display:grid;grid-template-columns:280px 1fr;gap:20px;">' +
+            // Left: Source info
+            '<div style="background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e0e4e8;">' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.chart + ' 质差分析来源</div>' +
+                '<div style="text-align:center;margin-bottom:12px;">' +
+                    '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + r.score + '</div>' +
+                    '<div style="font-size:11px;color:#999;">质差评分</div>' +
+                '</div>' +
+                '<div style="font-size:12px;color:#666;line-height:2;">' +
+                    '<div><strong>分析ID：</strong><span style="color:#2b7de9;">' + r.id + '</span></div>' +
+                    '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
+                    '<div><strong>所属地市：</strong>' + r.city + '</div>' +
+                    '<div><strong>分析模型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + r.modelName + '</span></div>' +
+                    '<div><strong>主要原因：</strong><span style="color:#e74c3c;font-weight:600;">' + r.primaryFactor + '</span></div>' +
+                    '<div><strong>严重程度：</strong>' + Pages.statusHtml(r.severity) + '</div>' +
+                    '<div><strong>分析时间：</strong>' + r.analysisTime + '</div>' +
+                '</div>' +
+                '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
+                    '<strong>建议：</strong>' + r.recommendation +
+                '</div>' +
+            '</div>' +
+            // Right: Order form
+            '<div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
+                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qmWoTitle" value="' + r.modelName + ' - ' + r.userAccount + '"></div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                    '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qmWoType"><option selected>AI预测</option><option>主动发现</option><option>系统告警</option></select></div>' +
+                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qmWoPriority"><option' + (priority === '低' ? ' selected' : '') + '>低</option><option' + (priority === '中' ? ' selected' : '') + '>中</option><option' + (priority === '高' ? ' selected' : '') + '>高</option><option' + (priority === '紧急' ? ' selected' : '') + '>紧急</option></select></div>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qmWoDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option></select></div>' +
+                    '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
+                '</div>' +
+                '<div class="form-group"><label class="form-label">指派工程师（' + r.city + '地区，按工作量排序）</label><select class="form-select" id="qmWoAssignee">' + engineerOpts + '</select></div>' +
+                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qmWoDesc" rows="3" style="resize:vertical;">用户 ' + r.userAccount + ' 经 ' + r.modelName + ' 分析，质差评分 ' + r.score + '，主因：' + r.primaryFactor + '（严重程度：' + r.severity + '）。建议：' + r.recommendation + '</textarea></div>' +
+                '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qmWoNote" placeholder="如：需携带光功率计、用户白天在家"></div>' +
+            '</div></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doQmCreateOrder(\'' + id + '\',\'' + woId + '\')">确认生成工单</button>',
+            '820px'
+        );
+    },
+
+    doQmCreateOrder: function(id, woId) {
+        var data = this._getQmRecords();
+        var r = null;
+        for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
+        if (!r) return;
+        var title = document.getElementById('qmWoTitle').value.trim();
+        if (!title) { Modal.toast('请填写工单标题', 'warning'); return; }
+        var assignee = document.getElementById('qmWoAssignee').value;
         var newOrder = {
-            id: 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000)),
-            title: r.modelName + ' - ' + r.userAccount,
-            type: 'AI预测',
+            id: woId,
+            title: title,
+            type: document.getElementById('qmWoType').value,
             city: r.city,
             userAccount: r.userAccount,
-            status: '待派单',
-            priority: r.severity === '紧急' ? '紧急' : (r.severity === '高' ? '高' : '中'),
+            status: assignee ? '已派单' : '待派单',
+            priority: document.getElementById('qmWoPriority').value,
             createTime: new Date().toLocaleString('zh-CN'),
-            assignee: '-',
+            assignee: assignee || '-',
             resolveTime: '-',
-            satisfaction: '-'
+            satisfaction: '-',
+            deadline: document.getElementById('qmWoDeadline').value + '小时',
+            description: document.getElementById('qmWoDesc').value,
+            note: document.getElementById('qmWoNote').value,
+            sourceId: r.id,
+            sourceType: '质差模型'
         };
         var orders = this._getWorkOrders();
         orders.unshift(newOrder);
         this._saveWorkOrders(orders);
-        DataStore.addLog('工单创建', '质差模型', '从质差模型生成工单: ' + newOrder.id);
-        Modal.toast('工单已创建: ' + newOrder.id, 'success');
+        DataStore.addLog('工单创建', '质差模型', '从质差模型生成工单: ' + newOrder.id + '，指派: ' + (assignee || '待派单'));
+        Modal.close();
+        Modal.toast('工单 ' + woId + ' 已创建' + (assignee ? '，已派发至 ' + assignee : '，等待派单'), 'success');
     },
 
     trainModel: function(name) {
-        Modal.show('训练模型', '<div style="text-align:center;padding:20px;"><div class="loading-spinner" style="margin:0 auto 12px;"></div><div style="color:#666;">正在训练 ' + name + ' ...</div></div>', '');
-        setTimeout(function() {
-            Modal.close();
-            Modal.toast(name + ' 训练完成，准确率提升 0.3%', 'success');
-            DataStore.addLog('模型训练', '质差模型', '重新训练 ' + name);
-        }, 2000);
+        Modal.show('训练模型 - ' + name,
+            '<div class="train-progress-wrap">' +
+                '<div class="train-progress-header"><span>正在训练 <strong>' + name + '</strong> ...</span><span id="trainPercent">0%</span></div>' +
+                '<div class="train-progress-bar"><div class="train-progress-fill" id="trainFill" style="width:0%"></div></div>' +
+                '<div class="train-log" id="trainLog">' +
+                    '<span class="log-step">[初始化]</span> 加载训练数据集...\n' +
+                '</div>' +
+                '<div id="trainMetrics" style="display:none;margin-top:12px;display:none;"></div>' +
+            '</div>',
+            '<button class="btn" id="trainCancelBtn" onclick="Modal.close()">取消训练</button>', '560px'
+        );
+        var fill = document.getElementById('trainFill');
+        var pct = document.getElementById('trainPercent');
+        var log = document.getElementById('trainLog');
+        var metrics = document.getElementById('trainMetrics');
+        var cancelBtn = document.getElementById('trainCancelBtn');
+        var totalEpochs = 20;
+        var epoch = 0;
+        var baseLoss = 0.45 + Math.random() * 0.15;
+        var baseAcc = 87 + Math.random() * 3;
+
+        var logLines = [
+            { t: 300, msg: '<span class="log-step">[数据预处理]</span> 特征工程完成，提取 ' + (15 + Math.floor(Math.random() * 20)) + ' 维特征' },
+            { t: 600, msg: '<span class="log-step">[数据预处理]</span> 训练集 ' + (8000 + Math.floor(Math.random() * 5000)) + ' 条，验证集 ' + (1000 + Math.floor(Math.random() * 2000)) + ' 条' },
+            { t: 900, msg: '<span class="log-step">[模型构建]</span> 算法: ' + (name.indexOf('WiFi') >= 0 ? 'RandomForest' : (name.indexOf('线路') >= 0 ? 'XGBoost' : 'GradientBoosting')) },
+            { t: 1200, msg: '<span class="log-step">[训练开始]</span> learning_rate=0.01, max_depth=8, n_estimators=' + totalEpochs * 50 }
+        ];
+        logLines.forEach(function(l) {
+            setTimeout(function() { if (log) log.innerHTML += l.msg + '\n'; log.scrollTop = log.scrollHeight; }, l.t);
+        });
+
+        var trainInterval = setInterval(function() {
+            epoch++;
+            if (epoch > totalEpochs) {
+                clearInterval(trainInterval);
+                var finalAcc = (baseAcc + 3.5 + Math.random() * 1.5).toFixed(1);
+                var finalRecall = (baseAcc + 1.2 + Math.random() * 2).toFixed(1);
+                var finalF1 = (0.87 + Math.random() * 0.08).toFixed(3);
+                if (fill) fill.style.width = '100%';
+                if (pct) pct.textContent = '100%';
+                if (log) {
+                    log.innerHTML += '<span class="log-step">[训练完成]</span> <span class="log-metric">最终准确率: ' + finalAcc + '% | 召回率: ' + finalRecall + '% | F1: ' + finalF1 + '</span>\n';
+                    log.innerHTML += '<span class="log-step">[模型保存]</span> 模型已保存至 /models/' + name.replace(/\s/g, '_') + '_v' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.pkl\n';
+                    log.scrollTop = log.scrollHeight;
+                }
+                if (metrics) {
+                    metrics.style.display = 'grid';
+                    metrics.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                    metrics.style.gap = '8px';
+                    metrics.innerHTML =
+                        '<div style="text-align:center;padding:10px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;"><div style="font-size:18px;font-weight:700;color:#27ae60;">' + finalAcc + '%</div><div style="font-size:10px;color:#999;">准确率</div></div>' +
+                        '<div style="text-align:center;padding:10px;background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe;"><div style="font-size:18px;font-weight:700;color:#5b8ff9;">' + finalRecall + '%</div><div style="font-size:10px;color:#999;">召回率</div></div>' +
+                        '<div style="text-align:center;padding:10px;background:#fefce8;border-radius:6px;border:1px solid #fde68a;"><div style="font-size:18px;font-weight:700;color:#f39c12;">' + finalF1 + '</div><div style="font-size:10px;color:#999;">F1分数</div></div>' +
+                        '<div style="text-align:center;padding:10px;background:#fdf2f8;border-radius:6px;border:1px solid #fbcfe8;"><div style="font-size:18px;font-weight:700;color:#9b59b6;">+0.3%</div><div style="font-size:10px;color:#999;">准确率提升</div></div>';
+                }
+                if (cancelBtn) { cancelBtn.textContent = '完成'; cancelBtn.className = 'btn btn-primary'; }
+                DataStore.addLog('模型训练', '质差模型', '重新训练 ' + name + '，准确率 ' + finalAcc + '%');
+                return;
+            }
+            var progress = Math.round(epoch / totalEpochs * 100);
+            var loss = (baseLoss * Math.pow(0.88, epoch) + Math.random() * 0.02).toFixed(4);
+            var acc = (baseAcc + (3.5 * epoch / totalEpochs) + (Math.random() - 0.5) * 0.8).toFixed(2);
+            if (fill) fill.style.width = progress + '%';
+            if (pct) pct.textContent = progress + '%';
+            if (log) {
+                var warn = parseFloat(loss) > 0.2 ? ' <span class="log-warn">[!] loss偏高</span>' : '';
+                log.innerHTML += '<span class="log-step">[Epoch ' + epoch + '/' + totalEpochs + ']</span> loss: <span class="log-metric">' + loss + '</span> | acc: <span class="log-metric">' + acc + '%</span>' + warn + '\n';
+                log.scrollTop = log.scrollHeight;
+            }
+        }, 400);
     },
 
     modelDetail: function(name) {
@@ -1499,7 +1663,7 @@ var Pages = {
         var engineerListHtml = '';
         (engineers.length > 0 ? engineers : allEngineers).forEach(function(e) {
             var isRecommend = e.id === recommendId;
-            engineerOpts += '<option value="' + e.name + '"' + (isRecommend ? ' selected' : '') + '>' + e.name + ' (' + e.team + ')' + (isRecommend ? ' ★推荐' : '') + '</option>';
+            engineerOpts += '<option value="' + e.name + '"' + (isRecommend ? ' selected' : '') + '>' + e.name + ' (' + e.team + ')' + (isRecommend ? ' [推荐]' : '') + '</option>';
             var statusColor = e.online ? '#27ae60' : '#bbb';
             var loadColor = e.workload > 10 ? '#e74c3c' : (e.workload > 7 ? '#f39c12' : '#27ae60');
             engineerListHtml += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:12px;">' +
@@ -1508,14 +1672,14 @@ var Pages = {
                 '<span style="color:#666;width:70px;">' + e.team + '</span>' +
                 '<span style="color:#666;width:80px;">' + e.skill.join('/') + '</span>' +
                 '<span style="color:' + loadColor + ';">工单' + e.workload + '件</span>' +
-                (isRecommend ? '<span style="color:#2b7de9;font-weight:600;">★推荐</span>' : '') +
+                (isRecommend ? '<span style="color:#2b7de9;font-weight:600;">[\u63a8\u8350]</span>' : '') +
                 '</div>';
         });
         var woId = 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000));
         Modal.show('从质差画像生成工单',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">📋 工单信息</div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
                 '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
                 '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qWoTitle" value="' + r.qualityType + ' - ' + r.userAccount + '"></div>' +
                 '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qWoType"><option selected>主动发现</option><option>系统告警</option><option>AI预测</option><option>用户申诉</option></select></div>' +
@@ -1526,7 +1690,7 @@ var Pages = {
                 '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qWoDesc" rows="3" style="resize:vertical;">' + '用户 ' + r.userAccount + ' 存在' + r.qualityType + '问题，CEI评分 ' + r.ceiScore + '，持续 ' + r.duration + '，影响业务：' + r.affectedBiz + '</textarea></div>' +
             '</div>' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">👤 用户信息 & 指派</div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.user + ' 用户信息 & 指派</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
                     '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
                     '<div class="form-group"><label class="form-label">所属地市</label><input class="form-input" value="' + r.city + '" readonly style="background:#f8fafc;"></div>' +
@@ -2052,25 +2216,90 @@ var Pages = {
     },
 
     showCreateOrderFromQl: function(account, reason) {
-        // 从定界结果直接创建工单
+        var isBiz = this._qlTab === 'business';
+        var woId = 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000));
+        var city = SeededRandom.pick(JilinData.cities);
+        var side = isBiz ? SeededRandom.pick(['家庭侧', '网络侧', '内容侧']) : SeededRandom.pick(['家庭侧', '光路侧', '接入侧']);
+        var ceiScore = SeededRandom.float(48, 72, 1);
+        var scoreColor = ceiScore < 55 ? '#e74c3c' : (ceiScore < 65 ? '#f39c12' : '#5b8ff9');
+        // Engineers
+        var engList = JilinData.findEngineers ? JilinData.findEngineers(city, null) : [];
+        var engOpts = '<option value="">暂不指派（待派单）</option>';
+        engList.forEach(function(e, i) {
+            engOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + e.name + ' - ' + e.team + ' 工单' + e.workload + '件' + (i === 0 ? ' [推荐]' : '') + '</option>';
+        });
+        var suggestion = side === '家庭侧' ? '检查用户侧网关设备、WiFi信号及终端连接状态' : (side === '网络侧' || side === '光路侧' ? '检查OLT端口、光路衰减及传输链路' : '联系内容提供商确认服务器状态');
+
+        Modal.show('从定界分析生成工单',
+            '<div style="display:grid;grid-template-columns:280px 1fr;gap:20px;">' +
+            // Left: Diagnosis source
+            '<div style="background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e0e4e8;">' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.search + ' 定界诊断来源</div>' +
+                '<div style="text-align:center;margin-bottom:12px;">' +
+                    '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + ceiScore + '</div>' +
+                    '<div style="font-size:11px;color:#999;">CEI评分</div>' +
+                '</div>' +
+                '<div style="font-size:12px;color:#666;line-height:2;">' +
+                    '<div><strong>用户账号：</strong>' + account + '</div>' +
+                    '<div><strong>所属地市：</strong>' + city + '</div>' +
+                    '<div><strong>定界类型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + (isBiz ? '业务CEI定界' : '通断CEI定界') + '</span></div>' +
+                    '<div><strong>定界结果：</strong><span style="color:#e74c3c;font-weight:600;">' + side + '</span></div>' +
+                    '<div><strong>定位原因：</strong><span style="color:#e74c3c;">' + reason + '</span></div>' +
+                    '<div><strong>影响时段：</strong>2025-12-02 08:00 ~ 14:00</div>' +
+                '</div>' +
+                '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
+                    '<strong>处理建议：</strong>' + suggestion +
+                '</div>' +
+            '</div>' +
+            // Right: Order form
+            '<div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
+                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qlWoTitle" value="' + reason + ' - ' + account + '"></div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                    '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qlWoType"><option selected>系统告警</option><option>质差定界</option><option>主动发现</option></select></div>' +
+                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qlWoPriority"><option>低</option><option>中</option><option selected>高</option><option>紧急</option></select></div>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qlWoDeadline"><option value="4">4小时（紧急）</option><option value="8" selected>8小时</option><option value="24">24小时（标准）</option><option value="48">48小时</option></select></div>' +
+                    '<div class="form-group"><label class="form-label">定界侧</label><input class="form-input" value="' + side + '" readonly style="background:#f8fafc;"></div>' +
+                '</div>' +
+                '<div class="form-group"><label class="form-label">指派工程师（' + city + '地区）</label><select class="form-select" id="qlWoAssignee">' + engOpts + '</select></div>' +
+                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qlWoDesc" rows="3" style="resize:vertical;">用户 ' + account + ' CEI定界分析，评分 ' + ceiScore + '，定界结果：' + side + '，定位原因：' + reason + '。建议：' + suggestion + '</textarea></div>' +
+                '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qlWoNote" placeholder="如：需现场检测光路、用户晚上在家"></div>' +
+            '</div></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doQlCreateOrder(\'' + account + '\',\'' + city + '\',\'' + woId + '\')">确认生成工单</button>',
+            '820px'
+        );
+    },
+
+    doQlCreateOrder: function(account, city, woId) {
+        var title = document.getElementById('qlWoTitle').value.trim();
+        if (!title) { Modal.toast('请填写工单标题', 'warning'); return; }
+        var assignee = document.getElementById('qlWoAssignee').value;
         var newOrder = {
-            id: 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000)),
-            title: reason + ' - ' + account,
-            type: '系统告警',
-            city: SeededRandom.pick(JilinData.cities),
+            id: woId,
+            title: title,
+            type: document.getElementById('qlWoType').value,
+            city: city,
             userAccount: account,
-            status: '待派单',
-            priority: '高',
+            status: assignee ? '已派单' : '待派单',
+            priority: document.getElementById('qlWoPriority').value,
             createTime: new Date().toLocaleString('zh-CN'),
-            assignee: '-',
+            assignee: assignee || '-',
             resolveTime: '-',
-            satisfaction: '-'
+            satisfaction: '-',
+            deadline: document.getElementById('qlWoDeadline').value + '小时',
+            description: document.getElementById('qlWoDesc').value,
+            note: document.getElementById('qlWoNote').value,
+            sourceType: '质差定界'
         };
         JilinData.workOrderList.unshift(newOrder);
         JilinData.workOrderStats.total++;
         JilinData.workOrderStats.pending++;
-        DataStore.addLog('工单创建', '质差定界定位', '从定界结果创建工单: ' + newOrder.id);
-        Modal.toast('工单已创建: ' + newOrder.id, 'success');
+        DataStore.addLog('工单创建', '质差定界定位', '从定界结果创建工单: ' + newOrder.id + '，指派: ' + (assignee || '待派单'));
+        Modal.close();
+        Modal.toast('工单 ' + woId + ' 已创建' + (assignee ? '，已派发至 ' + assignee : '，等待派单'), 'success');
     },
 
     exportQlResult: function() {
@@ -2160,14 +2389,14 @@ var Pages = {
         var defaultEngineers = JilinData.findEngineers('', null);
         var engineerOpts = '<option value="">暂不指派（待派单）</option>';
         defaultEngineers.forEach(function(e) {
-            var statusIcon = e.online ? '🟢' : '⚪';
+            var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' - ' + e.city + ' (' + e.team + ') 工单' + e.workload + '件</option>';
         });
         var woId = 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000));
         Modal.show('新建工单',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">📋 工单基本信息</div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单基本信息</div>' +
                 '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
                 '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="woTitle" placeholder="如：宽带无法上网 - JL20250001"></div>' +
                 '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="woType"><option>用户申诉</option><option>主动发现</option><option>系统告警</option><option>AI预测</option><option>巡检发现</option></select></div>' +
@@ -2179,7 +2408,7 @@ var Pages = {
                 '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="woDesc" rows="3" placeholder="请描述故障现象..." style="resize:vertical;"></textarea></div>' +
             '</div>' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">👷 指派工程师</div>' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.wrench + ' 指派工程师</div>' +
                 '<div class="form-group"><label class="form-label">指派工程师</label><select class="form-select" id="woAssignee">' + engineerOpts + '</select></div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
                     '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="woDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option><option value="72">72小时</option></select></div>' +
@@ -2203,7 +2432,7 @@ var Pages = {
         if (!sel) return;
         var opts = '<option value="">暂不指派（待派单）</option>';
         engineers.forEach(function(e) {
-            var statusIcon = e.online ? '🟢' : '⚪';
+            var statusIcon = e.online ? '[+]' : '[-]';
             opts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' (' + e.team + ') 工单' + e.workload + '件</option>';
         });
         sel.innerHTML = opts;
@@ -2212,7 +2441,7 @@ var Pages = {
         if (info && engineers.length > 0) {
             info.innerHTML = '<div style="font-size:11px;color:#666;margin-bottom:4px;">' + city + ' 可用工程师 (' + engineers.length + '人)：</div>' +
                 engineers.slice(0, 4).map(function(e) {
-                    return '<div style="font-size:11px;padding:3px 0;color:#333;">' + (e.online ? '🟢' : '⚪') + ' ' + e.name + ' · ' + e.area + ' · 工单' + e.workload + '件</div>';
+                    return '<div style="font-size:11px;padding:3px 0;color:#333;">' + (e.online ? '<span style="color:#27ae60;">●</span>' : '<span style="color:#ccc;">●</span>') + ' ' + e.name + ' · ' + e.area + ' · 工单' + e.workload + '件</div>';
                 }).join('');
         }
     },
@@ -2258,13 +2487,13 @@ var Pages = {
         var engineers = JilinData.findEngineers(wo.city, null);
         var engineerOpts = '';
         engineers.forEach(function(e, i) {
-            var statusIcon = e.online ? '🟢' : '⚪';
+            var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + statusIcon + ' ' + e.name + ' - ' + e.team + ' (' + e.skill.join('/') + ') 工单' + e.workload + '件</option>';
         });
         // 如果该地市没有工程师，显示全部
         if (engineers.length === 0) {
             JilinData.engineers.forEach(function(e) {
-                var statusIcon = e.online ? '🟢' : '⚪';
+                var statusIcon = e.online ? '[+]' : '[-]';
                 engineerOpts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' - ' + e.city + ' (' + e.team + ')</option>';
             });
         }
@@ -2373,7 +2602,7 @@ var Pages = {
     // ========== 工单后评估 (增强多维度分析) ==========
     renderWorkOrderEval: function(container) {
         var s = JilinData.workOrderStats;
-        // 计算各维度统计
+        // Calculate city stats
         var cityStats = {};
         JilinData.workOrderList.forEach(function(wo) {
             if (!cityStats[wo.city]) cityStats[wo.city] = { total: 0, resolved: 0, closed: 0 };
@@ -2385,25 +2614,68 @@ var Pages = {
         for (var city in cityStats) {
             var cs = cityStats[city];
             var rate = cs.total > 0 ? ((cs.resolved + cs.closed) / cs.total * 100).toFixed(1) : '0';
-            cityRows += '<tr><td>' + city + '</td><td>' + cs.total + '</td><td>' + cs.resolved + '</td><td>' + cs.closed + '</td><td>' + rate + '%</td></tr>';
+            var rateCls = parseFloat(rate) >= 90 ? 'status-normal' : (parseFloat(rate) >= 80 ? 'status-warning' : 'status-error');
+            cityRows += '<tr><td>' + city + '</td><td>' + cs.total + '</td><td>' + cs.resolved + '</td><td>' + cs.closed + '</td><td><span class="' + rateCls + '">' + rate + '%</span></td></tr>';
         }
+        // Engineer performance data
+        SeededRandom.reset(20251202 + 777);
+        var engineers = JilinData.engineers ? JilinData.engineers.slice(0, 10) : [];
+        var perfRows = engineers.map(function(e, idx) {
+            var resolved = SeededRandom.int(15, 45);
+            var avgTime = SeededRandom.float(1.5, 12, 1);
+            var satisfaction = SeededRandom.float(3.5, 5.0, 1);
+            var satPercent = (satisfaction / 5 * 100).toFixed(0);
+            var rankClass = idx === 0 ? 'gold' : (idx === 1 ? 'silver' : (idx === 2 ? 'bronze' : 'normal'));
+            var satColor = satisfaction >= 4.5 ? '#27ae60' : (satisfaction >= 4.0 ? '#5b8ff9' : (satisfaction >= 3.5 ? '#f39c12' : '#e74c3c'));
+            var stars = '';
+            for (var si = 0; si < 5; si++) { stars += '<span class="star ' + (si < Math.round(satisfaction) ? 'filled' : '') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>'; }
+            return '<tr>' +
+                '<td><span class="perf-rank-badge ' + rankClass + '">' + (idx + 1) + '</span></td>' +
+                '<td><strong>' + e.name + '</strong></td>' +
+                '<td>' + e.city + '</td>' +
+                '<td>' + e.team + '</td>' +
+                '<td style="font-weight:600;color:#5b8ff9;">' + resolved + '件</td>' +
+                '<td>' + avgTime + 'h</td>' +
+                '<td><div class="perf-bar"><div class="perf-bar-fill" style="width:' + satPercent + '%;background:' + satColor + ';"></div></div>' + satisfaction + '</td>' +
+                '<td><div class="stars">' + stars + '</div></td>' +
+                '</tr>';
+        }).join('');
+        SeededRandom.reset(20251202);
+
         container.innerHTML =
-            '<div class="page-content"><div class="kpi-grid">' +
+            '<div class="page-content">' +
+            // Time Filter
+            '<div class="remote-panel" style="margin-bottom:8px;"><div class="remote-form">' +
+                '<div class="form-group"><label class="form-label">评估周期</label><select class="form-select" id="evalPeriod"><option value="week">近一周</option><option value="month" selected>近一月</option><option value="quarter">近一季度</option></select></div>' +
+                '<div class="form-group"><label class="form-label">地市</label>' + this.cityFilterHtml('evalCity', '', '') + '</div>' +
+                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn" onclick="Modal.toast(\'评估报告已导出\',\'success\')">导出报告</button></div>' +
+            '</div></div>' +
+            // KPI Cards
+            '<div class="kpi-grid">' +
                 App.kpiCardHtml('工单总数', s.total, '件', 0) +
                 App.kpiCardHtml('平均处理时长', s.avgProcessTime, '小时', -5.2) +
                 App.kpiCardHtml('超时率', s.overdueRate, '%', -0.5) +
                 App.kpiCardHtml('满意率', s.satisfactionRate, '%', 1.2) +
                 App.kpiCardHtml('闭环率', ((s.completed + s.closed) / s.total * 100).toFixed(1), '%', 2.1) +
                 App.kpiCardHtml('业务质量提升', Math.floor(s.completed * 0.78), '件', 3.5) +
-                App.kpiCardHtml('提升占比', '78.2', '%', 1.8) +
-                App.kpiCardHtml('超时工单占比', s.overdueRate, '%', -0.3) +
+                App.kpiCardHtml('首次解决率', '72.8', '%', 1.8) +
+                App.kpiCardHtml('超时工单数', Math.max(1, Math.floor(s.total * 0.012)), '件', -0.3) +
             '</div>' +
+            // Charts Row
             '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px;">' +
                 '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">工单量与解决率趋势</span></div><div class="chart-container" id="woEvalChart"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">工单类型分布</span></div><div class="chart-container" id="woEvalPie"></div></div>' +
+                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">满意度评分分布</span></div><div class="chart-container" id="woSatChart"></div></div>' +
             '</div>' +
-            '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市工单统计</div>' +
-            '<table class="data-table"><thead><tr><th>地市</th><th>工单总数</th><th>已解决</th><th>已关闭</th><th>闭环率</th></tr></thead><tbody>' + cityRows + '</tbody></table></div></div>';
+            // Engineer Performance
+            '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;display:flex;justify-content:space-between;align-items:center;">工程师绩效排名<span style="font-size:11px;color:#999;font-weight:400;">基于解决工单数、处理时长及满意度综合评分</span></div>' +
+            '<table class="data-table"><thead><tr><th style="width:50px;">排名</th><th>姓名</th><th>地市</th><th>团队</th><th>已解决</th><th>平均时长</th><th>满意度</th><th>评分</th></tr></thead><tbody>' + perfRows + '</tbody></table></div>' +
+            // City Stats
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+                '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市工单统计</div>' +
+                '<table class="data-table"><thead><tr><th>地市</th><th>工单总数</th><th>已解决</th><th>已关闭</th><th>闭环率</th></tr></thead><tbody>' + cityRows + '</tbody></table></div>' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">工单类型分布</span></div><div class="chart-container" id="woEvalPie"></div></div>' +
+            '</div></div>';
+        // Charts
         var dom = document.getElementById('woEvalChart');
         if (dom) {
             var chart = echarts.init(dom); App.chartInstances['woEvalChart'] = chart;
@@ -2417,6 +2689,29 @@ var Pages = {
                 ]
             });
             window.addEventListener('resize',function(){chart.resize();});
+        }
+        // Satisfaction Distribution
+        var satDom = document.getElementById('woSatChart');
+        if (satDom) {
+            var satChart = echarts.init(satDom); App.chartInstances['woSatChart'] = satChart;
+            satChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { top: 20, right: 20, bottom: 30, left: 40 },
+                xAxis: { type: 'category', data: ['1星', '2星', '3星', '4星', '5星'], axisLabel: { fontSize: 11 } },
+                yAxis: { type: 'value', name: '工单数', splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                series: [{
+                    type: 'bar', barWidth: '50%',
+                    data: [
+                        { value: 8, itemStyle: { color: '#e74c3c' } },
+                        { value: 15, itemStyle: { color: '#f39c12' } },
+                        { value: 42, itemStyle: { color: '#f6bd16' } },
+                        { value: 128, itemStyle: { color: '#5b8ff9' } },
+                        { value: 265, itemStyle: { color: '#27ae60' } }
+                    ],
+                    label: { show: true, position: 'top', fontSize: 10 }
+                }]
+            });
+            window.addEventListener('resize',function(){satChart.resize();});
         }
         var pie = document.getElementById('woEvalPie');
         if (pie) {
@@ -2742,23 +3037,79 @@ var Pages = {
         var d = JilinData.dashboardData;
         var m = JilinData.kpiMetrics;
         var s = JilinData.workOrderStats;
+        // Generate alert ticker items
+        var alerts = [
+            { time: '14:28', level: 'critical', text: 'OLT-CC-0012 端口3光功率异常，接收功率 -27.5dBm，影响用户32户' },
+            { time: '14:15', level: 'major', text: 'BRAS-JL-02 CPU利用率达89%，建议关注负载均衡' },
+            { time: '14:02', level: 'minor', text: '长春朝阳区用户JL20250128 CEI评分降至62分，触发质差预警' },
+            { time: '13:48', level: 'critical', text: '松原前郭光缆中断告警，影响OLT设备3台，用户约1200户' },
+            { time: '13:35', level: 'major', text: '延边州IPTV卡顿率上升至4.2%，超出阈值(2%)' },
+            { time: '13:22', level: 'minor', text: '白山临江网关GW-BS-00128离线超过30分钟' },
+            { time: '13:10', level: 'major', text: '通化梅河口OLT-TH-0008端口利用率95%，建议扩容' },
+            { time: '12:55', level: 'critical', text: '四平公主岭传输链路丢包率8.5%，影响下游580用户' }
+        ];
+        var tickerHtml = alerts.map(function(a) {
+            return '<span class="alert-ticker-item"><span class="ticker-time">' + a.time + '</span><span class="ticker-level ' + a.level + '">' + (a.level === 'critical' ? '紧急' : (a.level === 'major' ? '重要' : '一般')) + '</span>' + a.text + '</span>';
+        }).join('');
+        // Duplicate for seamless scroll
+        tickerHtml = tickerHtml + tickerHtml;
+
         container.innerHTML =
             '<div class="page-content">' +
-            '<div class="dashboard-header"><h2 class="dashboard-title">家宽网络质量运营驾驶舱</h2><span class="dashboard-time">数据更新时间: 2025-12-02 14:30:00</span></div>' +
-            '<div class="dashboard-kpi-row">' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#5b8ff9,#3a6dd6);">📡</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + m.totalBroadbandUsers + '<span>万</span></div><div class="dash-kpi-label">宽带用户总数</div></div></div>' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#5ad8a6,#2ecc71);">📊</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + m.totalCeiScore + '<span>分</span></div><div class="dash-kpi-label">综合CEI评分</div></div></div>' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#f6bd16,#f39c12);">⚡</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + m.avgDownloadSpeed + '<span>Mbps</span></div><div class="dash-kpi-label">平均下载速率</div></div></div>' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">🔔</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + d.todayAlerts + '<span>条</span></div><div class="dash-kpi-label">今日告警</div></div></div>' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad);">📋</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + s.pending + '<span>件</span></div><div class="dash-kpi-label">待处理工单</div></div></div>' +
-                '<div class="dash-kpi"><div class="dash-kpi-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085);">💚</div><div class="dash-kpi-info"><div class="dash-kpi-value">' + d.networkHealth + '<span>%</span></div><div class="dash-kpi-label">网络健康度</div></div></div>' +
+            // Dashboard Header
+            '<div class="dashboard-header-enhanced">' +
+                '<div class="dashboard-title-area">' +
+                    '<h2 class="dashboard-title-enhanced">家宽网络质量运营驾驶舱</h2>' +
+                    '<div class="dashboard-time-badge"><span class="live-dot"></span>实时监控中</div>' +
+                '</div>' +
+                '<div class="dashboard-actions">' +
+                    '<div class="refresh-timer"><span>自动刷新</span><div class="refresh-timer-progress"><div class="refresh-timer-fill"></div></div></div>' +
+                    '<button class="btn" onclick="loadPageContent(\'home\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> 刷新</button>' +
+                    '<button class="btn" onclick="Modal.toast(\'全屏模式开发中\',\'info\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg> 全屏</button>' +
+                '</div>' +
             '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">' +
+            // Alert Ticker
+            '<div class="alert-ticker">' +
+                '<div class="alert-ticker-label"><span class="ticker-dot"></span>实时告警</div>' +
+                '<div class="alert-ticker-content"><div class="alert-ticker-scroll">' + tickerHtml + '</div></div>' +
+            '</div>' +
+            // Enhanced KPI Row
+            '<div class="dash-kpi-row-enhanced">' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">宽带用户总数</span><div class="dke-icon" style="background:rgba(91,143,249,0.1);color:#5b8ff9;">' + ICO.antenna + '</div></div><div class="dke-value">' + m.totalBroadbandUsers + '<span>万</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.3% 环比</span><span class="dke-compare">较昨日 +856户</span></div></div>' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">综合CEI评分</span><div class="dke-icon" style="background:rgba(90,216,166,0.1);color:#5ad8a6;">' + ICO.chart + '</div></div><div class="dke-value">' + m.totalCeiScore + '<span>分</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.5 环比</span><span class="dke-compare">目标 ≥93</span></div></div>' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">平均下载速率</span><div class="dke-icon" style="background:rgba(246,189,22,0.1);color:#f6bd16;">' + ICO.bolt + '</div></div><div class="dke-value">' + m.avgDownloadSpeed + '<span>Mbps</span></div><div class="dke-footer"><span class="dke-trend up">↑ 2.1%</span><span class="dke-compare">100M达标率 98.5%</span></div></div>' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">今日告警</span><div class="dke-icon" style="background:rgba(231,76,60,0.1);color:#e74c3c;">' + ICO.bell + '</div></div><div class="dke-value">' + d.todayAlerts + '<span>条</span></div><div class="dke-footer"><span class="dke-trend down">↓ 5.2% 环比</span><span class="dke-compare">紧急 ' + Math.floor(d.todayAlerts * 0.12) + ' / 重要 ' + Math.floor(d.todayAlerts * 0.35) + '</span></div></div>' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">待处理工单</span><div class="dke-icon" style="background:rgba(155,89,182,0.1);color:#9b59b6;">' + ICO.clipboard + '</div></div><div class="dke-value">' + s.pending + '<span>件</span></div><div class="dke-footer"><span class="dke-trend down">↓ 3件</span><span class="dke-compare">' + (s.pending > 0 ? '<span class="overdue-badge">超时 ' + Math.max(1, Math.floor(s.pending * 0.1)) + '</span>' : '无超时') + '</span></div></div>' +
+                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">网络健康度</span><div class="dke-icon" style="background:rgba(26,188,156,0.1);color:#1abc9c;">' + ICO.heart + '</div></div><div class="dke-value">' + d.networkHealth + '<span>%</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.8%</span><span class="dke-compare">较上周提升</span></div></div>' +
+            '</div>' +
+            // System Status Strip
+            '<div class="sys-status-strip">' +
+                '<div class="sys-status-item"><span class="sys-status-dot online"></span>应用服务器 <span class="sys-status-value">正常</span></div>' +
+                '<div class="sys-status-item"><span class="sys-status-dot online"></span>数据库 <span class="sys-status-value">正常</span> <span style="color:#999;">延迟 2ms</span></div>' +
+                '<div class="sys-status-item"><span class="sys-status-dot online"></span>Redis缓存 <span class="sys-status-value">正常</span> <span style="color:#999;">命中率 97.8%</span></div>' +
+                '<div class="sys-status-item"><span class="sys-status-dot online"></span>采集服务 <span class="sys-status-value">运行中</span></div>' +
+                '<div class="sys-status-item"><span class="sys-status-dot warning"></span>Kafka队列 <span class="sys-status-value" style="color:#f39c12;">积压 1.2k</span></div>' +
+                '<div style="margin-left:auto;display:flex;align-items:center;gap:6px;"><span style="color:#999;">在线用户</span><span class="sys-status-value">23</span><span style="color:#999;margin-left:12px;">今日访问</span><span class="sys-status-value">158</span></div>' +
+            '</div>' +
+            // Quick Actions
+            '<div class="quick-actions">' +
+                '<div class="quick-action" onclick="loadPageContent(\'cei-query\')"><div class="quick-action-icon" style="color:#5b8ff9;">' + ICO.search + '</div><div class="quick-action-label">CEI查询</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'work-order\')"><div class="quick-action-icon" style="color:#9b59b6;">' + ICO.clipboard + '</div><div class="quick-action-label">工单管理</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'user-quality\')"><div class="quick-action-icon" style="color:#e74c3c;">' + ICO.user + '</div><div class="quick-action-label">质差用户</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'gis-view\')"><div class="quick-action-icon" style="color:#27ae60;">' + ICO.map + '</div><div class="quick-action-label">GIS视图</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'quality-model\')"><div class="quick-action-icon" style="color:#2b7de9;">' + ICO.robot + '</div><div class="quick-action-label">质差模型</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'dpi-capture\')"><div class="quick-action-icon" style="color:#f39c12;">' + ICO.antenna + '</div><div class="quick-action-label">DPI抓包</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'ping-test\')"><div class="quick-action-icon" style="color:#1abc9c;">' + ICO.wrench + '</div><div class="quick-action-label">PING测试</div></div>' +
+                '<div class="quick-action" onclick="loadPageContent(\'pon-power\')"><div class="quick-action-icon" style="color:#f6bd16;">' + ICO.bulb + '</div><div class="quick-action-label">光功率异常</div></div>' +
+            '</div>' +
+            // Charts Row 1
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
                 '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">CEI评分趋势</span></div><div class="chart-container" id="homeChart1"></div></div>' +
                 '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">各地市CEI排名</span></div><div class="chart-container" id="homeChart2"></div></div>' +
                 '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务类型分布</span></div><div class="chart-container" id="homeChart3"></div></div>' +
             '</div>' +
-            '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px;">' +
+            // Charts Row 2
+            '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">' +
                 '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">24小时告警趋势</span></div><div class="chart-container" id="homeChart4"></div></div>' +
                 '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">质差类型TOP5</span></div><div class="chart-container" id="homeChart5"></div></div>' +
             '</div></div>';
