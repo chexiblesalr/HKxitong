@@ -133,7 +133,22 @@ var DataStore = {
                 { _id: 'C009', category: '工单规则', key: 'work_order_auto_close_days', name: '工单自动关闭天数', value: '7', unit: '天', desc: '已解决工单超过此天数自动关闭', updatedBy: 'admin', updatedAt: '2025-11-22 16:00:00' },
                 { _id: 'C010', category: '系统参数', key: 'data_retention_days', name: '数据保留天数', value: '90', unit: '天', desc: '历史数据保留天数，超过自动清理', updatedBy: 'admin', updatedAt: '2025-11-10 08:00:00' },
                 { _id: 'C011', category: '系统参数', key: 'alert_notification_enabled', name: '告警通知开关', value: '开启', unit: '', desc: '是否开启告警短信/邮件通知', updatedBy: 'admin', updatedAt: '2025-11-25 11:00:00' },
-                { _id: 'C012', category: '系统参数', key: 'session_timeout', name: '会话超时时间', value: '30', unit: '分钟', desc: '用户无操作超过此时间自动退出', updatedBy: 'admin', updatedAt: '2025-11-10 08:00:00' }
+                { _id: 'C012', category: '系统参数', key: 'session_timeout', name: '会话超时时间', value: '30', unit: '分钟', desc: '用户无操作超过此时间自动退出', updatedBy: 'admin', updatedAt: '2025-11-10 08:00:00' },
+                // DPI-XDR 阈值
+                { _id: 'C013', category: 'DPI-XDR阈值', key: 'dpi_http_first_packet_threshold', name: 'HTTP首包时延阈值', value: '200', unit: 'ms', desc: 'HTTP首包响应时延超过此值判定为业务质差', updatedBy: 'admin', updatedAt: '2025-11-28 09:00:00' },
+                { _id: 'C014', category: 'DPI-XDR阈值', key: 'dpi_dns_resolve_threshold', name: 'DNS解析时延阈值', value: '50', unit: 'ms', desc: 'DNS解析时延超过此值判定为DNS异常', updatedBy: 'admin', updatedAt: '2025-11-28 09:00:00' },
+                { _id: 'C015', category: 'DPI-XDR阈值', key: 'dpi_tcp_retransmit_threshold', name: 'TCP重传率阈值', value: '2', unit: '%', desc: 'TCP重传率超过此值判定为网络质差', updatedBy: 'admin', updatedAt: '2025-11-28 09:00:00' },
+                { _id: 'C016', category: 'DPI-XDR阈值', key: 'dpi_video_stall_threshold', name: '视频卡顿率阈值', value: '3', unit: '%', desc: 'IPTV/OTT视频卡顿率超过此值触发质差标记', updatedBy: 'admin', updatedAt: '2025-11-28 09:00:00' },
+                // 质差标签规则
+                { _id: 'C017', category: '质差标签', key: 'tag_weak_light_threshold', name: '弱光判定阈值', value: '-25', unit: 'dBm', desc: '接收光功率低于此值自动标记为"弱光"标签', updatedBy: 'admin', updatedAt: '2025-11-25 10:00:00' },
+                { _id: 'C018', category: '质差标签', key: 'tag_high_ber_threshold', name: '高误码判定阈值', value: '1e-6', unit: '', desc: '误码率高于此值自动标记为"高误码"标签', updatedBy: 'admin', updatedAt: '2025-11-25 10:00:00' },
+                { _id: 'C019', category: '质差标签', key: 'tag_frequent_disconnect_count', name: '频繁掉线次数阈值', value: '3', unit: '次/天', desc: '每日掉线超过此次数标记为"频繁掉线"', updatedBy: 'admin', updatedAt: '2025-11-25 10:00:00' },
+                { _id: 'C020', category: '质差标签', key: 'tag_dying_gasp_window', name: 'dying-gasp判定窗口', value: '5', unit: '分钟', desc: '检测到dying-gasp后此时间窗口内判定掉电', updatedBy: 'admin', updatedAt: '2025-11-25 10:00:00' },
+                // CEI定界参数
+                { _id: 'C021', category: 'CEI定界', key: 'boundary_home_latency_threshold', name: '家庭侧时延阈值', value: '30', unit: 'ms', desc: '网关到用户终端时延超过此值定界为家庭侧', updatedBy: 'admin', updatedAt: '2025-11-26 14:00:00' },
+                { _id: 'C022', category: 'CEI定界', key: 'boundary_network_loss_threshold', name: '网络侧丢包阈值', value: '1', unit: '%', desc: '骨干网丢包率超过此值定界为网络侧', updatedBy: 'admin', updatedAt: '2025-11-26 14:00:00' },
+                { _id: 'C023', category: 'CEI定界', key: 'boundary_content_response_threshold', name: '内容侧响应阈值', value: '500', unit: 'ms', desc: '内容源响应时延超过此值定界为内容侧', updatedBy: 'admin', updatedAt: '2025-11-26 14:00:00' },
+                { _id: 'C024', category: 'CEI定界', key: 'boundary_auto_dispatch_enabled', name: '定界自动派单', value: '开启', unit: '', desc: '定界完成后是否自动生成工单并派发', updatedBy: 'admin', updatedAt: '2025-11-26 14:00:00' }
             ]);
         }
 

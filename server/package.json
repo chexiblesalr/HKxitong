@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "init-db": "node db/seed.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "seed-xdr": "node -e \"fetch('http://localhost:3000/api/dpi-xdr/seed-sample',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count:200})}).then(r=>r.json()).then(console.log)\""
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -650,7 +650,7 @@ var App = {
 var PAGE_GROUP_MAP = {
     'broadband-quality': '全景视图', 'gis-view': '全景视图', 'kpi-view': '全景视图', 'con-analysis': '全景视图', 'pon-power': '全景视图', 'optical-test': '全景视图',
     'cei-query': '质量画像', 'cei-cluster': '质量画像', 'quality-model': '质量画像', 'user-quality': '质量画像', 'quality-cluster': '质量画像', 'biz-quality': '质量画像', 'biz-cluster': '质量画像',
-    'ce-location': '质差定界定位', 'dpi-capture': '质差定界定位', 'quality-location': '质差定界定位',
+    'ce-location': '质差定界定位', 'biz-cei-boundary': '质差定界定位', 'biz-cei-locate': '质差定界定位', 'conn-cei-boundary': '质差定界定位', 'conn-cei-locate': '质差定界定位', 'dpi-capture': '质差定界定位', 'quality-location': '质差定界定位',
     'ping-test': '远程操作', 'ont-power': '远程操作', 'gateway-restart': '远程操作',
     'work-order': '工单闭环', 'work-order-eval': '工单闭环',
     'user-management': '用户管理',
@@ -660,13 +660,22 @@ var PAGE_GROUP_MAP = {
 var PAGE_LABEL_MAP = {
     'broadband-quality': '宽带网络质量分析', 'gis-view': '宽带运营GIS视图', 'kpi-view': '宽带质量KPI视图', 'con-analysis': 'CON网络分析', 'pon-power': 'PON光功率异常管理', 'optical-test': '光路测试上下线',
     'cei-query': '用户和业务CEI查询', 'cei-cluster': 'CEI聚类分析', 'quality-model': '质差模型', 'user-quality': '用户质差', 'quality-cluster': '质差聚类质差', 'biz-quality': '业务质差', 'biz-cluster': '业务聚类质差',
-    'ce-location': 'CE定界定位查询', 'dpi-capture': 'DPI实时抓包', 'quality-location': '质差定界定位',
+    'ce-location': '用户/账号定界查询', 'biz-cei-boundary': '业务CEI定界', 'biz-cei-locate': '业务CEI定位', 'conn-cei-boundary': '通断CEI定界', 'conn-cei-locate': '通断CEI定位', 'dpi-capture': 'DPI-XDR明细查询', 'quality-location': '质差定界定位',
     'ping-test': 'PING测试', 'ont-power': 'ONT光功率查询', 'gateway-restart': '网关远程重启',
     'work-order': '质差工单及派单管理', 'work-order-eval': '质差工单后评估',
     'user-management': '用户账号管理',
     'log-management': '日志管理', 'config-center': '配置中心',
     'home': '运营驾驶舱'
 };
+
+PAGE_GROUP_MAP['quality-tags'] = PAGE_GROUP_MAP['quality-cluster'];
+PAGE_GROUP_MAP['cluster-alert'] = PAGE_GROUP_MAP['quality-cluster'];
+PAGE_GROUP_MAP['cei-comparison'] = PAGE_GROUP_MAP['work-order'];
+PAGE_GROUP_MAP['quality-loop'] = PAGE_GROUP_MAP['work-order'];
+PAGE_LABEL_MAP['quality-tags'] = '质差标签管理';
+PAGE_LABEL_MAP['cluster-alert'] = '多维聚类告警';
+PAGE_LABEL_MAP['cei-comparison'] = 'CEI改善对比';
+PAGE_LABEL_MAP['quality-loop'] = '质差闭环全景';
 
 function updateBreadcrumb(page) {
     var group = PAGE_GROUP_MAP[page] || '首页';

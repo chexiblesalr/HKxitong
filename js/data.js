@@ -377,10 +377,12 @@ var JilinData = {
             var loss = delay > 30 ? SeededRandom.float(5, 40, 1) : (delay > 15 ? SeededRandom.float(0, 10, 1) : 0);
             this.pingTestHistory.push({
                 time: SeededRandom.date('2025-11-16', '2025-12-02'),
+                ontId: 'ONT-' + cityPrefixes[city] + '-' + String(SeededRandom.int(1, 9999)).padStart(5, '0'),
                 target: '10.' + SeededRandom.int(160, 175) + '.' + SeededRandom.int(1, 254) + '.' + SeededRandom.int(1, 254),
                 city: city,
                 packetSize: SeededRandom.pick([32, 64, 128, 256]),
                 count: SeededRandom.pick([5, 10, 20, 50]),
+                interval: SeededRandom.pick([1, 1, 1, 2, 5]),
                 avgDelay: delay,
                 maxDelay: SeededRandom.float(delay, delay * 2, 1),
                 minDelay: SeededRandom.float(1, delay, 1),
@@ -388,6 +390,7 @@ var JilinData = {
                 status: loss > 20 ? '异常' : (loss > 5 || delay > 25 ? '告警' : '正常')
             });
         }
+
 
         // ===== ONT光功率查询 150条 =====
         this.ontPowerRecords = [];

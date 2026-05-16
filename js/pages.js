@@ -1017,65 +1017,97 @@ var Pages = {
 
     // ========== PING测试 ==========
     _pingPage: 1,
+    _pingRunning: false,
     renderPingTest: function(container, page) {
         this._pingPage = page || 1;
         var p = this.paginate(JilinData.pingTestHistory, this._pingPage, 12);
         var rows = p.data.map(function(r) {
-            return '<tr><td>' + r.time + '</td><td>' + r.target + '</td><td>' + r.city + '</td><td>' + r.avgDelay + 'ms</td><td>' + r.maxDelay + 'ms</td><td>' + r.packetLoss + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
+            return '<tr><td>' + r.time + '</td><td>' + (r.ontId || '-') + '</td><td>' + r.target + '</td><td>' + (r.packetSize || 64) + '</td><td>' + (r.count || 10) + '</td><td>' + (r.interval || 1) + '</td><td>' + r.city + '</td><td>' + r.avgDelay + 'ms</td><td>' + r.maxDelay + 'ms</td><td>' + (r.minDelay || '-') + 'ms</td><td>' + r.packetLoss + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
         }).join('');
         container.innerHTML =
             '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">PING测试工具</div>' +
-            '<div class="remote-form"><div class="form-group"><label class="form-label">目标IP/域名</label><input class="form-input" id="pingTarget" value="10.168.1.1"></div>' +
-            '<div class="form-group"><label class="form-label">报文大小</label><input class="form-input" id="pingSize" value="64"></div>' +
+            '<div class="remote-form">' +
+            '<div class="form-group"><label class="form-label">ont id</label><input class="form-input" id="pingOntId" placeholder="ONT设备ID"></div>' +
+            '<div class="form-group"><label class="form-label">目标IP/域名</label><input class="form-input" id="pingTarget" value="10.168.1.1"></div>' +
+            '<div class="form-group"><label class="form-label">ping包大小</label><input class="form-input" id="pingSize" value="64"></div>' +
             '<div class="form-group"><label class="form-label">次数</label><input class="form-input" id="pingCount" value="10"></div>' +
-            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.executePing()">开始PING</button></div></div>' +
-            '<div class="ping-result" id="pingResult">等待执行PING测试...</div></div>' +
+            '<div class="form-group"><label class="form-label">间隔</label><input class="form-input" id="pingInterval" placeholder="秒"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" id="pingStartBtn" onclick="Pages.executePing()">开始PING</button></div></div>' +
+            '<div class="ping-result" id="pingResult"><span style="color:#f39c12;">等待执行PING测试...</span></div></div>' +
             '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">历史测试记录 (共' + JilinData.pingTestHistory.length + '条)</div>' +
-            '<table class="data-table"><thead><tr><th>时间</th><th>目标地址</th><th>地市</th><th>平均时延</th><th>最大时延</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            '<table class="data-table"><thead><tr><th>时间</th><th>ont id</th><th>目标ip/域名</th><th>ping包大小</th><th>次数</th><th>间隔</th><th>地市</th><th>平均时延</th><th>最大时延</th><th>最小时延</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderPingTest.bind(Pages,document.getElementById("page-ping-test"))') + '</div></div>';
     },
 
     executePing: function() {
+        if (this._pingRunning) { Modal.toast('PING测试正在执行中，请等待完成', 'warning'); return; }
         var result = document.getElementById('pingResult');
         var target = document.getElementById('pingTarget').value.trim();
         var size = parseInt(document.getElementById('pingSize').value) || 64;
         var count = parseInt(document.getElementById('pingCount').value) || 10;
+        var pingInterval = parseInt(document.getElementById('pingInterval').value) || 1;
+        var ontId = document.getElementById('pingOntId').value.trim();
         if (!target) { Modal.toast('请输入目标IP或域名', 'warning'); return; }
-        result.style.color = '#00ff88';
-        result.textContent = 'PING ' + target + ' (' + target + ') ' + size + ' bytes of data.\n\n';
-        var i = 0;
-        var delays = [];
-        var interval = setInterval(function() {
-            if (i >= count) {
-                var avg = delays.reduce(function(s, d) { return s + d; }, 0) / delays.length;
-                var min = Math.min.apply(null, delays);
-                var max = Math.max.apply(null, delays);
-                var loss = delays.filter(function(d) { return d > 100; }).length;
-                result.textContent += '\n--- ' + target + ' ping statistics ---\n';
-                result.textContent += count + ' packets transmitted, ' + (count - loss) + ' received, ' + (loss / count * 100).toFixed(0) + '% packet loss\n';
-                result.textContent += 'rtt min/avg/max = ' + min.toFixed(1) + '/' + avg.toFixed(1) + '/' + max.toFixed(1) + ' ms';
-                // 添加到历史记录
-                JilinData.pingTestHistory.unshift({
-                    time: new Date().toLocaleString('zh-CN'),
-                    target: target,
-                    city: App.currentCity || '全省',
-                    packetSize: size,
-                    count: count,
-                    avgDelay: parseFloat(avg.toFixed(1)),
-                    maxDelay: parseFloat(max.toFixed(1)),
-                    minDelay: parseFloat(min.toFixed(1)),
-                    packetLoss: parseFloat((loss / count * 100).toFixed(1)),
-                    status: loss > 2 ? '异常' : (avg > 25 ? '告警' : '正常')
-                });
-                DataStore.addLog('PING测试', '远程操作', '对' + target + '执行PING测试，包大小' + size + 'B，次数' + count + '，平均时延' + avg.toFixed(1) + 'ms');
-                clearInterval(interval);
-                return;
-            }
-            var delay = Math.random() * 15 + 2 + (Math.random() > 0.9 ? Math.random() * 50 : 0);
-            delays.push(delay);
-            result.textContent += (i + 1) + ' bytes from ' + target + ': icmp_seq=' + (i + 1) + ' ttl=64 time=' + delay.toFixed(1) + ' ms\n';
-            i++;
-        }, 300);
+
+        this._pingRunning = true;
+        var startBtn = document.getElementById('pingStartBtn');
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = '执行中...'; }
+
+        // Step 1: 发送给RMS
+        result.innerHTML = '<span style="color:#f39c12;">发送给RMS ...</span>';
+        var step = 0;
+        var self = this;
+
+        setTimeout(function() {
+            // Step 2: Show dots
+            result.innerHTML += '<br><span style="color:#999;">···</span>';
+            setTimeout(function() {
+                result.innerHTML += '<br><span style="color:#999;">···</span>';
+                setTimeout(function() {
+                    // Step 3: RMS返回ping结果
+                    result.innerHTML += '<br><span style="color:#27ae60;font-weight:600;">RMS返回ping结果</span>';
+                    setTimeout(function() {
+                        // Step 4: 显示ping结果
+                        var delays = [];
+                        var lines = '';
+                        for (var i = 0; i < count; i++) {
+                            var delay = Math.random() * 15 + 2 + (Math.random() > 0.9 ? Math.random() * 50 : 0);
+                            delays.push(delay);
+                        }
+                        var avg = delays.reduce(function(s, d) { return s + d; }, 0) / delays.length;
+                        var min = Math.min.apply(null, delays);
+                        var max = Math.max.apply(null, delays);
+                        var loss = delays.filter(function(d) { return d > 100; }).length;
+                        var lossRate = parseFloat((loss / count * 100).toFixed(1));
+
+                        result.innerHTML += '<br><span style="color:#999;">···</span>';
+                        result.innerHTML += '<br><span style="color:#00ff88;">--- ' + target + ' ping统计 ---</span>';
+                        result.innerHTML += '<br><span style="color:#00ff88;">' + count + ' 个包已发送, ' + (count - loss) + ' 个已接收, 丢包率 ' + lossRate.toFixed(1) + '%</span>';
+                        result.innerHTML += '<br><span style="color:#00ff88;">rtt 最小/平均/最大 = ' + min.toFixed(1) + '/' + avg.toFixed(1) + '/' + max.toFixed(1) + ' ms</span>';
+
+                        // 添加到历史记录
+                        JilinData.pingTestHistory.unshift({
+                            time: new Date().toLocaleString('zh-CN'),
+                            ontId: ontId || '-',
+                            target: target,
+                            city: App.currentCity || '全省',
+                            packetSize: size,
+                            count: count,
+                            interval: pingInterval,
+                            avgDelay: parseFloat(avg.toFixed(1)),
+                            maxDelay: parseFloat(max.toFixed(1)),
+                            minDelay: parseFloat(min.toFixed(1)),
+                            packetLoss: lossRate,
+                            status: lossRate > 20 ? '异常' : (lossRate > 5 || avg > 25 ? '告警' : '正常')
+                        });
+                        DataStore.addLog('PING测试', '远程操作', '对' + target + '执行PING测试' + (ontId ? '（ONT: ' + ontId + '）' : '') + '，包大小' + size + 'B，次数' + count + '，间隔' + pingInterval + 's，平均时延' + avg.toFixed(1) + 'ms');
+
+                        self._pingRunning = false;
+                        if (startBtn) { startBtn.disabled = false; startBtn.textContent = '开始PING'; }
+                    }, 600);
+                }, 500);
+            }, 400);
+        }, 500);
     },
 
     // ========== ONT光功率查询 (增强交互) ==========
@@ -2020,31 +2052,95 @@ var Pages = {
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
         if (!r) return;
-        Modal.show('抓包详情 - ' + r.id,
+        var srcPort = Math.floor(Math.random() * 60000 + 1024);
+        var dstPort = r.protocol === 'HTTPS' ? 443 : (r.protocol === 'HTTP' ? 80 : (r.protocol === 'DNS' ? 53 : (r.protocol === 'RTMP' ? 1935 : (r.protocol === 'HLS' ? 80 : (r.protocol === 'QUIC' ? 443 : Math.floor(Math.random() * 60000 + 1024))))));
+        // 协议特定xDR字段
+        var protoFields = '';
+        if (r.protocol === 'HTTP') {
+            protoFields = '<div style="margin-top:12px;padding:12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#2b7de9;">HTTP xDR明细字段</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
+                '<div><strong>请求URL：</strong><code style="word-break:break-all;">http://' + r.dstIp + '/api/v1/stream?id=' + Math.floor(Math.random()*9999) + '</code></div>' +
+                '<div><strong>请求方法：</strong>GET</div>' +
+                '<div><strong>响应状态码：</strong><span style="color:' + (Math.random() > 0.8 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.pick([200, 200, 200, 301, 404, 500, 503]) + '</span></div>' +
+                '<div><strong>Content-Type：</strong>' + SeededRandom.pick(['text/html', 'application/json', 'video/mp4', 'image/jpeg']) + '</div>' +
+                '<div><strong>User-Agent：</strong>' + SeededRandom.pick(['Mozilla/5.0 (Windows NT 10.0)', 'Dalvik/2.1.0 (Android)', 'AppleCoreMedia/1.0']) + '</div>' +
+                '<div><strong>首包响应时延：</strong><span style="color:' + (SeededRandom.float(50,300,0) > 200 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(50, 300, 0) + 'ms</span></div>' +
+                '<div><strong>HTTP事务时延：</strong>' + SeededRandom.float(100, 800, 0) + 'ms</div>' +
+                '<div><strong>响应体大小：</strong>' + SeededRandom.float(1, 5000, 0) + ' KB</div>' +
+                '</div></div>';
+        } else if (r.protocol === 'HTTPS') {
+            protoFields = '<div style="margin-top:12px;padding:12px;background:#f0fdf4;border:1px solid #a3e4c1;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#1a7a4a;">HTTPS/TLS xDR明细字段</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
+                '<div><strong>SNI域名：</strong>' + SeededRandom.pick(['www.bilibili.com', 'v.qq.com', 'www.douyin.com', 'live.kuaishou.com', 'www.baidu.com']) + '</div>' +
+                '<div><strong>TLS版本：</strong>' + SeededRandom.pick(['TLS 1.2', 'TLS 1.3', 'TLS 1.3']) + '</div>' +
+                '<div><strong>加密套件：</strong>' + SeededRandom.pick(['AES_128_GCM_SHA256', 'AES_256_GCM_SHA384', 'CHACHA20_POLY1305']) + '</div>' +
+                '<div><strong>证书域名：</strong>*.' + SeededRandom.pick(['bilibili.com', 'qq.com', 'douyin.com', 'kuaishou.com']) + '</div>' +
+                '<div><strong>TLS握手时延：</strong>' + SeededRandom.float(20, 150, 0) + 'ms</div>' +
+                '<div><strong>证书有效期：</strong>2025-06-15 ~ 2026-06-15</div>' +
+                '</div></div>';
+        } else if (r.protocol === 'DNS') {
+            protoFields = '<div style="margin-top:12px;padding:12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#c0392b;">DNS xDR明细字段</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
+                '<div><strong>查询域名：</strong>' + SeededRandom.pick(['www.baidu.com', 'v.qq.com', 'api.bilibili.com', 'live.douyin.com', 'dns.alidns.com']) + '</div>' +
+                '<div><strong>查询类型：</strong>' + SeededRandom.pick(['A', 'A', 'AAAA', 'CNAME', 'MX']) + '</div>' +
+                '<div><strong>响应码：</strong><span style="color:' + (Math.random() > 0.9 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.pick(['NOERROR', 'NOERROR', 'NOERROR', 'NXDOMAIN', 'SERVFAIL']) + '</span></div>' +
+                '<div><strong>解析IP：</strong>' + Math.floor(Math.random()*200+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '</div>' +
+                '<div><strong>DNS时延：</strong><span style="color:' + (SeededRandom.float(5,80,0) > 50 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(5, 80, 0) + 'ms</span></div>' +
+                '<div><strong>DNS服务器：</strong>' + SeededRandom.pick(['114.114.114.114', '8.8.8.8', '223.5.5.5', '119.29.29.29']) + '</div>' +
+                '<div><strong>TTL：</strong>' + SeededRandom.int(60, 3600) + 's</div>' +
+                '<div><strong>是否劫持：</strong>' + SeededRandom.pick(['否', '否', '否', '疑似']) + '</div>' +
+                '</div></div>';
+        } else if (r.protocol === 'QUIC') {
+            protoFields = '<div style="margin-top:12px;padding:12px;background:#fefce8;border:1px solid #fde68a;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#92400e;">QUIC xDR明细字段</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
+                '<div><strong>QUIC版本：</strong>' + SeededRandom.pick(['QUICv1', 'QUICv2', 'h3-29']) + '</div>' +
+                '<div><strong>Connection ID：</strong>0x' + Math.floor(Math.random()*0xFFFFFFFF).toString(16) + '</div>' +
+                '<div><strong>SNI域名：</strong>' + SeededRandom.pick(['www.google.com', 'www.youtube.com', 'quic.rocks']) + '</div>' +
+                '<div><strong>0-RTT：</strong>' + SeededRandom.pick(['是', '否', '否']) + '</div>' +
+                '<div><strong>丢包率：</strong>' + SeededRandom.float(0, 5, 2) + '%</div>' +
+                '<div><strong>平滑RTT：</strong>' + SeededRandom.float(5, 60, 1) + 'ms</div>' +
+                '</div></div>';
+        } else {
+            // TCP/UDP/RTMP/HLS等通用
+            protoFields = '<div style="margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#333;">TCP/传输层 xDR明细字段</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
+                '<div><strong>TCP窗口大小：</strong>' + SeededRandom.pick([65535, 131072, 262144]) + '</div>' +
+                '<div><strong>TCP重传率：</strong><span style="color:' + (SeededRandom.float(0,5,2) > 2 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(0, 5, 2) + '%</span></div>' +
+                '<div><strong>RTT：</strong>' + SeededRandom.float(5, 80, 1) + 'ms</div>' +
+                '<div><strong>MSS：</strong>' + SeededRandom.pick([1460, 1380, 1440]) + '</div>' +
+                '<div><strong>建连时延：</strong>' + SeededRandom.float(10, 120, 0) + 'ms</div>' +
+                '<div><strong>建连成功率：</strong>' + SeededRandom.float(95, 100, 1) + '%</div>' +
+                (r.protocol === 'RTMP' ? '<div><strong>流媒体地址：</strong>rtmp://' + r.dstIp + '/live/stream_' + Math.floor(Math.random()*999) + '</div><div><strong>视频码率：</strong>' + SeededRandom.pick([2500, 4000, 6000, 8000]) + ' kbps</div>' : '') +
+                (r.protocol === 'HLS' ? '<div><strong>m3u8地址：</strong>https://' + r.dstIp + '/live/index.m3u8</div><div><strong>分片时长：</strong>' + SeededRandom.pick([2, 4, 6, 10]) + 's</div>' : '') +
+                '</div></div>';
+        }
+        Modal.show('DPI-XDR明细 - ' + r.id,
             '<div style="font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-            '<div><strong>抓包ID：</strong>' + r.id + '</div>' +
+            '<div><strong>记录ID：</strong>' + r.id + '</div>' +
             '<div><strong>时间：</strong>' + r.time + '</div>' +
             '<div><strong>用户：</strong>' + r.userAccount + '</div>' +
             '<div><strong>地市：</strong>' + r.city + '</div>' +
-            '<div><strong>源IP：</strong>' + r.srcIp + '</div>' +
-            '<div><strong>目的IP：</strong>' + r.dstIp + '</div>' +
-            '<div><strong>协议：</strong>' + r.protocol + '</div>' +
+            '<div><strong>源IP：</strong>' + r.srcIp + ':' + srcPort + '</div>' +
+            '<div><strong>目的IP：</strong>' + r.dstIp + ':' + dstPort + '</div>' +
+            '<div><strong>协议：</strong><span style="padding:2px 8px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:10px;font-size:11px;color:#2b7de9;font-weight:600;">' + r.protocol + '</span></div>' +
             '<div><strong>应用：</strong>' + r.app + '</div>' +
             '<div><strong>上行流量：</strong>' + r.upTraffic + ' MB</div>' +
             '<div><strong>下行流量：</strong>' + r.downTraffic + ' MB</div>' +
-            '<div><strong>时延：</strong>' + r.latency + ' ms</div>' +
+            '<div><strong>会话时延：</strong>' + r.latency + ' ms</div>' +
             '<div><strong>状态：</strong>' + r.status + '</div>' +
             '</div>' +
+            protoFields +
             '<div style="margin-top:12px;padding:10px;background:#1e1e2e;border-radius:4px;font-family:monospace;font-size:11px;color:#0f0;line-height:1.6;">' +
-            '> Capture: ' + r.protocol + ' ' + r.srcIp + ':' + Math.floor(Math.random() * 60000 + 1024) + ' → ' + r.dstIp + ':' + (r.protocol === 'HTTPS' ? 443 : (r.protocol === 'HTTP' ? 80 : (r.protocol === 'DNS' ? 53 : Math.floor(Math.random() * 60000 + 1024)))) + '<br>' +
+            '> Capture: ' + r.protocol + ' ' + r.srcIp + ':' + srcPort + ' → ' + r.dstIp + ':' + dstPort + '<br>' +
             '> Frame Length: ' + Math.floor(Math.random() * 1400 + 64) + ' bytes<br>' +
             '> TTL: 64, Window Size: 65535<br>' +
             '> Application: ' + r.app + '<br>' +
             '> Session Duration: ' + (Math.random() * 300 + 5).toFixed(1) + 's' +
             '</div>',
-            '<button class="btn" onclick="Modal.close()">关闭</button>', '650px'
+            '<button class="btn" onclick="Modal.close()">关闭</button>', '720px'
         );
     },
+
 
     startDpiCapture: function() {
         this._dpiCapturing = true;
@@ -3171,6 +3267,270 @@ var Pages = {
             });
             window.addEventListener('resize',function(){c5.resize();});
         }
+    },
+
+    // ========== 业务CEI定界（拆分页面） ==========
+    renderBizCeiBoundary: function(container) {
+        var sides = [
+            { name: '家庭侧', value: 32.8, color: '#5ad8a6', reasons: ['WiFi信号弱', '网关CPU高', '终端兼容性差', '组网不合理', '带宽不足'] },
+            { name: '网络侧', value: 45.2, color: '#5b8ff9', reasons: ['OLT上行拥塞', 'BRAS负载高', '传输链路抖动', '路由环路', '光衰过大'] },
+            { name: '内容侧', value: 15.5, color: '#f6bd16', reasons: ['CDN节点异常', '源站响应慢', 'DNS劫持', '内容限速', '证书过期'] },
+            { name: '其他', value: 6.5, color: '#bdc3c7', reasons: ['未知原因', '设备兼容', '策略配置'] }
+        ];
+        var topReasons = [
+            { name: '视频卡顿', count: 856, pct: 22.5 },
+            { name: '下载速率低', count: 698, pct: 18.3 },
+            { name: '游戏高时延', count: 523, pct: 13.7 },
+            { name: '网页加载慢', count: 412, pct: 10.8 },
+            { name: '直播缓冲长', count: 356, pct: 9.3 }
+        ];
+        // 生成表格数据
+        var tableRows = '';
+        for (var i = 0; i < 15; i++) {
+            var city = SeededRandom.pick(JilinData.cities);
+            var side = SeededRandom.pick(sides);
+            var reason = SeededRandom.pick(topReasons);
+            var cei = SeededRandom.float(48, 82, 1);
+            var ceiCls = cei < 60 ? 'status-error' : (cei < 75 ? 'status-warning' : 'status-normal');
+            tableRows += '<tr><td>JL' + (20250000 + SeededRandom.int(1, 500)) + '</td><td>' + city + '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color + ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td><td>' + reason.name + '</td><td><span class="' + ceiCls + '">' + cei + '</span></td><td>' + SeededRandom.float(15, 85, 1) + 'ms</td><td>' + Pages.statusHtml(SeededRandom.pick(['紧急', '一般', '告警'])) + '</td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages._showBizBoundaryDetail(\'' + city + '\')">详情</a> <a style="color:#27ae60;cursor:pointer;margin-left:6px;" onclick="Pages.showCreateOrderFromQl(\'JL' + (20250000 + i) + '\',\'' + reason.name + '\')">派单</a></td></tr>';
+        }
+
+        container.innerHTML =
+            '<div class="page-content">' +
+            '<div class="remote-panel"><div class="remote-panel-title">' + ICO.chart + ' 业务CEI定界分析</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('bizBdCity', '', '') +
+            '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="bizBdAccount" placeholder="输入用户账号或IP"></div>' +
+            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" type="date" value="2025-12-02"></div>' +
+            '<div class="form-group"><label class="form-label">业务类型</label><select class="form-select"><option value="">全部</option><option>宽带上网</option><option>IPTV</option><option>在线游戏</option><option>视频通话</option></select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiBoundary(document.getElementById(\'page-biz-cei-boundary\'))">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
+            '<div style="margin-bottom:8px;padding:10px 12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;color:#1a5bb8;"><strong>业务CEI定界说明：</strong>基于用户业务体验指标(视频卡顿率、HTTP首包时延、DNS解析时延、下载速率等)，将质差根因定界到<strong>家庭侧、网络侧、内容侧</strong>三大区域。阈值从配置中心动态读取。</div>' +
+            // 统计卡片
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">3,812</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">45.2%</div><div class="wo-stat-label">网络侧占比</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">32.8%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">15.5%</div><div class="wo-stat-label">内容侧占比</div></div>' +
+            '</div>' +
+            // 图表行
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">定界结果分布</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差原因TOP5</span></div><div class="chart-container" id="bizBdChart2"></div></div>' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务指标雷达图</span></div><div class="chart-container" id="bizBdChart3"></div></div>' +
+            '</div>' +
+            // 表格
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定界明细</div>' +
+            '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>主要原因</th><th>CEI评分</th><th>业务时延</th><th>严重程度</th><th>时间</th><th>操作</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
+        // 渲染图表
+        this._renderCeiSplitCharts('bizBd', sides, topReasons, [
+            { name: '时延', max: 100 }, { name: '丢包率', max: 10 }, { name: '下载速率', max: 300 }, { name: '上传速率', max: 80 }, { name: 'DNS解析', max: 50 }
+        ], [35, 3.2, 180, 42, 15]);
+    },
+
+    // ========== 业务CEI定位（拆分页面） ==========
+    renderBizCeiLocate: function(container) {
+        var locateItems = [
+            { name: 'OLT上行拥塞', count: 856, dim: 'OLT', devices: ['OLT-CC-0012', 'OLT-JL-0008', 'OLT-SP-0003'], affectedUsers: 2340 },
+            { name: 'BRAS负载高', count: 698, dim: 'BRAS', devices: ['BRAS-CC-01', 'BRAS-JL-02'], affectedUsers: 5680 },
+            { name: 'CDN节点异常', count: 523, dim: 'CDN', devices: ['CDN-CC-Video01', 'CDN-JL-Stream02'], affectedUsers: 1850 },
+            { name: '传输链路抖动', count: 412, dim: '传输', devices: ['TRANS-SP-Link03'], affectedUsers: 890 },
+            { name: '光路衰减', count: 356, dim: 'PON', devices: ['PON-CC-0045', 'PON-YB-0012', 'PON-BS-0023'], affectedUsers: 720 }
+        ];
+        var locateRows = locateItems.map(function(item, idx) {
+            var sevCls = idx < 2 ? 'status-error' : (idx < 4 ? 'status-warning' : 'status-normal');
+            return '<tr><td>BL-' + String(idx + 1).padStart(3, '0') + '</td><td style="color:#e74c3c;font-weight:600;">' + item.name + '</td><td>' + item.dim + '</td><td>' + item.devices.join(', ') + '</td><td>' + item.count + '</td><td>' + item.affectedUsers + '</td><td><span class="' + sevCls + '">' + (idx < 2 ? '高' : (idx < 4 ? '中' : '低')) + '</span></td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td></tr>';
+        });
+
+        container.innerHTML =
+            '<div class="page-content">' +
+            '<div class="remote-panel"><div class="remote-panel-title">' + ICO.search + ' 业务CEI定位分析</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('bizLocCity', '', '') +
+            '<div class="form-group"><label class="form-label">定位维度</label><select class="form-select"><option>全部</option><option>OLT</option><option>BRAS</option><option>CDN</option><option>传输</option><option>PON</option></select></div>' +
+            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" type="date" value="2025-12-02"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiLocate(document.getElementById(\'page-biz-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
+            '<div style="margin-bottom:8px;padding:10px 12px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;color:#666;"><strong>业务CEI定位说明：</strong>在定界确定质差侧（家庭/网络/内容）后，进一步下钻定位到具体的设备、链路或节点。支持按OLT、BRAS、CDN、传输链路、PON口等维度交叉分析。</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">定位原因设备聚合分析</span></div><div class="chart-container" id="bizLocChart1"></div></div>' +
+                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各维度影响用户数对比</span></div><div class="chart-container" id="bizLocChart2"></div></div>' +
+            '</div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定位明细（已按影响用户数排序）</div>' +
+            '<table class="data-table"><thead><tr><th>定位ID</th><th>定位原因</th><th>维度</th><th>关联设备</th><th>质差事件数</th><th>影响用户</th><th>严重程度</th><th>发现时间</th></tr></thead><tbody>' + locateRows.join('') + '</tbody></table></div></div>';
+        // 图表
+        var d1 = document.getElementById('bizLocChart1');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['bizLocChart1'] = c1;
+            c1.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { top: 15, right: 40, bottom: 15, left: 100 },
+                yAxis: { type: 'category', data: locateItems.map(function(r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
+                series: [{ type: 'bar', data: locateItems.map(function(r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9 } }]
+            });
+            window.addEventListener('resize', function() { c1.resize(); });
+        }
+        var d2 = document.getElementById('bizLocChart2');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['bizLocChart2'] = c2;
+            c2.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { top: 20, right: 20, bottom: 40, left: 50 },
+                xAxis: { type: 'category', data: locateItems.map(function(r) { return r.dim; }), axisLabel: { fontSize: 10 } },
+                yAxis: { type: 'value', name: '影响用户数', splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                series: [{ type: 'bar', data: locateItems.map(function(r) { return { value: r.affectedUsers, itemStyle: { color: r.affectedUsers > 2000 ? '#e74c3c' : (r.affectedUsers > 1000 ? '#f39c12' : '#5b8ff9') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }]
+            });
+            window.addEventListener('resize', function() { c2.resize(); });
+        }
+    },
+
+    // ========== 通断CEI定界（拆分页面） ==========
+    renderConnCeiBoundary: function(container) {
+        var sides = [
+            { name: '家庭侧', value: 28.5, color: '#5ad8a6', reasons: ['网关掉电', '网关死机', 'WiFi模块故障', '用户拔线', '电源不稳'] },
+            { name: '光路侧', value: 38.2, color: '#5b8ff9', reasons: ['光衰过大', '光纤断裂', '接头松动', '分光器故障', '弯曲过度'] },
+            { name: '接入侧', value: 25.8, color: '#f6bd16', reasons: ['OLT端口故障', 'PON板卡异常', 'MAC认证失败', 'VLAN配置错误', '端口拉闸'] },
+            { name: '其他', value: 7.5, color: '#bdc3c7', reasons: ['未知中断', '施工割接', '计划停电'] }
+        ];
+        var topReasons = [
+            { name: '光衰过大', count: 920, pct: 24.1 },
+            { name: '频繁掉线', count: 756, pct: 19.8 },
+            { name: 'dying-gasp', count: 534, pct: 14.0 },
+            { name: '设备重启', count: 423, pct: 11.1 },
+            { name: '光路中断', count: 312, pct: 8.2 }
+        ];
+        var tableRows = '';
+        for (var i = 0; i < 15; i++) {
+            var city = SeededRandom.pick(JilinData.cities);
+            var side = SeededRandom.pick(sides);
+            var reason = SeededRandom.pick(topReasons);
+            var cei = SeededRandom.float(40, 78, 1);
+            var ceiCls = cei < 55 ? 'status-error' : (cei < 70 ? 'status-warning' : 'status-normal');
+            tableRows += '<tr><td>JL' + (20250000 + SeededRandom.int(1, 500)) + '</td><td>' + city + '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color + ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td><td>' + reason.name + '</td><td><span class="' + ceiCls + '">' + cei + '</span></td><td>' + SeededRandom.float(-28, -16, 1) + 'dBm</td><td>' + SeededRandom.int(1, 15) + '次</td><td>' + Pages.statusHtml(SeededRandom.pick(['紧急', '一般', '告警'])) + '</td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td></tr>';
+        }
+        container.innerHTML =
+            '<div class="page-content">' +
+            '<div class="remote-panel"><div class="remote-panel-title">' + ICO.bolt + ' 通断CEI定界分析</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('connBdCity', '', '') +
+            '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" placeholder="输入用户账号或IP"></div>' +
+            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" type="date" value="2025-12-02"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderConnCeiBoundary(document.getElementById(\'page-conn-cei-boundary\'))">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
+            '<div style="margin-bottom:8px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;font-size:12px;color:#c0392b;"><strong>通断CEI定界说明：</strong>基于用户通断体验指标(掉线次数、掉线时长、dying-gasp、光功率)，将连通性质差根因定界到<strong>家庭侧、光路侧、接入侧</strong>三大区域。弱光阈值：接收光功率 < -25dBm（可在配置中心调整）。</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">2,945</div><div class="wo-stat-label">通断质差用户总数</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">38.2%</div><div class="wo-stat-label">光路侧占比</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">28.5%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">25.8%</div><div class="wo-stat-label">接入侧占比</div></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断定界结果分布</span></div><div class="chart-container" id="connBdChart1"></div></div>' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断原因TOP5</span></div><div class="chart-container" id="connBdChart2"></div></div>' +
+                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断指标雷达图</span></div><div class="chart-container" id="connBdChart3"></div></div>' +
+            '</div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">通断CEI定界明细</div>' +
+            '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>主要原因</th><th>CEI评分</th><th>接收光功率</th><th>掉线次数</th><th>严重程度</th><th>时间</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
+        this._renderCeiSplitCharts('connBd', sides, topReasons, [
+            { name: '接收光功率', max: 5 }, { name: '发送光功率', max: 5 }, { name: '中断次数', max: 20 }, { name: '中断时长', max: 60 }, { name: '误码率', max: 10 }
+        ], [3.5, 2.8, 8, 25, 2.5]);
+    },
+
+    // ========== 通断CEI定位（拆分页面） ==========
+    renderConnCeiLocate: function(container) {
+        var locateItems = [
+            { name: '光衰过大(弱光)', count: 920, dim: 'PON/光路', devices: ['PON-CC-0045', 'PON-JL-0023', 'PON-YB-0012'], affectedUsers: 1450, tag: '弱光' },
+            { name: '高误码', count: 756, dim: 'OLT', devices: ['OLT-CC-0012', 'OLT-SP-0008'], affectedUsers: 980, tag: '高误码' },
+            { name: '频繁掉线', count: 534, dim: 'BNG/BRAS', devices: ['BRAS-CC-01', 'BNG-JL-03'], affectedUsers: 1680, tag: '频繁掉线' },
+            { name: 'dying-gasp(掉电)', count: 423, dim: '家庭侧', devices: ['区域：长春朝阳', '区域：吉林龙潭'], affectedUsers: 560, tag: '掉电' },
+            { name: '光路中断', count: 312, dim: '光缆', devices: ['光缆段-CC-A023', '光缆段-SP-B012'], affectedUsers: 2100, tag: '光路中断' }
+        ];
+        var locateRows = locateItems.map(function(item, idx) {
+            var sevCls = item.affectedUsers > 1500 ? 'status-error' : (item.affectedUsers > 800 ? 'status-warning' : 'status-normal');
+            return '<tr><td>CL-' + String(idx + 1).padStart(3, '0') + '</td><td style="color:#e74c3c;font-weight:600;">' + item.name + '</td><td>' + item.dim + '</td><td>' + item.devices.join(', ') + '</td><td><span class="badge badge-warning" style="font-size:10px;">' + item.tag + '</span></td><td>' + item.count + '</td><td>' + item.affectedUsers + '</td><td><span class="' + sevCls + '">' + (item.affectedUsers > 1500 ? '高' : (item.affectedUsers > 800 ? '中' : '低')) + '</span></td></tr>';
+        });
+
+        container.innerHTML =
+            '<div class="page-content">' +
+            '<div class="remote-panel"><div class="remote-panel-title">' + ICO.search + ' 通断CEI定位分析</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('connLocCity', '', '') +
+            '<div class="form-group"><label class="form-label">定位维度</label><select class="form-select"><option>全部</option><option>PON/光路</option><option>OLT</option><option>BNG/BRAS</option><option>光缆</option><option>家庭侧</option></select></div>' +
+            '<div class="form-group"><label class="form-label">质差标签</label><select class="form-select"><option value="">全部</option><option>弱光</option><option>高误码</option><option>频繁掉线</option><option>掉电</option><option>光路中断</option></select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderConnCeiLocate(document.getElementById(\'page-conn-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
+            '<div style="margin-bottom:8px;padding:10px 12px;background:#e8f8f0;border:1px solid #a3e4c1;border-radius:4px;font-size:12px;color:#1a7a4a;"><strong>通断CEI定位说明：</strong>在通断定界确定质差侧后，下钻定位到具体PON口、OLT端口、BNG设备或光缆段。支持<strong>弱光、高误码、频繁掉线、dying-gasp</strong>等标准化质差标签筛选，自动聚类相同设备/区域下的同类故障。</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">质差标签分布（通断）</span></div><div class="chart-container" id="connLocChart1"></div></div>' +
+                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各维度影响用户数</span></div><div class="chart-container" id="connLocChart2"></div></div>' +
+            '</div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">通断CEI定位明细（按影响用户数排序）</div>' +
+            '<table class="data-table"><thead><tr><th>定位ID</th><th>定位原因</th><th>维度</th><th>关联设备/区域</th><th>质差标签</th><th>事件数</th><th>影响用户</th><th>严重程度</th></tr></thead><tbody>' + locateRows.join('') + '</tbody></table></div></div>';
+        // 图表
+        var d1 = document.getElementById('connLocChart1');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['connLocChart1'] = c1;
+            c1.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' },
+                legend: { bottom: 5, textStyle: { fontSize: 10 } },
+                series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: locateItems.map(function(r) { return { name: r.tag, value: r.count }; }), label: { fontSize: 10, formatter: '{b}\n{d}%' }, itemStyle: { borderRadius: 4 } }]
+            });
+            window.addEventListener('resize', function() { c1.resize(); });
+        }
+        var d2 = document.getElementById('connLocChart2');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['connLocChart2'] = c2;
+            c2.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { top: 15, right: 50, bottom: 15, left: 80 },
+                yAxis: { type: 'category', data: locateItems.map(function(r) { return r.dim; }).reverse(), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'value' },
+                series: [{ type: 'bar', data: locateItems.map(function(r) { return { value: r.affectedUsers, itemStyle: { color: r.affectedUsers > 1500 ? '#e74c3c' : (r.affectedUsers > 800 ? '#f39c12' : '#27ae60') } }; }).reverse(), barWidth: '50%', label: { show: true, position: 'right', fontSize: 9 } }]
+            });
+            window.addEventListener('resize', function() { c2.resize(); });
+        }
+    },
+
+    // ========== 通用CEI拆分页面图表渲染 ==========
+    _renderCeiSplitCharts: function(prefix, sides, topReasons, radarIndicators, radarData) {
+        var d1 = document.getElementById(prefix + 'Chart1');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances[prefix + 'Chart1'] = c1;
+            c1.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}% ({d}%)' },
+                legend: { bottom: 5, textStyle: { fontSize: 10 } },
+                series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: sides.map(function(s) { return { name: s.name, value: s.value, itemStyle: { color: s.color } }; }), label: { fontSize: 10, formatter: '{b}\n{d}%' } }]
+            });
+            window.addEventListener('resize', function() { c1.resize(); });
+        }
+        var d2 = document.getElementById(prefix + 'Chart2');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances[prefix + 'Chart2'] = c2;
+            c2.setOption({
+                grid: { top: 15, right: 50, bottom: 15, left: 80 }, tooltip: { trigger: 'axis' },
+                yAxis: { type: 'category', data: topReasons.map(function(r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
+                series: [{ type: 'bar', data: topReasons.map(function(r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9, formatter: function(p) { return p.value + '件'; } } }]
+            });
+            window.addEventListener('resize', function() { c2.resize(); });
+        }
+        var d3 = document.getElementById(prefix + 'Chart3');
+        if (d3) {
+            var c3 = echarts.init(d3); App.chartInstances[prefix + 'Chart3'] = c3;
+            c3.setOption({
+                tooltip: {},
+                radar: { indicator: radarIndicators, radius: '60%', axisName: { fontSize: 9, color: '#666' } },
+                series: [{ type: 'radar', data: [{ value: radarData, name: '当前值', areaStyle: { color: 'rgba(91,143,249,0.2)' } }], itemStyle: { color: '#5b8ff9' } }]
+            });
+            window.addEventListener('resize', function() { c3.resize(); });
+        }
+    },
+
+    _showBizBoundaryDetail: function(city) {
+        Modal.show('定界详情 - ' + city,
+            '<div style="font-size:13px;line-height:2;">' +
+            '<div><strong>地市：</strong>' + city + '</div>' +
+            '<div><strong>质差用户数：</strong>' + SeededRandom.int(80, 350) + ' 户</div>' +
+            '<div><strong>家庭侧占比：</strong>' + SeededRandom.float(25, 40, 1) + '%</div>' +
+            '<div><strong>网络侧占比：</strong>' + SeededRandom.float(35, 50, 1) + '%</div>' +
+            '<div><strong>内容侧占比：</strong>' + SeededRandom.float(10, 20, 1) + '%</div>' +
+            '<div><strong>TOP原因：</strong>视频卡顿(' + SeededRandom.int(20, 80) + '人)、下载速率低(' + SeededRandom.int(15, 60) + '人)</div>' +
+            '</div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '450px'
+        );
     },
 
     // 通用模块占位

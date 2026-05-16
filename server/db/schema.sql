@@ -337,8 +337,11 @@ CREATE INDEX idx_bqi_biz ON biz_quality_issues(biz_type);
 CREATE TABLE IF NOT EXISTS ping_tests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     test_id VARCHAR(30) NOT NULL UNIQUE,
+    ont_id VARCHAR(50),
+    rms_task_id VARCHAR(50),
     target_ip VARCHAR(50) NOT NULL,
     target_name VARCHAR(100),
+    target_type VARCHAR(20),
     city_id INTEGER,
     source_ip VARCHAR(50),
     packet_size INTEGER DEFAULT 64,
@@ -353,6 +356,8 @@ CREATE TABLE IF NOT EXISTS ping_tests (
     packets_received INTEGER,
     status VARCHAR(20),
     operator VARCHAR(50),
+    raw_result TEXT,
+    error_message TEXT,
     test_time DATETIME NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (city_id) REFERENCES cities(id)
@@ -674,3 +679,258 @@ SELECT
     o.online_ont_count as online_users
 FROM olt_devices o
 JOIN cities c ON o.city_id = c.id;
+
+-- ============ DPI-XDR raw and derived analysis tables ============
+
+CREATE TABLE IF NOT EXISTS dpi_xdr_common (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_id VARCHAR(64) NOT NULL UNIQUE,
+    protocol VARCHAR(32) NOT NULL,
+    capture_time DATETIME NOT NULL,
+    user_account VARCHAR(64),
+    user_ip VARCHAR(64),
+    city_id INTEGER,
+    city_name VARCHAR(50),
+    src_ip VARCHAR(64),
+    src_port INTEGER,
+    dst_ip VARCHAR(64),
+    dst_port INTEGER,
+    app_name VARCHAR(100),
+    app_category VARCHAR(50),
+    up_bytes INTEGER DEFAULT 0,
+    down_bytes INTEGER DEFAULT 0,
+    up_packets INTEGER DEFAULT 0,
+    down_packets INTEGER DEFAULT 0,
+    session_duration DECIMAL(10,2),
+    tcp_rtt DECIMAL(10,2),
+    tcp_retransmit_rate DECIMAL(8,3),
+    http_first_packet_delay DECIMAL(10,2),
+    dns_delay DECIMAL(10,2),
+    sni_domain VARCHAR(255),
+    domain_name VARCHAR(255),
+    olt_id VARCHAR(64),
+    pon_port VARCHAR(64),
+    ont_id VARCHAR(64),
+    bras_id VARCHAR(64),
+    is_quality_issue TINYINT DEFAULT 0,
+    quality_tags TEXT,
+    raw_json TEXT,
+    source_file VARCHAR(255),
+    imported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+CREATE INDEX IF NOT EXISTS idx_xdr_time ON dpi_xdr_common(capture_time);
+CREATE INDEX IF NOT EXISTS idx_xdr_user ON dpi_xdr_common(user_account);
+CREATE INDEX IF NOT EXISTS idx_xdr_protocol ON dpi_xdr_common(protocol);
+CREATE INDEX IF NOT EXISTS idx_xdr_city ON dpi_xdr_common(city_id);
+CREATE INDEX IF NOT EXISTS idx_xdr_quality ON dpi_xdr_common(is_quality_issue);
+
+CREATE TABLE IF NOT EXISTS dpi_xdr_protocol_detail (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_id VARCHAR(64) NOT NULL,
+    protocol VARCHAR(32) NOT NULL,
+    detail_json TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (record_id) REFERENCES dpi_xdr_common(record_id)
+);
+CREATE INDEX IF NOT EXISTS idx_xdr_detail_record ON dpi_xdr_protocol_detail(record_id);
+
+CREATE TABLE IF NOT EXISTS data_import_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    import_id VARCHAR(64) NOT NULL UNIQUE,
+    source_type VARCHAR(50) NOT NULL,
+    source_file VARCHAR(255),
+    total_rows INTEGER DEFAULT 0,
+    success_rows INTEGER DEFAULT 0,
+    failed_rows INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'success',
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS quality_tag_definitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag_id VARCHAR(64) NOT NULL UNIQUE,
+    tag_name VARCHAR(80) NOT NULL,
+    category VARCHAR(50),
+    config_key VARCHAR(80),
+    operator VARCHAR(8),
+    threshold_value VARCHAR(50),
+    unit VARCHAR(20),
+    severity VARCHAR(20),
+    enabled TINYINT DEFAULT 1,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_quality_tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag_event_id VARCHAR(64) NOT NULL UNIQUE,
+    user_account VARCHAR(64),
+    city_id INTEGER,
+    city_name VARCHAR(50),
+    tag_id VARCHAR(64),
+    tag_name VARCHAR(80),
+    category VARCHAR(50),
+    source_type VARCHAR(50),
+    source_record_id VARCHAR(64),
+    evidence_json TEXT,
+    confidence DECIMAL(5,2),
+    severity VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'active',
+    first_detect_time DATETIME,
+    last_detect_time DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+CREATE INDEX IF NOT EXISTS idx_uqt_user ON user_quality_tags(user_account);
+CREATE INDEX IF NOT EXISTS idx_uqt_tag ON user_quality_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_uqt_city ON user_quality_tags(city_id);
+CREATE INDEX IF NOT EXISTS idx_uqt_status ON user_quality_tags(status);
+
+CREATE TABLE IF NOT EXISTS quality_cluster_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cluster_id VARCHAR(64) NOT NULL UNIQUE,
+    dimension VARCHAR(30) NOT NULL,
+    cluster_key VARCHAR(120) NOT NULL,
+    city_id INTEGER,
+    city_name VARCHAR(50),
+    primary_tag VARCHAR(80),
+    event_count INTEGER DEFAULT 0,
+    affected_users INTEGER DEFAULT 0,
+    severity VARCHAR(20),
+    evidence_json TEXT,
+    status VARCHAR(20) DEFAULT 'open',
+    analysis_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+CREATE INDEX IF NOT EXISTS idx_cluster_dim ON quality_cluster_results(dimension);
+CREATE INDEX IF NOT EXISTS idx_cluster_city ON quality_cluster_results(city_id);
+CREATE INDEX IF NOT EXISTS idx_cluster_status ON quality_cluster_results(status);
+
+CREATE TABLE IF NOT EXISTS cei_boundary_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    boundary_id VARCHAR(64) NOT NULL UNIQUE,
+    boundary_type VARCHAR(30) NOT NULL,
+    boundary_side VARCHAR(30) NOT NULL,
+    user_account VARCHAR(64),
+    city_id INTEGER,
+    city_name VARCHAR(50),
+    root_cause VARCHAR(100),
+    related_device VARCHAR(120),
+    cei_score DECIMAL(5,2),
+    evidence_json TEXT,
+    confidence DECIMAL(5,2),
+    severity VARCHAR(20),
+    suggestion TEXT,
+    analysis_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+CREATE INDEX IF NOT EXISTS idx_boundary_type ON cei_boundary_results(boundary_type);
+CREATE INDEX IF NOT EXISTS idx_boundary_user ON cei_boundary_results(user_account);
+CREATE INDEX IF NOT EXISTS idx_boundary_city ON cei_boundary_results(city_id);
+
+-- ============ 平台补齐能力：外部系统、模型闭环、报表、权限、统一审计 ============
+CREATE TABLE IF NOT EXISTS external_system_connectors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    connector_code VARCHAR(50) NOT NULL UNIQUE,
+    connector_name VARCHAR(100) NOT NULL,
+    connector_type VARCHAR(30) NOT NULL,
+    endpoint_url VARCHAR(255),
+    protocol VARCHAR(30),
+    auth_type VARCHAR(30),
+    status VARCHAR(20) DEFAULT '模拟可用',
+    last_sync_time DATETIME,
+    success_count INTEGER DEFAULT 0,
+    fail_count INTEGER DEFAULT 0,
+    config_json TEXT,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS external_sync_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sync_id VARCHAR(64) NOT NULL UNIQUE,
+    connector_code VARCHAR(50) NOT NULL,
+    data_type VARCHAR(50),
+    source_file VARCHAR(255),
+    total_rows INTEGER DEFAULT 0,
+    success_rows INTEGER DEFAULT 0,
+    failed_rows INTEGER DEFAULT 0,
+    status VARCHAR(20),
+    message TEXT,
+    result_json TEXT,
+    sync_time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_sync_connector ON external_sync_logs(connector_code);
+CREATE INDEX IF NOT EXISTS idx_sync_time ON external_sync_logs(sync_time);
+
+CREATE TABLE IF NOT EXISTS ai_model_definitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_code VARCHAR(50) NOT NULL UNIQUE,
+    model_name VARCHAR(100) NOT NULL,
+    model_type VARCHAR(50),
+    version VARCHAR(20),
+    target_accuracy DECIMAL(5,2) DEFAULT 85,
+    current_accuracy DECIMAL(5,2) DEFAULT 0,
+    weight_json TEXT,
+    feature_json TEXT,
+    status VARCHAR(20) DEFAULT '模拟运行',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS model_feedback_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    feedback_id VARCHAR(64) NOT NULL UNIQUE,
+    model_code VARCHAR(50) NOT NULL,
+    source_record_id VARCHAR(64),
+    predicted_label VARCHAR(100),
+    corrected_label VARCHAR(100),
+    is_correct TINYINT DEFAULT 1,
+    confidence DECIMAL(5,2),
+    reviewer VARCHAR(50),
+    comment TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_model ON model_feedback_records(model_code);
+
+CREATE TABLE IF NOT EXISTS report_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id VARCHAR(64) NOT NULL UNIQUE,
+    report_type VARCHAR(20) NOT NULL,
+    report_name VARCHAR(120) NOT NULL,
+    period_start DATE,
+    period_end DATE,
+    status VARCHAR(20) DEFAULT '已生成',
+    summary_json TEXT,
+    file_name VARCHAR(255),
+    generated_by VARCHAR(50),
+    generated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_report_type ON report_jobs(report_type);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role VARCHAR(30) NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    actions TEXT NOT NULL,
+    data_scope VARCHAR(30) DEFAULT 'province',
+    UNIQUE(role, module)
+);
+
+CREATE TABLE IF NOT EXISTS unified_audit_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id VARCHAR(64) NOT NULL UNIQUE,
+    module VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id VARCHAR(80),
+    action VARCHAR(50),
+    operator VARCHAR(50),
+    result VARCHAR(20),
+    detail_json TEXT,
+    event_time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_audit_module ON unified_audit_events(module);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON unified_audit_events(event_time);

@@ -100,8 +100,10 @@
                             <div class="menu-item" data-page="cei-cluster" onclick="handleMenuClick(this)">CEI聚类分析</div>
                             <div class="menu-item" data-page="quality-model" onclick="handleMenuClick(this)">质差模型</div>
                             <div class="menu-item" data-page="user-quality" onclick="handleMenuClick(this)">用户质差</div>
+                            <div class="menu-item" data-page="quality-tags" onclick="handleMenuClick(this)">质差标签管理</div>
                             <div class="menu-item" data-page="quality-cluster" onclick="handleMenuClick(this)">质差聚类质差
                             </div>
+                            <div class="menu-item" data-page="cluster-alert" onclick="handleMenuClick(this)">多维聚类告警</div>
                             <div class="menu-item" data-page="biz-quality" onclick="handleMenuClick(this)">业务质差</div>
                             <div class="menu-item" data-page="biz-cluster" onclick="handleMenuClick(this)">业务聚类质差</div>
                         </div>
@@ -118,11 +120,13 @@
                             <span class="menu-group-arrow">&#9654;</span>
                         </div>
                         <div class="menu-children">
-                            <div class="menu-item" data-page="ce-location" onclick="handleMenuClick(this)">CE定界定位查询
-                            </div>
-                            <div class="menu-item" data-page="dpi-capture" onclick="handleMenuClick(this)">DPI实时抓包</div>
-                            <div class="menu-item" data-page="quality-location" onclick="handleMenuClick(this)">质差定界定位
-                            </div>
+                            <div class="menu-item" data-page="ce-location" onclick="handleMenuClick(this)">用户/账号定界查询</div>
+                            <div class="menu-item" data-page="biz-cei-boundary" onclick="handleMenuClick(this)">业务CEI定界</div>
+                            <div class="menu-item" data-page="biz-cei-locate" onclick="handleMenuClick(this)">业务CEI定位</div>
+                            <div class="menu-item" data-page="conn-cei-boundary" onclick="handleMenuClick(this)">通断CEI定界</div>
+                            <div class="menu-item" data-page="conn-cei-locate" onclick="handleMenuClick(this)">通断CEI定位</div>
+                            <div class="menu-item" data-page="dpi-capture" onclick="handleMenuClick(this)">DPI-XDR明细查询</div>
+                            <div class="menu-item" data-page="boundary-accuracy" onclick="handleMenuClick(this)">定界准确率闭环</div>
                         </div>
                     </div>
 
@@ -159,6 +163,8 @@
                             </div>
                             <div class="menu-item" data-page="work-order-eval" onclick="handleMenuClick(this)">质差工单后评估
                             </div>
+                            <div class="menu-item" data-page="cei-comparison" onclick="handleMenuClick(this)">CEI改善对比</div>
+                            <div class="menu-item" data-page="quality-loop" onclick="handleMenuClick(this)">质差闭环全景</div>
                         </div>
                     </div>
 
@@ -186,6 +192,11 @@
                         <div class="menu-children">
                             <div class="menu-item" data-page="log-management" onclick="handleMenuClick(this)">日志管理</div>
                             <div class="menu-item" data-page="config-center" onclick="handleMenuClick(this)">配置中心</div>
+                            <div class="menu-item" data-page="integration-center" onclick="handleMenuClick(this)">外部接口管理</div>
+                            <div class="menu-item" data-page="ai-model-center" onclick="handleMenuClick(this)">AI模型闭环</div>
+                            <div class="menu-item" data-page="report-center" onclick="handleMenuClick(this)">报表中心</div>
+                            <div class="menu-item" data-page="permission-center" onclick="handleMenuClick(this)">权限矩阵</div>
+                            <div class="menu-item" data-page="audit-center" onclick="handleMenuClick(this)">统一审计</div>
                         </div>
                     </div>
                 </div>
@@ -302,8 +313,18 @@
                 <div class="page-container" id="page-biz-quality"></div>
                 <div class="page-container" id="page-biz-cluster"></div>
                 <div class="page-container" id="page-ce-location"></div>
+                <div class="page-container" id="page-biz-cei-boundary"></div>
+                <div class="page-container" id="page-biz-cei-locate"></div>
+                <div class="page-container" id="page-conn-cei-boundary"></div>
+                <div class="page-container" id="page-conn-cei-locate"></div>
                 <div class="page-container" id="page-dpi-capture"></div>
+                <div class="page-container" id="page-boundary-accuracy"></div>
                 <div class="page-container" id="page-quality-location"></div>
+                <div class="page-container" id="page-quality-tags"></div>
+                <div class="page-container" id="page-cluster-alert"></div>
+                <div class="page-container" id="page-cei-comparison"></div>
+                <div class="page-container" id="page-quality-loop"></div>
+                <div class="page-container" id="page-cei-boundary-enhanced"></div>
                 <div class="page-container" id="page-ping-test"></div>
                 <div class="page-container" id="page-ont-power"></div>
                 <div class="page-container" id="page-gateway-restart"></div>
@@ -312,6 +333,11 @@
                 <div class="page-container" id="page-user-management"></div>
                 <div class="page-container" id="page-log-management"></div>
                 <div class="page-container" id="page-config-center"></div>
+                <div class="page-container" id="page-integration-center"></div>
+                <div class="page-container" id="page-ai-model-center"></div>
+                <div class="page-container" id="page-report-center"></div>
+                <div class="page-container" id="page-permission-center"></div>
+                <div class="page-container" id="page-audit-center"></div>
                 <div class="page-container" id="page-home"></div>
             </div>
         </div>
@@ -337,6 +363,8 @@
     <script src="js/data.js"></script>
     <script src="js/store.js"></script>
     <script src="js/pages.js"></script>
+    <script src="js/enhance.js"></script>
+    <script src="js/enhance-pages.js"></script>
     <script src="js/app.js"></script>
     <script src="js/mapdata.js"></script>
     <script src="js/map.js"></script>
@@ -388,16 +416,30 @@
                 'biz-quality': function () { Pages.renderBizQuality(container); },
                 'biz-cluster': function () { Pages.renderBizCluster(container); },
                 'ce-location': function () { Pages.renderQualityLocation(container); },
-                'dpi-capture': function () { Pages.renderDpiCapture(container); },
+                'biz-cei-boundary': function () { Pages.renderBizCeiBoundary(container); },
+                'biz-cei-locate': function () { Pages.renderBizCeiLocate(container); },
+                'conn-cei-boundary': function () { Pages.renderConnCeiBoundary(container); },
+                'conn-cei-locate': function () { Pages.renderConnCeiLocate(container); },
+                'dpi-capture': function () { (window.EnhancePages && EnhancePages.renderDpiXdrDetail) ? EnhancePages.renderDpiXdrDetail(container) : Pages.renderDpiCapture(container); },
+                'boundary-accuracy': function () { (window.EnhancePages && EnhancePages.renderBoundaryAccuracy) ? EnhancePages.renderBoundaryAccuracy(container) : Pages.renderModulePlaceholder(container, 'boundary accuracy'); },
                 'quality-location': function () { Pages.renderQualityLocation(container); },
+                'quality-tags': function () { (window.EnhancePages && EnhancePages.renderQualityTags) ? EnhancePages.renderQualityTags(container) : Pages.renderModulePlaceholder(container, 'quality tags'); },
+                'cluster-alert': function () { (window.EnhancePages && EnhancePages.renderClusterAlert) ? EnhancePages.renderClusterAlert(container) : Pages.renderModulePlaceholder(container, 'cluster alert'); },
                 'ping-test': function () { Pages.renderPingTest(container); },
                 'ont-power': function () { Pages.renderOntPower(container); },
                 'gateway-restart': function () { Pages.renderGatewayRestart(container); },
                 'work-order': function () { Pages.renderWorkOrder(container); },
                 'work-order-eval': function () { Pages.renderWorkOrderEval(container); },
+                'cei-comparison': function () { (window.EnhancePages && EnhancePages.renderCeiComparison) ? EnhancePages.renderCeiComparison(container) : Pages.renderModulePlaceholder(container, 'cei comparison'); },
+                'quality-loop': function () { (window.EnhancePages && EnhancePages.renderQualityLoop) ? EnhancePages.renderQualityLoop(container) : Pages.renderModulePlaceholder(container, 'quality loop'); },
                 'user-management': function () { Pages.renderUserManagement(container); },
                 'log-management': function () { Pages.renderLogManagement(container); },
-                'config-center': function () { Pages.renderConfigCenter(container); }
+                'config-center': function () { Pages.renderConfigCenter(container); },
+                'integration-center': function () { (window.EnhancePages && EnhancePages.renderIntegrationCenter) ? EnhancePages.renderIntegrationCenter(container) : Pages.renderModulePlaceholder(container, 'integration center'); },
+                'ai-model-center': function () { (window.EnhancePages && EnhancePages.renderAiModelCenter) ? EnhancePages.renderAiModelCenter(container) : Pages.renderModulePlaceholder(container, 'ai model center'); },
+                'report-center': function () { (window.EnhancePages && EnhancePages.renderReportCenter) ? EnhancePages.renderReportCenter(container) : Pages.renderModulePlaceholder(container, 'report center'); },
+                'permission-center': function () { (window.EnhancePages && EnhancePages.renderPermissionCenter) ? EnhancePages.renderPermissionCenter(container) : Pages.renderModulePlaceholder(container, 'permission center'); },
+                'audit-center': function () { (window.EnhancePages && EnhancePages.renderAuditCenter) ? EnhancePages.renderAuditCenter(container) : Pages.renderModulePlaceholder(container, 'audit center'); }
             };
 
             // Update breadcrumb FIRST (before renderer, so it always updates even if renderer errors)
