@@ -4,6 +4,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { getDb, initSchema, queryAll, queryOne, execute, paginate, saveDb } = require('./db/database');
 
 const app = express();
@@ -19,6 +20,17 @@ function asNumber(v, fallback) {
     if (v === undefined || v === null || v === '') return fallback || 0;
     const n = Number(v);
     return Number.isFinite(n) ? n : (fallback || 0);
+}
+
+function csvCell(v) {
+    const s = String(v === undefined || v === null ? '' : v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function localDate(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + (offsetDays || 0));
+    return d.toISOString().slice(0, 10);
 }
 
 function toIsoTime(v) {
@@ -996,7 +1008,8 @@ async function startServer() {
     app.post('/api/reports/generate', (req, res) => {
         const type = (req.body && req.body.report_type) || 'daily';
         const reportId = 'RPT-' + type.toUpperCase() + '-' + Date.now();
-        const today = new Date().toISOString().slice(0, 10);
+        const today = localDate(0);
+        const periodStart = type === 'monthly' ? localDate(-29) : (type === 'weekly' ? localDate(-6) : today);
         const summary = {
             xdrTotal: queryOne('SELECT COUNT(*) as c FROM dpi_xdr_common').c,
             qualityTags: queryOne('SELECT COUNT(*) as c FROM user_quality_tags').c,
@@ -1005,11 +1018,33 @@ async function startServer() {
             boundaryAccuracy: queryOne('SELECT ROUND(AVG(current_accuracy),1) as v FROM ai_model_definitions').v || 0,
             connectorSyncs: queryOne('SELECT COUNT(*) as c FROM external_sync_logs').c
         };
+        const title = (type === 'monthly' ? '月报' : type === 'weekly' ? '周报' : '日报') + '-' + today;
+        const reportDir = path.join(__dirname, '..', 'reports');
+        if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true });
+        const fileName = reportId + '.csv';
+        const rows = [
+            ['报表ID', reportId],
+            ['报表名称', title],
+            ['报表类型', type],
+            ['统计周期', periodStart + ' ~ ' + today],
+            ['生成时间', new Date().toISOString().slice(0, 19).replace('T', ' ')],
+            ['DPI-XDR记录数', summary.xdrTotal],
+            ['质差标签数', summary.qualityTags],
+            ['PING测试数', summary.pingTests],
+            ['工单数', summary.workOrders],
+            ['模型准确率', summary.boundaryAccuracy + '%'],
+            ['外部接口同步次数', summary.connectorSyncs]
+        ];
+        const detailRows = queryAll(`SELECT module, action, operator, result, event_time FROM unified_audit_events ORDER BY event_time DESC LIMIT 20`);
+        const csv = '\ufeff' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') +
+            '\r\n\r\n最近审计事件\r\n模块,动作,操作人,结果,时间\r\n' +
+            detailRows.map(r => [r.module, r.action, r.operator, r.result, r.event_time].map(csvCell).join(',')).join('\r\n') + '\r\n';
+        fs.writeFileSync(path.join(reportDir, fileName), csv, 'utf8');
         execute(`INSERT INTO report_jobs(report_id,report_type,report_name,period_start,period_end,status,summary_json,file_name,generated_by)
-            VALUES(?,?,?,?,?,?,?,?,?)`, [reportId, type, (type === 'monthly' ? '月报' : type === 'weekly' ? '周报' : '日报') + '-' + today, today, today, '已生成', JSON.stringify(summary), reportId + '.csv', (req.body && req.body.generated_by) || 'admin']);
+            VALUES(?,?,?,?,?,?,?,?,?)`, [reportId, type, title, periodStart, today, '已生成', JSON.stringify(summary), fileName, (req.body && req.body.generated_by) || 'admin']);
         audit('报表中心', 'report', reportId, '生成报表', summary, 'admin', '成功');
         saveDb();
-        res.json(ok({ reportId, summary }));
+        res.json(ok({ reportId, summary, fileName, downloadUrl: '/reports/' + fileName }));
     });
     app.get('/api/reports', (req, res) => {
         const { report_type, page, pageSize } = req.query;

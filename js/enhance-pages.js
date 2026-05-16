@@ -1650,7 +1650,7 @@ EnhancePages.exportXdr = function() {
         var rows = cfgs.map(function(c) {
             return '<tr><td>' + h(c.category) + '</td><td>' + h(c.config_key) + '</td><td style="max-width:260px;word-break:break-all;">' + h(c.config_value) + '</td><td>' + h(c.description || '') + '</td><td>' + h(c.updated_by || '-') + '</td><td>' + h(c.updated_at || '-') + '</td><td><button class="btn" onclick="Pages.showBackendConfig(\'' + h(c.config_key) + '\')">编辑</button><button class="btn" onclick="Pages.deleteBackendConfig(\'' + h(c.config_key) + '\')">删除</button></td></tr>';
         }).join('');
-        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">配置中心（后端CRUD）</span><div style="display:flex;gap:8px;"><select class="form-select" onchange="Pages._cfgCategory=this.value;Pages.renderConfigCenter(document.getElementById(\'page-config-center\'))">' + opts + '</select><button class="btn btn-primary" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body"><table class="data-table"><thead><tr><th>分类</th><th>配置键</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header" style="align-items:flex-start;gap:12px;flex-wrap:wrap;"><span class="system-panel-title">配置中心（后端CRUD）</span><div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="form-select" style="width:180px;" onchange="Pages._cfgCategory=this.value;Pages.renderConfigCenter(document.getElementById(\'page-config-center\'))">' + opts + '</select><button class="btn btn-primary" style="white-space:nowrap;" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>分类</th><th>配置键</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
     };
     Pages.showBackendConfig = async function(key) {
         var cfgs = await API.configs({});
@@ -1868,16 +1868,19 @@ EnhancePages.exportXdr = function() {
         var reports = (window.API && API.reports) ? await API.reports({ page: page, pageSize: 10 }) : { data: [], pagination: {} };
         var rows = ((reports && reports.data) || []).map(function(r) {
             var s = parseJson(r.summary_json);
-            return '<tr><td>' + esc(r.generated_at) + '</td><td>' + esc(r.report_type) + '</td><td>' + esc(r.report_name) + '</td><td>' + esc(r.period_start) + ' ~ ' + esc(r.period_end) + '</td><td>' + (s.xdrTotal || 0) + '</td><td>' + (s.qualityTags || 0) + '</td><td>' + (s.workOrders || 0) + '</td><td>' + (s.boundaryAccuracy || 0) + '%</td><td><button class="btn" onclick="EnhancePages.exportReportCsv(\'' + esc(r.report_id) + '\')">导出CSV</button></td></tr>';
+            var file = r.file_name ? '<a class="btn" href="/reports/' + esc(r.file_name) + '" download>下载文件</a>' : '<button class="btn" onclick="EnhancePages.exportReportCsv(\'' + esc(r.report_id) + '\')">导出CSV</button>';
+            return '<tr><td>' + esc(r.generated_at) + '</td><td>' + esc(r.report_type) + '</td><td>' + esc(r.report_name) + '</td><td>' + esc(r.period_start) + ' ~ ' + esc(r.period_end) + '</td><td>' + (s.xdrTotal || 0) + '</td><td>' + (s.qualityTags || 0) + '</td><td>' + (s.workOrders || 0) + '</td><td>' + (s.boundaryAccuracy || 0) + '%</td><td>' + file + '</td></tr>';
         }).join('') || '<tr><td colspan="9" style="text-align:center;color:#999;padding:18px;">暂无报表，请先生成</td></tr>';
         container.innerHTML = pageWrap('报表中心（日/周/月报）',
-            '<div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn btn-primary" onclick="EnhancePages.generateReport(\'daily\')">生成日报</button><button class="btn" onclick="EnhancePages.generateReport(\'weekly\')">生成周报</button><button class="btn" onclick="EnhancePages.generateReport(\'monthly\')">生成月报</button></div>' +
-            '<table class="data-table"><thead><tr><th>生成时间</th><th>类型</th><th>名称</th><th>周期</th><th>xDR</th><th>质差标签</th><th>工单</th><th>模型准确率</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' + pager(reports.pagination, 'EnhancePages.renderReportPage'));
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;">' +
+            '<div style="font-size:12px;color:#666;">生成后会在服务器 <code>reports/</code> 目录落 CSV 文件，列表中的“下载文件”会直接下载真实文件。</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="EnhancePages.generateReport(\'daily\')">生成日报</button><button class="btn" onclick="EnhancePages.generateReport(\'weekly\')">生成周报</button><button class="btn" onclick="EnhancePages.generateReport(\'monthly\')">生成月报</button></div></div>' +
+            '<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>生成时间</th><th>类型</th><th>名称</th><th>周期</th><th>xDR</th><th>质差标签</th><th>工单</th><th>模型准确率</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + pager(reports.pagination, 'EnhancePages.renderReportPage'));
     };
     EnhancePages.renderReportPage = function(page) { this.renderReportCenter(document.getElementById('page-report-center'), page); };
     EnhancePages.generateReport = async function(type) {
         var r = await API.generateReport({ report_type: type, generated_by: 'admin' });
-        if (r) Modal.toast('报表已生成：' + r.reportId, 'success');
+        if (r) Modal.toast('报表已生成文件：' + (r.fileName || r.reportId), 'success');
         this.renderReportCenter(document.getElementById('page-report-center'), 1);
     };
     EnhancePages.exportReportCsv = function(reportId) {
