@@ -33,6 +33,20 @@ function localDate(offsetDays) {
     return d.toISOString().slice(0, 10);
 }
 
+function mockOnuId(prefix) {
+    const vendor = prefix || ['HWTC', 'ZTEG', 'FHTT', 'ALCL'][Math.floor(Math.random() * 4)];
+    const hex = '0123456789ABCDEF';
+    let s = vendor;
+    while (s.length < 16) s += hex[Math.floor(Math.random() * hex.length)];
+    return s.slice(0, 16);
+}
+
+function mockUserAccount() {
+    let s = '211';
+    while (s.length < 11) s += Math.floor(Math.random() * 10);
+    return s;
+}
+
 function toIsoTime(v) {
     if (!v) return new Date().toISOString().slice(0, 19).replace('T', ' ');
     if (v instanceof Date) return v.toISOString().slice(0, 19).replace('T', ' ');
@@ -706,44 +720,52 @@ async function startServer() {
             results, stats: { sent, received, loss: lossRate, avg, min, max, jitter, status }, testTime: now }));
     });
     app.get('/api/ont-power', (req, res) => {
-        const { city_id, status, page, pageSize } = req.query;
-        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND o.city_id=?';p.push(parseInt(city_id));}if(status){w+=' AND o.status=?';p.push(status);}
-        res.json(ok(paginate(`SELECT o.*, c.city_name, u.user_account FROM ont_power_records o JOIN cities c ON o.city_id=c.id LEFT JOIN broadband_users u ON o.user_id=u.id ${w} ORDER BY o.query_time DESC`,
-            `SELECT COUNT(*) as total FROM ont_power_records o ${w}`, p, page, pageSize)));
+        const { city_id, status, keyword, page, pageSize } = req.query;
+        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND o.city_id=?';p.push(parseInt(city_id));}if(status){w+=' AND o.status=?';p.push(status);}if(keyword){w+=" AND (o.ont_id LIKE '%'||?||'%' OR u.user_account LIKE '%'||?||'%' OR printf('211%08d', o.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
+        res.json(ok(paginate(`SELECT o.*, c.city_name, CASE WHEN u.user_account LIKE '211%' THEN u.user_account ELSE printf('211%08d', o.id % 100000000) END as user_account FROM ont_power_records o JOIN cities c ON o.city_id=c.id LEFT JOIN broadband_users u ON o.user_id=u.id ${w} ORDER BY o.query_time DESC`,
+            `SELECT COUNT(*) as total FROM ont_power_records o LEFT JOIN broadband_users u ON o.user_id=u.id ${w}`, p, page, pageSize)));
     });
     app.post('/api/ont-power/query', (req, res) => {
         const b = req.body || {};
         const city = queryOne('SELECT id, city_name FROM cities ORDER BY RANDOM() LIMIT 1') || { id: 1, city_name: '' };
-        const user = queryOne('SELECT id, user_account FROM broadband_users WHERE city_id=? ORDER BY RANDOM() LIMIT 1', [city.id]) || { id: 1, user_account: b.account || '-' };
+        const input = String(b.ontId || b.account || '').trim();
+        const user = input && /^211\d{8}$/.test(input)
+            ? (queryOne('SELECT id, user_account FROM broadband_users WHERE user_account=?', [input]) || { id: 1, user_account: input })
+            : (queryOne('SELECT id, user_account FROM broadband_users WHERE city_id=? ORDER BY RANDOM() LIMIT 1', [city.id]) || { id: 1, user_account: b.account || mockUserAccount() });
         const rx = Math.round((-16 - Math.random() * 12) * 10) / 10;
         const tx = Math.round((2 + Math.random() * 3) * 10) / 10;
-        const status = rx < -25 ? '异常' : (rx < -22 ? '告警' : '正常');
-        const ontId = b.ontId || ('ONT-MOCK-' + Math.floor(Math.random() * 10000));
+        const bias = Math.round((10 + Math.random()*20)*10)/10;
+        const status = rx < -25 || bias < 7 || bias > 30 ? '异常' : (rx < -22 ? '告警' : '正常');
+        const ontId = input && !/^211\d{8}$/.test(input) ? input : mockOnuId();
         execute(`INSERT INTO ont_power_records(user_id,ont_id,city_id,ont_model,tx_power,rx_power,temperature,voltage,bias_current,olt_rx_power,optical_distance,status,query_time)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`, [user.id, ontId, city.id, 'HG8245H', tx, rx, Math.round((35 + Math.random()*15)*10)/10, 3.3, Math.round((8 + Math.random()*4)*10)/10, rx - 1.5, Math.round((1 + Math.random()*8)*10)/10, status]);
-        audit('远程操作', 'ont_power', ontId, 'ONT光功率实时读取', { rx, tx, status }, b.operator || 'system', status === '正常' ? '成功' : '告警');
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`, [user.id, ontId, city.id, 'HG8245H', tx, rx, Math.round((35 + Math.random()*15)*10)/10, 0, bias, rx - 1.5, Math.round((1 + Math.random()*8)*10)/10, status]);
+        audit('远程操作', 'ont_power', ontId, 'ONT光功率实时读取', { rx, tx, bias, status }, b.operator || 'system', status === '正常' ? '成功' : '告警');
         saveDb();
-        res.json(ok({ ontId, user_account: user.user_account, city_name: city.city_name, tx_power: tx, rx_power: rx, status }));
+        const account = /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount();
+        res.json(ok({ ontId, user_account: account, city_name: city.city_name, tx_power: tx, rx_power: rx, bias_current: bias, status }));
     });
     app.get('/api/gateway-restarts', (req, res) => {
-        const { city_id, page, pageSize } = req.query;
-        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND g.city_id=?';p.push(parseInt(city_id));}
-        res.json(ok(paginate(`SELECT g.*, c.city_name FROM gateway_restarts g JOIN cities c ON g.city_id=c.id ${w} ORDER BY g.restart_time DESC`,
+        const { city_id, keyword, page, pageSize } = req.query;
+        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND g.city_id=?';p.push(parseInt(city_id));}if(keyword){w+=" AND (g.gateway_id LIKE '%'||?||'%' OR g.gateway_sn LIKE '%'||?||'%' OR printf('211%08d', g.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
+        res.json(ok(paginate(`SELECT g.*, CASE WHEN g.gateway_sn LIKE '211%' THEN g.gateway_sn ELSE printf('211%08d', g.id % 100000000) END as gateway_sn, c.city_name FROM gateway_restarts g JOIN cities c ON g.city_id=c.id ${w} ORDER BY g.restart_time DESC`,
             `SELECT COUNT(*) as total FROM gateway_restarts g ${w}`, p, page, pageSize)));
     });
     app.post('/api/gateway-restart', (req, res) => {
         const b = req.body || {};
         const city = queryOne('SELECT id, city_name FROM cities ORDER BY RANDOM() LIMIT 1') || { id: 1, city_name: '' };
-        const user = queryOne('SELECT id, user_account, gateway_id, gateway_sn FROM broadband_users WHERE city_id=? ORDER BY RANDOM() LIMIT 1', [city.id]) || { id: null, user_account: '-', gateway_id: 'GW-MOCK', gateway_sn: 'SN-MOCK' };
+        const input = String(b.gatewayId || b.onuId || b.account || '').trim();
+        const user = /^211\d{8}$/.test(input)
+            ? (queryOne('SELECT id, user_account, gateway_id, gateway_sn FROM broadband_users WHERE user_account=?', [input]) || { id: null, user_account: input })
+            : (queryOne('SELECT id, user_account, gateway_id, gateway_sn FROM broadband_users WHERE city_id=? ORDER BY RANDOM() LIMIT 1', [city.id]) || { id: null, user_account: mockUserAccount() });
         const duration = Math.floor(Math.random()*120+15);
-        const gwId = b.gatewayId || user.gateway_id || ('GW-MOCK-' + Math.floor(Math.random()*10000));
+        const gwId = input && !/^211\d{8}$/.test(input) ? input : mockOnuId();
         const result = '重启成功';
         execute(`INSERT INTO gateway_restarts(gateway_id,gateway_sn,user_id,city_id,restart_reason,restart_type,operator,result,duration_seconds,pre_status,post_status,restart_time,complete_time)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))`,
-            [gwId, user.gateway_sn || '', user.id, city.id, b.reason || '用户申报故障', '远程重启', b.operator || 'system', result, duration, JSON.stringify({ online: true, cpu: 92 }), JSON.stringify({ online: true, cpu: 35 })]);
-        audit('远程操作', 'gateway_restart', gwId, '网关远程重启', { result, duration, reason: b.reason || '' }, b.operator || 'system', '成功');
+            [gwId, /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount(), user.id, city.id, b.reason || '用户申报故障', b.restartType || '远程重启', b.operator || 'system', result, duration, JSON.stringify({ online: true, cpu: 92 }), JSON.stringify({ online: true, cpu: 35 })]);
+        audit('远程操作', 'gateway_restart', gwId, 'ONU远程重启', { result, duration, reason: b.reason || '' }, b.operator || 'system', '成功');
         saveDb();
-        res.json(ok({ result, duration: duration + 's', gateway_id: gwId, city_name: city.city_name }));
+        res.json(ok({ result, duration: duration + 's', gateway_id: gwId, onu_id: gwId, user_account: /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount(), city_name: city.city_name }));
     });
     app.get('/api/dpi', (req, res) => {
         const { city_id, protocol, page, pageSize } = req.query;

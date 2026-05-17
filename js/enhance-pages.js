@@ -1380,7 +1380,7 @@ EnhancePages.exportXdr = function() {
             '<div class="remote-panel"><div class="remote-panel-title">PING测试工具（RMS/API模式）</div>' +
             '<div class="remote-form">' +
                 Pages.cityFilterHtml('pingCityFilter', 'Pages._pingCity=this.value;Pages.renderPingTest(document.getElementById("page-ping-test"),1)', this._pingCity) +
-                '<div class="form-group"><label class="form-label">ONT ID</label><input class="form-input" id="pingOntId" value="' + (this._pingOnt || '') + '" placeholder="ONT设备ID"></div>' +
+                '<div class="form-group"><label class="form-label">ONT设备ID</label><input class="form-input" id="pingOntId" value="' + (this._pingOnt || '') + '" placeholder="HWTC123456789ABC"></div>' +
                 '<div class="form-group"><label class="form-label">目标IP/域名</label><input class="form-input" id="pingTarget" value="' + (this._pingTarget || '10.168.1.1') + '" placeholder="10.168.1.1 / example.com"></div>' +
                 '<div class="form-group"><label class="form-label">ping包大小</label><input class="form-input" id="pingSize" type="number" min="32" max="1500" value="64"></div>' +
                 '<div class="form-group"><label class="form-label">次数</label><input class="form-input" id="pingCount" type="number" min="1" max="100" value="10"></div>' +
@@ -1395,11 +1395,11 @@ EnhancePages.exportXdr = function() {
                 '<div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                     '<span>历史测试记录（共' + (pager.total || 0) + '条）</span>' +
                     '<input class="form-input" style="width:180px;height:30px;" id="pingTargetFilter" value="' + (this._pingTarget || '') + '" placeholder="目标IP/域名">' +
-                    '<input class="form-input" style="width:150px;height:30px;" id="pingOntFilter" value="' + (this._pingOnt || '') + '" placeholder="ONT ID">' +
+                    '<input class="form-input" style="width:160px;height:30px;" id="pingOntFilter" value="' + (this._pingOnt || '') + '" placeholder="ONT设备ID">' +
                     '<select class="form-select" style="width:110px;height:30px;" id="pingStatusFilter"><option value="">全部状态</option>' + statusOpts + '</select>' +
                     '<button class="btn" onclick="Pages.applyPingHistoryFilter()">查询</button>' +
                 '</div>' +
-                '<table class="data-table"><thead><tr><th>时间</th><th>ONT ID</th><th>RMS任务</th><th>目标IP/域名</th><th>包大小</th><th>次数</th><th>间隔</th><th>地市</th><th>平均时延</th><th>最大时延</th><th>最小时延</th><th>抖动</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + pingRowsHtml(rows) + '</tbody></table>' +
+                '<table class="data-table"><thead><tr><th>时间</th><th>ONT设备ID</th><th>RMS任务</th><th>目标IP/域名</th><th>包大小</th><th>次数</th><th>间隔</th><th>地市</th><th>平均时延</th><th>最大时延</th><th>最小时延</th><th>抖动</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + pingRowsHtml(rows) + '</tbody></table>' +
                 pingPaginationHtml(pager) +
             '</div></div>';
     };
@@ -1789,6 +1789,117 @@ EnhancePages.exportXdr = function() {
         if (!r) return this._executeGatewayRestartLocal();
         if (box) box.textContent += '\n> RMS返回：' + r.result + '\n> 耗时：' + r.duration + '\n> 已写入网关重启历史与统一审计';
         Modal.toast('网关重启完成，历史已入库', 'success');
+        this.renderGatewayRestart(document.getElementById('page-gateway-restart'), 1);
+    };
+})();
+
+// ============ Remote operation fixes from demo修改1-3: ONT/ONU field names and records ============
+(function() {
+    if (!window.Pages || !window.API) return;
+
+    function esc(v) {
+        return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, function(ch) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+        });
+    }
+    function n(v) { var x = Number(v); return isFinite(x) ? x : 0; }
+    function wait(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
+    function pager(p, cb) {
+        if (!p || (p.totalPages || 1) <= 1) return '';
+        return '<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:10px 12px;font-size:12px;">' +
+            '<span>共 ' + (p.total || 0) + ' 条，第 ' + (p.page || 1) + '/' + (p.totalPages || 1) + ' 页</span>' +
+            '<button class="btn" ' + ((p.page || 1) <= 1 ? 'disabled' : '') + ' onclick="' + cb + '(' + ((p.page || 1) - 1) + ')">上一页</button>' +
+            '<button class="btn" ' + ((p.page || 1) >= (p.totalPages || 1) ? 'disabled' : '') + ' onclick="' + cb + '(' + ((p.page || 1) + 1) + ')">下一页</button>' +
+        '</div>';
+    }
+
+    Pages.renderOntPower = async function(container, page) {
+        this._ontPage = page || 1;
+        var resp = await API.ontPower({ page: this._ontPage, pageSize: 12, city_id: this._ontCity || '', keyword: this._ontSearch || '' });
+        if (!resp) return;
+        var rows = (resp.data || []).map(function(r) {
+            var rxCls = n(r.rx_power) < -25 ? 'status-error' : (n(r.rx_power) < -22 ? 'status-warning' : 'status-normal');
+            var bias = n(r.bias_current);
+            var biasCls = bias < 7 || bias > 30 ? 'status-error' : 'status-normal';
+            return '<tr><td>' + esc(r.ont_id) + '</td><td>' + esc(r.user_account || '-') + '</td><td>' + esc(r.city_name) + '</td><td>' + esc(r.ont_model || '-') + '</td><td>' + n(r.tx_power).toFixed(1) + ' dBm</td><td><span class="' + rxCls + '">' + n(r.rx_power).toFixed(1) + ' dBm</span></td><td>' + n(r.temperature).toFixed(1) + '°C</td><td><span class="' + biasCls + '">' + bias.toFixed(1) + ' mA</span></td><td>' + Pages.statusHtml(r.status || '正常') + '</td><td>' + esc(r.query_time || '-') + '</td></tr>';
+        }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无ONT光功率记录</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">ONT光功率查询</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('ontCityFilter', 'Pages._ontCity=this.value;Pages.renderOntPower(document.getElementById("page-ont-power"),1)', this._ontCity) +
+            '<div class="form-group"><label class="form-label">ONT设备ID/用户账号</label><input class="form-input" id="ontSearchInput" value="' + esc(this._ontSearch || '') + '" placeholder="HWTC123456789ABC 或 21119410780"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages._ontSearch=document.getElementById(\'ontSearchInput\').value.trim();Pages.renderOntPower(document.getElementById(\'page-ont-power\'),1)">查询</button><button class="btn" id="ontReadBtn" onclick="Pages.realtimeOntQuery()">实时读取</button></div></div></div>' +
+            '<div style="margin:0 0 8px 0;padding:8px 12px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;color:#666;"><strong>字段规则：</strong>ONT设备ID按16位模拟，如 HWTC123456789ABC；用户账号为11位数字且以211开头。偏置电流正常10-30mA，告警&lt;7或&gt;30mA。</div>' +
+            '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>ONT设备ID</th><th>用户账号</th><th>地市</th><th>型号</th><th>发送光功率</th><th>接收光功率</th><th>温度</th><th>偏置电流</th><th>状态</th><th>读取时间</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            pager(resp.pagination, 'Pages.renderOntPower.bind(Pages,document.getElementById("page-ont-power"))') + '</div></div>';
+    };
+
+    Pages.realtimeOntQuery = async function() {
+        var input = document.getElementById('ontSearchInput');
+        var val = input ? input.value.trim() : '';
+        if (!val) return Modal.toast('请输入ONT设备ID或用户账号', 'warning');
+        var btn = document.getElementById('ontReadBtn');
+        if (btn) { btn.disabled = true; btn.textContent = '查询中...'; }
+        Modal.show('ONT实时读取', '<div style="padding:20px;text-align:center;color:#666;">查询中...<br><span style="font-size:12px;">正在通过OMCI/网管接口读取光功率</span></div>', '', '420px');
+        await wait(1200);
+        var r = await API.queryOntPower({ ontId: val, operator: 'admin' });
+        Modal.close();
+        if (btn) { btn.disabled = false; btn.textContent = '实时读取'; }
+        if (r) Modal.toast('实时读取完成，已新增最新记录：' + r.ontId, r.status === '正常' ? 'success' : 'warning');
+        this._ontSearch = val;
+        this.renderOntPower(document.getElementById('page-ont-power'), 1);
+    };
+
+    Pages.renderGatewayRestart = async function(container, page) {
+        this._gwPage = page || 1;
+        var resp = await API.gatewayRestarts({ page: this._gwPage, pageSize: 12, city_id: this._gwCity || '', keyword: this._gwSearch || '' });
+        if (!resp) return;
+        var rows = (resp.data || []).map(function(r) {
+            return '<tr><td>' + esc(r.restart_time || '-') + '</td><td>' + esc(r.gateway_id || '-') + '</td><td>' + esc(r.gateway_sn || '-') + '</td><td>' + esc(r.city_name || '-') + '</td><td>' + esc(r.restart_reason || '-') + '</td><td>' + esc(r.operator || '-') + '</td><td>' + Pages.statusHtml(r.result || '重启成功') + '</td><td>' + esc(r.duration_seconds || '-') + 's</td></tr>';
+        }).join('') || '<tr><td colspan="8" style="text-align:center;color:#999;padding:18px;">暂无ONU重启记录</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">网关远程重启</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('gwCityFilter', 'Pages._gwCity=this.value;Pages.renderGatewayRestart(document.getElementById("page-gateway-restart"),1)', this._gwCity) +
+            '<div class="form-group"><label class="form-label">ONU设备ID/用户账号</label><input class="form-input" id="gwRestartId" value="' + esc(this._gwSearch || '') + '" placeholder="HWTC123456789ABC 或 21119410780"></div>' +
+            '<div class="form-group"><label class="form-label">重启原因</label><select class="form-select" id="gwRestartReason"><option>用户申报故障</option><option>CPU异常高</option><option>流量异常</option><option>定期维护</option><option>ONU离线</option></select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.executeGatewayRestart()">执行重启</button><button class="btn" onclick="Pages.batchRestart()">批量重启</button></div></div>' +
+            '<div id="gwRestartResult" style="display:none;" class="ping-result"></div></div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">重启记录（按时间倒序）</div>' +
+            '<table class="data-table"><thead><tr><th>时间</th><th>ONU设备ID</th><th>用户账号</th><th>地市</th><th>重启原因</th><th>操作人</th><th>结果</th><th>耗时</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            pager(resp.pagination, 'Pages.renderGatewayRestart.bind(Pages,document.getElementById("page-gateway-restart"))') + '</div></div>';
+    };
+
+    Pages.executeGatewayRestart = async function() {
+        var id = (document.getElementById('gwRestartId') || {}).value || '';
+        var reason = (document.getElementById('gwRestartReason') || {}).value || '用户申报故障';
+        id = id.trim();
+        if (!id) return Modal.toast('请输入ONU设备ID或用户账号', 'warning');
+        this._gwSearch = id;
+        var box = document.getElementById('gwRestartResult');
+        if (box) { box.style.display = 'block'; box.textContent = '正在通过RMS/网管接口下发重启指令...\n> 目标：' + id + '\n> 原因：' + reason; }
+        var r = await API.executeRestart({ gatewayId: id, reason: reason, operator: 'admin' });
+        if (box && r) box.textContent += '\n> 返回：' + r.result + '\n> ONU设备ID：' + (r.onu_id || r.gateway_id) + '\n> 用户账号：' + (r.user_account || '-') + '\n> 已写入重启历史';
+        if (r) Modal.toast('重启完成，记录已按时间倒序写入', 'success');
+        this.renderGatewayRestart(document.getElementById('page-gateway-restart'), 1);
+    };
+
+    Pages.batchRestart = function() {
+        Modal.show('批量重启',
+            '<div class="form-group"><label class="form-label">ONU设备ID列表（每行一个，16位）</label><textarea id="batchGwIds" style="width:100%;height:120px;border:1px solid #e0e4e8;border-radius:2px;padding:8px;font-size:12px;resize:vertical;" placeholder="HWTC123456789ABC&#10;ZTEG0011AABBCCDD&#10;FHTT99887766AABB"></textarea></div>' +
+            '<div class="form-group"><label class="form-label">重启原因</label><select class="form-select" id="batchReason"><option>定期维护</option><option>批量故障恢复</option><option>系统升级</option></select></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doBatchRestart()">确认批量重启</button>',
+            '520px');
+    };
+
+    Pages.doBatchRestart = async function() {
+        var ids = ((document.getElementById('batchGwIds') || {}).value || '').split(/\r?\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+        if (!ids.length) return Modal.toast('请输入ONU设备ID', 'warning');
+        var reason = (document.getElementById('batchReason') || {}).value || '批量故障恢复';
+        var ok = 0;
+        for (var i = 0; i < ids.length; i++) {
+            var r = await API.executeRestart({ gatewayId: ids[i], reason: reason, restartType: '批量重启', operator: 'admin' });
+            if (r) ok++;
+        }
+        Modal.close();
+        Modal.toast('批量重启完成：' + ok + '/' + ids.length + ' 条已入库', ok === ids.length ? 'success' : 'warning');
+        this._gwSearch = '';
         this.renderGatewayRestart(document.getElementById('page-gateway-restart'), 1);
     };
 })();
