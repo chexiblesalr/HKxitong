@@ -180,6 +180,7 @@ DataStore.initDefaults();
 
 // ========== 弹窗管理器 ==========
 var Modal = {
+    _confirmHandlers: {},
     show: function(title, bodyHtml, footerHtml, width) {
         this.close(); // 关闭已有弹窗
         var w = width || '600px';
@@ -203,11 +204,20 @@ var Modal = {
     },
 
     confirm: function(title, message, onConfirm) {
+        var handlerId = 'confirm_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+        this._confirmHandlers[handlerId] = onConfirm;
         this.show(title,
             '<div style="padding:10px 0;font-size:13px;color:#333;">' + message + '</div>',
-            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Modal.close();(' + onConfirm.toString() + ')()">确定</button>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Modal.runConfirm(\'' + handlerId + '\')">确定</button>',
             '420px'
         );
+    },
+
+    runConfirm: function(handlerId) {
+        var handler = this._confirmHandlers[handlerId];
+        delete this._confirmHandlers[handlerId];
+        this.close();
+        if (typeof handler === 'function') handler();
     },
 
     alert: function(title, message) {

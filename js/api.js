@@ -106,6 +106,8 @@ var API = {
     systemUsers()      { return this.get('/system-users'); },
     saveSystemUser(p)  { return this.post('/system-users', p || {}); },
     setSystemUserStatus(id, p){ return this.put('/system-users/' + id + '/status', p || {}); },
+    lockSystemUser(id, p){ return this.put('/system-users/' + id + '/lock', p || {}); },
+    resetSystemUserPassword(id){ return this.put('/system-users/' + id + '/reset-password', {}); },
     logs(p)            { return this.get('/logs', p); },
     configs(p)         { return this.get('/configs', p); },
     saveConfig(p)      { return this.post('/configs', p || {}); },

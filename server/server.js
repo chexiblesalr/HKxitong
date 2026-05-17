@@ -211,6 +211,62 @@ function ensurePingSchema() {
     saveDb();
 }
 
+function ensureSystemUserSchema() {
+    const cols = queryAll('PRAGMA table_info(system_users)').map(c => c.name);
+    const additions = [
+        ['locked', 'INTEGER DEFAULT 0'],
+        ['menu_permissions', 'TEXT'],
+        ['operation_permissions', 'TEXT'],
+        ['data_scope', 'VARCHAR(30) DEFAULT "city"'],
+        ['password_reset_at', 'DATETIME']
+    ];
+    additions.forEach(([name, type]) => {
+        if (!cols.includes(name)) execute(`ALTER TABLE system_users ADD COLUMN ${name} ${type}`);
+    });
+    saveDb();
+}
+
+const SYSTEM_REAL_NAMES = [
+    '\u5f20\u5efa\u56fd', '\u738b\u5fd7\u5f3a', '\u8d75\u7389\u6d77', '\u90d1\u5fd7\u52c7',
+    '\u6881\u5efa\u519b', '\u91d1\u6210\u65e5', '\u9648\u660e\u4eae', '\u5468\u6587\u658c',
+    '\u5218\u5cf0', '\u8d75\u534e', '\u5f20\u654f', '\u6768\u6d9b'
+];
+
+function systemRealNameBySeed(seed) {
+    const n = Math.abs(Number(seed) || 0);
+    return SYSTEM_REAL_NAMES[n % SYSTEM_REAL_NAMES.length];
+}
+
+function isBadMockText(value) {
+    const s = String(value || '').trim();
+    return !s || s.indexOf('?') >= 0 || /xxx|demo|auditor|operator|viewer|admin|test|_/.test(s.toLowerCase()) || /^[A-Za-z0-9_-]+$/.test(s);
+}
+
+function normalizeSystemUserMockData() {
+    const users = queryAll(`SELECT u.id,u.username,u.real_name,u.department,u.menu_permissions,u.operation_permissions,u.data_scope,u.city_id,c.city_name
+        FROM system_users u LEFT JOIN cities c ON u.city_id=c.id ORDER BY u.id`);
+    users.forEach(u => {
+        const username = String(u.username || '').toLowerCase();
+        const cityName = String(u.city_name || '').trim();
+        const isAdmin = username === 'admin';
+        const cleanUsername = !isAdmin && /xxx|demo|auditor|test/.test(username) ? ('jlsh' + String(u.id).padStart(2, '0')) : u.username;
+        const realName = isBadMockText(u.real_name)
+            ? (isAdmin ? '\u7cfb\u7edf\u7ba1\u7406\u5458' : systemRealNameBySeed(u.id))
+            : u.real_name;
+        const department = isBadMockText(u.department)
+            ? (isAdmin ? '\u4fe1\u606f\u6280\u672f\u90e8' : ((cityName && cityName.indexOf('?') < 0) ? cityName + '\u7f51\u7edc\u8fd0\u7ef4\u90e8' : '\u7f51\u7edc\u8fd0\u7ef4\u90e8'))
+            : u.department;
+        const menu = isBadMockText(u.menu_permissions) ? '\u5168\u666f\u89c6\u56fe,\u8d28\u91cf\u753b\u50cf,\u8fdc\u7a0b\u64cd\u4f5c' : u.menu_permissions;
+        const ops = isBadMockText(u.operation_permissions) ? 'view,execute,export' : u.operation_permissions;
+        const scope = isBadMockText(u.data_scope) ? (isAdmin ? 'province' : 'city') : u.data_scope;
+        if (cleanUsername !== u.username || realName !== u.real_name || department !== u.department || menu !== u.menu_permissions || ops !== u.operation_permissions || scope !== u.data_scope) {
+            execute(`UPDATE system_users SET username=?,real_name=?,department=?,menu_permissions=?,operation_permissions=?,data_scope=?,updated_at=datetime('now','localtime') WHERE id=?`,
+                [cleanUsername, realName, department, menu, ops, scope, u.id]);
+        }
+    });
+    saveDb();
+}
+
 function normalizeExistingRemoteIds() {
     queryAll('SELECT id, ont_id FROM ping_tests').forEach(r => {
         const next = normalizedOnuId(r.ont_id, r.id);
@@ -295,6 +351,20 @@ function ensurePlatformCompletionDefaults() {
         ['report_retention_days', '180', '报表配置', '报表保留天数'],
         ['permission_default_scope', 'city', '权限配置', '普通用户默认数据范围']
     ];
+    cfgs.push(
+        ['user_quality_time_grain', '小时', '用户质差模型', '用户质差识别时间粒度'],
+        ['user_quality_type', '线路质差', '用户质差模型', '线路/设备/配置/业务质差类型'],
+        ['user_quality_tag', 'ONU接收光功率弱光', '用户质差模型', '用户质差标签'],
+        ['user_quality_threshold_mode', 'AI动态', '用户质差模型', '固定阈值或AI动态阈值'],
+        ['user_quality_threshold_detail', '{"rx_power":"<-25dBm","packet_loss":">5%"}', '用户质差模型', '固定阈值详情'],
+        ['biz_quality_time_grain', '小时', '业务应用质差模型', '业务质差识别时间粒度'],
+        ['biz_quality_app_type', '视频', '业务应用质差模型', '视频/游戏/在线办公/网站下载'],
+        ['biz_quality_type', '视频卡顿', '业务应用质差模型', '业务应用质差类型'],
+        ['biz_quality_tag', '视频卡顿时长占比', '业务应用质差模型', '业务质差标签'],
+        ['biz_quality_severity', '中', '业务应用质差模型', '业务质差严重程度'],
+        ['biz_quality_threshold_mode', '固定阈值', '业务应用质差模型', '固定阈值或AI动态阈值'],
+        ['biz_quality_threshold_detail', '{"download_speed":"<20Mbps","jitter":">30ms"}', '业务应用质差模型', '固定阈值详情']
+    );
     cfgs.forEach(c => {
         const exists = queryOne('SELECT id FROM system_configs WHERE config_key=?', [c[0]]);
         if (!exists) execute(`INSERT INTO system_configs(config_key,config_value,category,description,config_type,created_at,updated_at)
@@ -307,6 +377,8 @@ async function startServer() {
     await initSchema();
     ensureAnalysisDefaults();
     ensurePingSchema();
+    ensureSystemUserSchema();
+    normalizeSystemUserMockData();
     normalizeExistingRemoteIds();
     ensurePlatformCompletionDefaults();
     // Check if data exists
@@ -1181,18 +1253,29 @@ async function startServer() {
 
     // ====== 系统管理 ======
     app.get('/api/system-users', (req, res) => {
-        res.json(ok(queryAll(`SELECT u.id,u.username,u.real_name,u.role,u.department,u.phone,u.email,u.status,u.last_login_at,u.login_count,c.city_name
+        res.json(ok(queryAll(`SELECT u.id,u.username,u.real_name,u.role,u.department,u.phone,u.email,u.status,u.locked,u.menu_permissions,u.operation_permissions,u.data_scope,u.last_login_at,u.login_count,c.city_name
             FROM system_users u LEFT JOIN cities c ON u.city_id=c.id ORDER BY u.id`)));
     });
     app.post('/api/system-users', (req, res) => {
         const b = req.body || {};
         if (!b.username) return res.json(err('username is required'));
         const city = b.city_name ? queryOne('SELECT id FROM cities WHERE city_name=?', [b.city_name]) : null;
-        execute(`INSERT OR REPLACE INTO system_users
-            (username,password_hash,real_name,role,city_id,department,phone,email,status,created_at,updated_at)
-            VALUES(?,?,?,?,?,?,?,?,?,COALESCE((SELECT created_at FROM system_users WHERE username=?),datetime('now','localtime')),datetime('now','localtime'))`,
-            [b.username, b.password_hash || 'mock-hash', b.real_name || b.username, b.role || 'viewer', b.city_id || (city ? city.id : null),
-             b.department || '', b.phone || '', b.email || '', b.status === 0 ? 0 : 1, b.username]);
+        const realName = isBadMockText(b.real_name) ? systemRealNameBySeed(Date.now()) : b.real_name;
+        const department = isBadMockText(b.department) ? '\u7f51\u7edc\u8fd0\u7ef4\u90e8' : b.department;
+        const existingUser = queryOne('SELECT id,status,locked,password_hash FROM system_users WHERE username=?', [b.username]);
+        if (existingUser) {
+            execute(`UPDATE system_users SET real_name=?,role=?,city_id=?,department=?,phone=?,email=?,
+                menu_permissions=?,operation_permissions=?,data_scope=?,updated_at=datetime('now','localtime') WHERE username=?`,
+                [realName, b.role || 'viewer', b.city_id || (city ? city.id : null), department, b.phone || '', b.email || '',
+                 b.menu_permissions || '全景视图,质量画像,远程操作', b.operation_permissions || 'view,execute,export', b.data_scope || 'city', b.username]);
+        } else {
+            execute(`INSERT INTO system_users
+                (username,password_hash,real_name,role,city_id,department,phone,email,status,locked,menu_permissions,operation_permissions,data_scope,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))`,
+                [b.username, b.password_hash || 'mock-hash', realName, b.role || 'viewer', b.city_id || (city ? city.id : null),
+                 department, b.phone || '', b.email || '', b.status === 0 ? 0 : 1, b.locked ? 1 : 0,
+                 b.menu_permissions || '全景视图,质量画像,远程操作', b.operation_permissions || 'view,execute,export', b.data_scope || 'city']);
+        }
         audit('用户管理', 'system_user', b.username, '保存用户', b, 'admin', '成功');
         saveDb();
         res.json(ok(queryOne('SELECT * FROM system_users WHERE username=?', [b.username])));
@@ -1203,6 +1286,20 @@ async function startServer() {
         audit('用户管理', 'system_user', req.params.id, '更新状态', { status }, 'admin', '成功');
         saveDb();
         res.json(ok({ id: req.params.id, status }));
+    });
+    app.put('/api/system-users/:id/lock', (req, res) => {
+        const locked = req.body && req.body.locked ? 1 : 0;
+        execute("UPDATE system_users SET locked=?, updated_at=datetime('now','localtime') WHERE id=?", [locked, req.params.id]);
+        audit('用户管理', 'system_user', req.params.id, locked ? '锁定用户' : '解锁用户', { locked }, 'admin', '成功');
+        saveDb();
+        res.json(ok({ id: req.params.id, locked }));
+    });
+    app.put('/api/system-users/:id/reset-password', (req, res) => {
+        const defaultPassword = 'Abc@123456';
+        execute("UPDATE system_users SET password_hash=?, password_reset_at=datetime('now','localtime'), updated_at=datetime('now','localtime') WHERE id=?", ['mock-reset-' + Date.now(), req.params.id]);
+        audit('用户管理', 'system_user', req.params.id, '密码重置', { defaultPassword }, 'admin', '成功');
+        saveDb();
+        res.json(ok({ id: req.params.id, defaultPassword, resetAt: new Date().toISOString().slice(0, 19).replace('T', ' ') }));
     });
     app.get('/api/logs', (req, res) => {
         const { module, username, page, pageSize } = req.query;

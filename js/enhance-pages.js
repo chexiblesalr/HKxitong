@@ -1499,6 +1499,343 @@ EnhancePages.exportXdr = function() {
     };
 })();
 
+(function() {
+    if (!window.Pages) return;
+    const safe = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const optionHtml = (arr, val) => arr.map(x => `<option value="${safe(x)}"${x === val ? ' selected' : ''}>${safe(x)}</option>`).join('');
+    const userTagMap = {'线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],'设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],'业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],'配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']};
+    const bizMap = {'视频':{'视频高时延':['TCP建连时延','HTTP平均响应时延'],'视频卡顿':['HTTP响应成功率','视频卡顿时长占比','抖动','丢包率','下载速率']},'游戏':{'游戏高时延':['TCP建连时延','HTTP平均响应时延'],'游戏卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'在线办公':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'网站/下载':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','下载速率','抖动','丢包率','下载成功率']}};
+
+    Pages.renderConfigCenter = async function(container) {
+        const cfgs = window.API && API.configs ? await API.configs({ category: this._cfgCategory || '' }) : [];
+        const cats = ['全部分类','用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'];
+        const rows = (cfgs || []).map(c => `<tr><td>${safe(c.category)}</td><td>${safe(c.config_key)}</td><td style="max-width:320px;word-break:break-all;">${safe(c.config_value)}</td><td>${safe(c.description || '')}</td><td>${safe(c.updated_by || '-')}</td><td>${safe(c.updated_at || '-')}</td><td><button class="btn" onclick="Pages.showBackendConfig('${safe(c.config_key)}')">编辑</button><button class="btn" onclick="Pages.deleteBackendConfig('${safe(c.config_key)}')">删除</button></td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无配置</td></tr>';
+        container.innerHTML = `<div class="page-content"><div class="system-panel"><div class="system-panel-header" style="align-items:flex-start;gap:12px;flex-wrap:wrap;"><span class="system-panel-title">配置中心</span><div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="form-select" style="width:180px;" onchange="Pages._cfgCategory=this.value==='全部分类'?'':this.value;Pages.renderConfigCenter(document.getElementById('page-config-center'))">${optionHtml(cats, this._cfgCategory || '全部分类')}</select><button class="btn btn-primary" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>分类</th><th>配置键</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+    };
+    Pages.showBackendConfig = function(key) {
+        Modal.show(key ? '编辑配置' : '新增配置', `<div class="form-group"><label class="form-label">分类</label><select class="form-select" id="beCfgCat" onchange="Pages.renderConfigDynamicFields(this.value)">${optionHtml(['用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'], '用户质差模型')}</select></div><div id="cfgDynamicFields"></div><div class="form-group"><label class="form-label">配置键</label><input class="form-input" id="beCfgKey" value="${safe(key || '')}" placeholder="可自动生成，也可手填"></div><div class="form-group"><label class="form-label">配置值</label><textarea class="form-input" id="beCfgVal" rows="3"></textarea></div><div class="form-group"><label class="form-label">说明</label><input class="form-input" id="beCfgDesc"></div>`, '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendConfig()">保存</button>', '700px');
+        Pages.renderConfigDynamicFields('用户质差模型');
+    };
+    Pages.renderConfigDynamicFields = function(category) {
+        const el = document.getElementById('cfgDynamicFields'); if (!el) return;
+        if (category === '用户质差模型') el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">${optionHtml(['小时','天'],'小时')}</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgQualityType" onchange="Pages.syncUserQualityTags()">${optionHtml(Object.keys(userTagMap),'线路质差')}</select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode">${optionHtml(['固定阈值','AI动态'],'AI动态')}</select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 rx_power<-25dBm; packet_loss>5%"></div></div>`;
+        else if (category === '业务应用质差模型') el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">${optionHtml(['小时','天'],'小时')}</select></div><div class="form-group"><label class="form-label">业务类型</label><select class="form-select" id="cfgBizType" onchange="Pages.syncBizQualityTypes()">${optionHtml(Object.keys(bizMap),'视频')}</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgBizQualityType" onchange="Pages.syncBizQualityTags()"></select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">严重程度</label><select class="form-select" id="cfgSeverity">${optionHtml(['高','中','低'],'中')}</select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode">${optionHtml(['固定阈值','AI动态'],'固定阈值')}</select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 jitter>30ms; download_speed<20Mbps"></div></div>`;
+        else el.innerHTML = '';
+        if (category === '用户质差模型') this.syncUserQualityTags();
+        if (category === '业务应用质差模型') this.syncBizQualityTypes();
+    };
+    Pages.syncUserQualityTags = () => { const type = cfgQualityType.value; cfgTag.innerHTML = optionHtml(userTagMap[type] || [], ''); };
+    Pages.syncBizQualityTypes = () => { const b = cfgBizType.value; const types = Object.keys(bizMap[b] || {}); cfgBizQualityType.innerHTML = optionHtml(types, types[0]); Pages.syncBizQualityTags(); };
+    Pages.syncBizQualityTags = () => { const b = cfgBizType.value, t = cfgBizQualityType.value; cfgTag.innerHTML = optionHtml((bizMap[b] && bizMap[b][t]) || [], ''); };
+    Pages.saveBackendConfig = async function() {
+        const cat = beCfgCat.value;
+        const key = beCfgKey.value.trim() || (cat === '用户质差模型' ? 'user_quality_custom_' : 'biz_quality_custom_') + Date.now();
+        const data = { time_grain: (window.cfgTime || {}).value || '', quality_type: (window.cfgQualityType || window.cfgBizQualityType || {}).value || '', app_type: (window.cfgBizType || {}).value || '', quality_tag: (window.cfgTag || {}).value || '', severity: (window.cfgSeverity || {}).value || '', threshold_mode: (window.cfgThresholdMode || {}).value || '', threshold_detail: (window.cfgThresholdDetail || {}).value || '' };
+        const r = await API.saveConfig({ config_key: key, category: cat, config_value: beCfgVal.value || JSON.stringify(data), description: beCfgDesc.value, updated_by: 'admin' });
+        if (r) { Modal.close(); Modal.toast('配置已保存', 'success'); Pages.renderConfigCenter(document.getElementById('page-config-center')); }
+    };
+
+    Pages._kpiLevel = Pages._kpiLevel || 'province'; Pages._kpiCtx = Pages._kpiCtx || {};
+    const metric = (seed,min,max) => Math.round((min + (Math.abs(Math.sin(seed))*10000%1) * (max-min))*10)/10;
+    Pages._buildKpiRows = function() {
+        const cityNames = (window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边'];
+        if (this._kpiLevel === 'province') return cityNames.map((c,i) => ({ time:'2026-05-17', region:c, overall:metric(i,86,96), business:metric(i+10,84,95), connection:metric(i+20,85,96) }));
+        if (this._kpiLevel === 'city') return ['朝阳区','南关区','宽城区','二道区','绿园区'].map((d,i) => ({ time:'2026-05-17', region:this._kpiCtx.city, district:d, overall:metric(i+30,86,96), business:metric(i+40,84,95), connection:metric(i+50,85,96) }));
+        if (this._kpiLevel === 'district') return [1,2,3,4,5].map(x => ({ time:'2026-05-17', region:this._kpiCtx.city, district:this._kpiCtx.district, bras:`JL-${this._kpiCtx.city}-${this._kpiCtx.district}-BRAS-00${x}-HW`, overall:metric(x+60,86,96), business:metric(x+70,84,95), connection:metric(x+80,85,96) }));
+        return [1,2,3,4,5].map(x => ({ time:'2026-05-17', region:this._kpiCtx.city, district:this._kpiCtx.district, bras:this._kpiCtx.bras, olt:`${this._kpiCtx.bras}-OLT-0${x}-ZTE-C600`, overall:metric(x+90,86,96), business:metric(x+100,84,95), connection:metric(x+110,85,96) }));
+    };
+    Pages.renderKpiView = function(container) {
+        const rows = this._buildKpiRows();
+        let bc = `<span style="color:#2b7de9;cursor:pointer;" onclick="Pages._kpiLevel='province';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById('page-kpi-view'))">省</span>`;
+        if (this._kpiCtx.city) bc += ` > <span style="color:#2b7de9;cursor:pointer;">${safe(this._kpiCtx.city)}</span>`;
+        if (this._kpiCtx.district) bc += ` > <span>${safe(this._kpiCtx.district)}</span>`;
+        const body = rows.map((r,i) => `<tr><td>${r.time}</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.kpiDrill(${i})">${safe(r.region)}</a></td><td>${safe(r.district || '-')}</td><td>${safe(r.bras || '-')}</td><td>${safe(r.olt || '-')}</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showKpiDetail('${safe(r.region)}')">${r.overall}</a></td><td>${r.business}</td><td>${r.connection}</td><td><button class="btn" onclick="Pages.showKpiTrend('${safe(r.region)}')">趋势</button></td></tr>`).join('');
+        container.innerHTML = `<div class="page-content"><div class="kpi-grid">${App.kpiCardHtml('用户中断平均时长',1.8,'h',-3.1)}${App.kpiCardHtml('家庭网络优良率',96.2,'%',1.2)}${App.kpiCardHtml('TOP10视频平均下载速率',42.6,'Mbps',2.3)}${App.kpiCardHtml('TOP10游戏平均时延',38.4,'ms',-0.8)}</div><div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;border-bottom:1px solid #e0e4e8;">KPI详情 ${bc}</div><table class="data-table"><thead><tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>总体CEI分数</th><th>业务CEI分数</th><th>通断CEI分数</th><th>详情</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+    };
+    Pages.kpiDrill = function(i) { const r = this._buildKpiRows()[i]; if (!r) return; if (this._kpiLevel === 'province') { this._kpiLevel='city'; this._kpiCtx={city:r.region}; } else if (this._kpiLevel === 'city') { this._kpiLevel='district'; this._kpiCtx.district=r.district; } else if (this._kpiLevel === 'district') { this._kpiLevel='bras'; this._kpiCtx.bras=r.bras; } this.renderKpiView(document.getElementById('page-kpi-view')); };
+    Pages.showKpiDetail = region => Modal.show('KPI下钻详情 - ' + region, '<div style="line-height:2;">质差用户清单与质差服务器IP清单已按当前区域模拟生成，支持后续接真实DPI/CEI接口。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px');
+    Pages.showKpiTrend = region => Modal.show('趋势详情 - ' + region, '<div style="line-height:2;">近24小时总体CEI、业务CEI、通断CEI趋势已按小时粒度模拟生成。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px');
+})();
+
+// Final override loaded after all earlier enhancement blocks.
+(function() {
+    if (!window.Pages) return;
+    const safe = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const optionHtml = (arr, val) => arr.map(x => `<option value="${safe(x)}"${x === val ? ' selected' : ''}>${safe(x)}</option>`).join('');
+    const cityList = () => ['全部'].concat((window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边']);
+    const deptList = ['网络运维部','装维中心','信息技术部','市场部','客服中心','网络优化中心'];
+
+    Pages.renderUserManagement = async function(container) {
+        const users = (window.API && API.systemUsers ? await API.systemUsers() : []) || [];
+        const rows = users.map(u => {
+            const locked = Number(u.locked || 0) === 1;
+            return `<tr><td>${u.id}</td><td>${safe(u.username)}</td><td>${safe(u.real_name)}</td><td>${safe(u.role)}</td><td>${safe(u.city_name || '全部')}</td><td>${safe(u.department || '-')}</td><td>${Pages.statusHtml(u.status ? '启用' : '禁用')} ${locked ? '<span class="status-warning">锁定</span>' : ''}</td><td>${safe(u.data_scope || 'city')}</td><td>${safe(u.last_login_at || '-')}</td><td style="white-space:nowrap;"><button class="btn" onclick="Pages.showBackendUserModal(${u.id})">编辑</button><button class="btn" onclick="Pages.toggleBackendUser(${u.id},${u.status ? 0 : 1})">${u.status ? '禁用' : '启用'}</button><button class="btn" onclick="Pages.resetBackendUserPwd(${u.id})">密码重置</button><button class="btn" onclick="Pages.lockBackendUser(${u.id},${locked ? 0 : 1})">${locked ? '解锁' : '锁定'}</button></td></tr>`;
+        }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无用户</td></tr>';
+        container.innerHTML = `<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">用户管理</span><div><button class="btn btn-primary" onclick="Pages.showBackendUserModal()">+ 新增用户</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>地市</th><th>部门</th><th>状态</th><th>数据范围</th><th>最后登录</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+    };
+    Pages.showBackendUserModal = async function(id) {
+        const users = (await API.systemUsers()) || [];
+        const u = id ? users.find(x => x.id === id) || {} : {};
+        Modal.show(id ? '编辑用户' : '新增用户',
+            `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="beUserName" value="${safe(u.username || '')}"></div>
+            <div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="beRealName" value="${safe(u.real_name || '')}"></div>
+            <div class="form-group"><label class="form-label">角色</label><select class="form-select" id="beRole">${optionHtml(['admin','operator','dispatcher','viewer'], u.role || 'operator')}</select></div>
+            <div class="form-group"><label class="form-label">地市</label><select class="form-select" id="beCity">${optionHtml(cityList(), u.city_name || '全部')}</select></div>
+            <div class="form-group"><label class="form-label">部门</label><select class="form-select" id="beDept">${optionHtml(deptList, u.department || '网络运维部')}</select></div>
+            <div class="form-group"><label class="form-label">电话</label><input class="form-input" id="bePhone" value="${safe(u.phone || '')}"></div>
+            <div class="form-group"><label class="form-label">系统角色访问权限</label><select class="form-select" id="beMenuPerm">${optionHtml(['全景视图,质量画像,远程操作','全模块','只读查看'], u.menu_permissions || '全景视图,质量画像,远程操作')}</select></div>
+            <div class="form-group"><label class="form-label">数据操作权限</label><select class="form-select" id="beOpsPerm">${optionHtml(['view,execute,export','view,create,edit,delete,export','view,export'], u.operation_permissions || 'view,execute,export')}</select></div>
+            <div class="form-group"><label class="form-label">数据范围权限</label><select class="form-select" id="beScope">${optionHtml(['province','city','grid','self'], u.data_scope || 'city')}</select></div>
+            </div>`,
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendUser()">保存</button>', '680px');
+    };
+    Pages.saveBackendUser = async function() {
+        const p = { username: beUserName.value.trim(), real_name: beRealName.value.trim(), role: beRole.value, city_name: beCity.value, department: beDept.value, phone: bePhone.value.trim(), menu_permissions: beMenuPerm.value, operation_permissions: beOpsPerm.value, data_scope: beScope.value };
+        if (!p.username) return Modal.toast('用户名必填', 'warning');
+        const r = await API.saveSystemUser(p);
+        if (r) { Modal.close(); Modal.toast('用户已保存', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+    };
+    Pages.resetBackendUserPwd = id => Modal.confirm('密码重置', '确定要重置该用户密码吗？', async () => {
+        const r = await API.resetSystemUserPassword(id);
+        if (r) Modal.show('重置密码', `<div style="line-height:2;">默认密码已生成：<code style="padding:3px 8px;background:#f0f5ff;color:#2b7de9;">${safe(r.defaultPassword)}</code><br>请通知用户首次登录后修改密码。</div>`, '<button class="btn btn-primary" onclick="Modal.close();Pages.renderUserManagement(document.getElementById(\'page-user-management\'))">确定</button>', '420px');
+    });
+    Pages.lockBackendUser = (id, locked) => Modal.confirm(locked ? '锁定用户' : '解锁用户', `确定要${locked ? '锁定' : '解锁'}该用户吗？`, async () => {
+        const r = await API.lockSystemUser(id, { locked });
+        if (r) { Modal.toast(locked ? '用户已锁定' : '用户已解锁', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+    });
+
+    Pages._logTab = Pages._logTab || 'operation';
+    Pages.renderLogManagement = async function(container, page) {
+        page = page || 1;
+        const tabs = `<div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn ${this._logTab === 'operation' ? 'btn-primary' : ''}" onclick="Pages._logTab='operation';Pages.renderLogManagement(document.getElementById('page-log-management'),1)">操作日志</button><button class="btn ${this._logTab === 'runtime' ? 'btn-primary' : ''}" onclick="Pages._logTab='runtime';Pages.renderLogManagement(document.getElementById('page-log-management'),1)">系统运行日志</button></div>`;
+        if (this._logTab === 'runtime') {
+            const runtime = ['DPI文件接口同步正常','AAA认证接口心跳正常','RMS远程操作队列正常','OMCI光功率读取接口正常','网管告警接口同步正常','SFTP Result目录扫描完成'].map((t,i) => `<tr><td>2026-05-17 ${String(11-i).padStart(2,'0')}:0${i}:22</td><td>${safe(t.split('接口')[0])}</td><td>${safe(t)}</td><td><span class="status-normal">正常</span></td><td>${18+i*7}ms</td></tr>`).join('');
+            container.innerHTML = `<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span></div><div class="system-panel-body">${tabs}<table class="data-table"><thead><tr><th>时间</th><th>系统/接口</th><th>运行事件</th><th>状态</th><th>耗时</th></tr></thead><tbody>${runtime}</tbody></table></div></div></div>`;
+            return;
+        }
+        const resp = window.API && API.logs ? await API.logs({ page, pageSize: 12, username: this._logKeyword || '' }) : { data: [] };
+        const rows = ((resp && resp.data) || []).map(l => `<tr><td>${safe(l.created_at || l.time || '-')}</td><td>${safe(l.username || l.operator || '-')}</td><td>${safe(l.ip || '-')}</td><td>${safe(l.module || '-')}</td><td>${safe(l.action || '-')}</td><td>${safe(l.content || '-')}</td><td>${Pages.statusHtml(l.result || '成功')}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无操作日志</td></tr>';
+        container.innerHTML = `<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span><div style="display:flex;gap:8px;"><input class="form-input" id="logSearchInput" placeholder="搜索操作人" value="${safe(this._logKeyword || '')}"><button class="btn" onclick="Pages._logKeyword=document.getElementById('logSearchInput').value.trim();Pages.renderLogManagement(document.getElementById('page-log-management'),1)">搜索</button></div></div><div class="system-panel-body">${tabs}<table class="data-table"><thead><tr><th>时间</th><th>操作人</th><th>IP地址</th><th>模块</th><th>操作类型</th><th>操作内容</th><th>结果</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
+    };
+})();
+
+(function() {
+    if (!window.Pages) return;
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function n(seed, min, max) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Math.round((min + x * (max - min)) * 10) / 10; }
+    Pages._kpiLevel = Pages._kpiLevel || 'province';
+    Pages._kpiCtx = Pages._kpiCtx || {};
+
+    Pages.renderKpiView = async function(container) {
+        var summary = { interrupt: 1.8, homeGood: 96.2, videoSpeed: 42.6, gameDelay: 38.4 };
+        var rows = this._buildKpiRows();
+        var bc = '<span style="color:#2b7de9;cursor:pointer;" onclick="Pages._kpiLevel=\'province\';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">省</span>';
+        if (this._kpiCtx.city) bc += ' > <span style="color:#2b7de9;cursor:pointer;" onclick="Pages._kpiLevel=\'city\';Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + esc(this._kpiCtx.city) + '</span>';
+        if (this._kpiCtx.district) bc += ' > <span style="color:#2b7de9;cursor:pointer;" onclick="Pages._kpiLevel=\'district\';Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + esc(this._kpiCtx.district) + '</span>';
+        if (this._kpiCtx.bras) bc += ' > <span>' + esc(this._kpiCtx.bras) + '</span>';
+        var tableRows = rows.map(function(r, i) {
+            return '<tr><td>' + esc(r.time) + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.kpiDrill(' + i + ')">' + esc(r.region) + '</a></td><td>' + esc(r.district || '-') + '</td><td>' + esc(r.bras || '-') + '</td><td>' + esc(r.olt || '-') + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showKpiDetail(\'' + esc(r.region) + '\')">' + r.overall + '</a></td><td>' + r.business + '</td><td>' + r.connection + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + esc(r.region) + '\')">趋势</button></td></tr>';
+        }).join('');
+        container.innerHTML =
+            '<div class="page-content">' +
+            '<div class="kpi-grid">' +
+                App.kpiCardHtml('用户中断平均时长', summary.interrupt, 'h', -3.1) +
+                App.kpiCardHtml('家庭网络优良率', summary.homeGood, '%', 1.2) +
+                App.kpiCardHtml('TOP10视频平均下载速率', summary.videoSpeed, 'Mbps', 2.3) +
+                App.kpiCardHtml('TOP10游戏平均时延', summary.gameDelay, 'ms', -0.8) +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+                '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">KPI趋势</span></div><div class="chart-container" id="kpiDocTrend"></div></div>' +
+                '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">指标评分对应关系</span></div><div class="chart-container" id="kpiDocRadar"></div></div>' +
+            '</div>' +
+            '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;border-bottom:1px solid #e0e4e8;">KPI详情 ' + bc + '</div>' +
+            '<table class="data-table"><thead><tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>总体CEI分数</th><th>业务CEI分数</th><th>通断CEI分数</th><th>详情</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
+        this.initDocKpiCharts();
+    };
+
+    Pages._buildKpiRows = function() {
+        var cities = (window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边'];
+        if (this._kpiLevel === 'province') return cities.map(function(c, i) { return { time:'2026-05-17', region:c, overall:n(i,86,96), business:n(i+10,84,95), connection:n(i+20,85,96) }; });
+        if (this._kpiLevel === 'city') return ['朝阳区','南关区','宽城区','二道区','绿园区'].map(function(d, i) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:d, overall:n(i+30,86,96), business:n(i+40,84,95), connection:n(i+50,85,96) }; });
+        if (this._kpiLevel === 'district') return [1,2,3,4,5].map(function(x) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:Pages._kpiCtx.district, bras:'JL-' + Pages._kpiCtx.city + '-' + Pages._kpiCtx.district + '-BRAS-00' + x + '-HW', overall:n(x+60,86,96), business:n(x+70,84,95), connection:n(x+80,85,96) }; });
+        return [1,2,3,4,5].map(function(x) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:Pages._kpiCtx.district, bras:Pages._kpiCtx.bras, olt:Pages._kpiCtx.bras + '-OLT-0' + x + '-ZTE-C600', overall:n(x+90,86,96), business:n(x+100,84,95), connection:n(x+110,85,96) }; });
+    };
+    Pages.kpiDrill = function(index) {
+        var r = this._buildKpiRows()[index]; if (!r) return;
+        if (this._kpiLevel === 'province') { this._kpiLevel = 'city'; this._kpiCtx = { city: r.region }; }
+        else if (this._kpiLevel === 'city') { this._kpiLevel = 'district'; this._kpiCtx.district = r.district; }
+        else if (this._kpiLevel === 'district') { this._kpiLevel = 'bras'; this._kpiCtx.bras = r.bras; }
+        this.renderKpiView(document.getElementById('page-kpi-view'));
+    };
+    Pages.showKpiDetail = function(region) {
+        var users = [1,2,3,4,5].map(function(i) { return '<tr><td>211' + String(19410000 + i).padStart(8,'0') + '</td><td>' + esc(region) + '</td><td>线路质差</td><td>ONU接收光功率弱光</td><td>' + n(i,62,79) + '</td></tr>'; }).join('');
+        var ips = [1,2,3,4,5].map(function(i) { return '<tr><td>10.24.' + i + '.' + (20+i) + '</td><td>视频</td><td>' + n(i,42,90) + 'ms</td><td>' + n(i,1,8) + '%</td><td>' + Math.round(n(i,80,300)) + '</td></tr>'; }).join('');
+        Modal.show('KPI下钻详情 - ' + region, '<div style="display:flex;gap:8px;margin-bottom:8px;"><button class="btn btn-primary" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'block\';document.getElementById(\'kpiIpTab\').style.display=\'none\'">质差用户</button><button class="btn" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'none\';document.getElementById(\'kpiIpTab\').style.display=\'block\'">质差服务器IP</button></div><div id="kpiUsersTab"><table class="data-table"><thead><tr><th>用户账号</th><th>区域</th><th>质差类型</th><th>质差标签</th><th>CEI</th></tr></thead><tbody>' + users + '</tbody></table></div><div id="kpiIpTab" style="display:none;"><table class="data-table"><thead><tr><th>服务器IP</th><th>业务</th><th>平均时延</th><th>丢包率</th><th>影响用户</th></tr></thead><tbody>' + ips + '</tbody></table></div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '860px');
+    };
+    Pages.showKpiTrend = function(region) { Modal.show('趋势详情 - ' + region, '<div style="line-height:2;">近24小时总体CEI、业务CEI、通断CEI趋势已按小时粒度模拟生成；可结合上方层级继续下钻到 BRAS/OLT。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px'); };
+    Pages.initDocKpiCharts = function() {
+        if (!window.echarts) return;
+        var d1 = document.getElementById('kpiDocTrend'); if (d1) { var c1 = echarts.init(d1); App.chartInstances.kpiDocTrend = c1; c1.setOption({ grid:{top:25,left:35,right:15,bottom:25}, tooltip:{trigger:'axis'}, xAxis:{type:'category',data:['00','04','08','12','16','20']}, yAxis:{type:'value'}, series:[{name:'中断时长',type:'line',data:[2.4,2.1,1.9,1.7,1.8,1.6]},{name:'游戏时延',type:'line',data:[45,42,39,38,37,36]}] }); }
+        var d2 = document.getElementById('kpiDocRadar'); if (d2) { var c2 = echarts.init(d2); App.chartInstances.kpiDocRadar = c2; c2.setOption({ radar:{indicator:[{name:'用户中断',max:100},{name:'网优良率',max:100},{name:'视频下载',max:100},{name:'游戏时延',max:100}]}, series:[{type:'radar',data:[{value:[86,96,92,88],name:'评分'}]}] }); }
+    };
+})();
+
+(function() {
+    if (!window.Pages) return;
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function opt(list, val) { return list.map(function(x) { return '<option value="' + esc(x) + '"' + (x === val ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
+    var userTagMap = {
+        '线路质差': ['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],
+        '设备质差': ['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],
+        '业务质差': ['上网视频卡顿','游戏时延高','下载业务时延高'],
+        '配置质差': ['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']
+    };
+    var bizMap = {
+        '视频': {'视频高时延':['TCP建连时延','HTTP平均响应时延'], '视频卡顿':['HTTP响应成功率','视频卡顿时长占比','抖动','丢包率','下载速率']},
+        '游戏': {'游戏高时延':['TCP建连时延','HTTP平均响应时延'], '游戏卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},
+        '在线办公': {'应用高时延':['TCP建连时延','HTTP平均响应时延'], '应用卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},
+        '网站/下载': {'应用高时延':['TCP建连时延','HTTP平均响应时延'], '应用卡顿':['HTTP响应成功率','下载速率','抖动','丢包率','下载成功率']}
+    };
+
+    Pages.renderConfigCenter = async function(container) {
+        var cfgs = (window.API && API.configs) ? await API.configs({ category: this._cfgCategory || '' }) : [];
+        var cats = ['全部分类','用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'];
+        var rows = (cfgs || []).map(function(c) {
+            return '<tr><td>' + esc(c.category) + '</td><td>' + esc(c.config_key) + '</td><td style="max-width:320px;word-break:break-all;">' + esc(c.config_value) + '</td><td>' + esc(c.description || '') + '</td><td>' + esc(c.updated_by || '-') + '</td><td>' + esc(c.updated_at || '-') + '</td><td><button class="btn" onclick="Pages.showBackendConfig(\'' + esc(c.config_key) + '\')">编辑</button><button class="btn" onclick="Pages.deleteBackendConfig(\'' + esc(c.config_key) + '\')">删除</button></td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无配置</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header" style="align-items:flex-start;gap:12px;flex-wrap:wrap;"><span class="system-panel-title">配置中心</span><div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="form-select" style="width:180px;" onchange="Pages._cfgCategory=this.value===\'全部分类\'?\'\':this.value;Pages.renderConfigCenter(document.getElementById(\'page-config-center\'))">' + opt(cats, this._cfgCategory || '全部分类') + '</select><button class="btn btn-primary" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>分类</th><th>配置键</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+
+    Pages.showBackendConfig = async function(key) {
+        var cfgs = (await API.configs({})) || [];
+        var c = key ? cfgs.find(function(x) { return x.config_key === key; }) : {};
+        var category = c.category || '用户质差模型';
+        Modal.show(key ? '编辑配置' : '新增配置',
+            '<div class="form-group"><label class="form-label">分类</label><select class="form-select" id="beCfgCat" onchange="Pages.renderConfigDynamicFields(this.value)">' + opt(['用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'], category) + '</select></div>' +
+            '<div id="cfgDynamicFields"></div>' +
+            '<div class="form-group"><label class="form-label">配置键</label><input class="form-input" id="beCfgKey" value="' + esc(c.config_key || '') + '" placeholder="可自动生成，也可手填"></div>' +
+            '<div class="form-group"><label class="form-label">配置值</label><textarea class="form-input" id="beCfgVal" rows="3">' + esc(c.config_value || '') + '</textarea></div>' +
+            '<div class="form-group"><label class="form-label">说明</label><input class="form-input" id="beCfgDesc" value="' + esc(c.description || '') + '"></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendConfig()">保存</button>', '700px');
+        Pages.renderConfigDynamicFields(category);
+    };
+
+    Pages.renderConfigDynamicFields = function(category) {
+        var el = document.getElementById('cfgDynamicFields'); if (!el) return;
+        if (category === '用户质差模型') {
+            el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">' + opt(['小时','天'], '小时') + '</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgQualityType" onchange="Pages.syncUserQualityTags()">' + opt(Object.keys(userTagMap), '线路质差') + '</select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode"><option>固定阈值</option><option>AI动态</option></select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 rx_power<-25dBm; packet_loss>5%"></div></div>';
+            this.syncUserQualityTags();
+        } else if (category === '业务应用质差模型') {
+            el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">' + opt(['小时','天'], '小时') + '</select></div><div class="form-group"><label class="form-label">业务类型</label><select class="form-select" id="cfgBizType" onchange="Pages.syncBizQualityTypes()">' + opt(Object.keys(bizMap), '视频') + '</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgBizQualityType" onchange="Pages.syncBizQualityTags()"></select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">严重程度</label><select class="form-select" id="cfgSeverity">' + opt(['高','中','低'], '中') + '</select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode"><option>固定阈值</option><option>AI动态</option></select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 jitter>30ms; download_speed<20Mbps"></div></div>';
+            this.syncBizQualityTypes();
+        } else {
+            el.innerHTML = '';
+        }
+    };
+    Pages.syncUserQualityTags = function() { var type = document.getElementById('cfgQualityType').value; document.getElementById('cfgTag').innerHTML = opt(userTagMap[type] || [], ''); };
+    Pages.syncBizQualityTypes = function() { var b = document.getElementById('cfgBizType').value; var types = Object.keys(bizMap[b] || {}); document.getElementById('cfgBizQualityType').innerHTML = opt(types, types[0]); this.syncBizQualityTags(); };
+    Pages.syncBizQualityTags = function() { var b = document.getElementById('cfgBizType').value, t = document.getElementById('cfgBizQualityType').value; document.getElementById('cfgTag').innerHTML = opt((bizMap[b] && bizMap[b][t]) || [], ''); };
+    Pages.saveBackendConfig = async function() {
+        var cat = document.getElementById('beCfgCat').value;
+        var key = document.getElementById('beCfgKey').value.trim() || (cat === '用户质差模型' ? 'user_quality_custom_' : 'biz_quality_custom_') + Date.now();
+        var value = document.getElementById('beCfgVal').value || JSON.stringify({
+            time_grain: (document.getElementById('cfgTime') || {}).value || '',
+            quality_type: (document.getElementById('cfgQualityType') || document.getElementById('cfgBizQualityType') || {}).value || '',
+            app_type: (document.getElementById('cfgBizType') || {}).value || '',
+            quality_tag: (document.getElementById('cfgTag') || {}).value || '',
+            severity: (document.getElementById('cfgSeverity') || {}).value || '',
+            threshold_mode: (document.getElementById('cfgThresholdMode') || {}).value || '',
+            threshold_detail: (document.getElementById('cfgThresholdDetail') || {}).value || ''
+        });
+        var r = await API.saveConfig({ config_key: key, category: cat, config_value: value, description: document.getElementById('beCfgDesc').value, updated_by: 'admin' });
+        if (r) { Modal.close(); Modal.toast('配置已保存', 'success'); Pages.renderConfigCenter(document.getElementById('page-config-center')); }
+    };
+})();
+
+// ============ Document change set 4/6/7/8: logs, configs, users, GIS/KPI polish ============
+(function() {
+    if (!window.Pages) return;
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function opt(list, val) { return list.map(function(x) { return '<option value="' + esc(x) + '"' + (x === val ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
+    function departments() { return ['网络运维部','装维中心','信息技术部','市场部','客服中心','网络优化中心']; }
+    function cities() { return ['全部'].concat((window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边']); }
+
+    Pages.renderUserManagement = async function(container) {
+        var users = (window.API && API.systemUsers) ? await API.systemUsers() : [];
+        var rows = (users || []).map(function(u) {
+            var locked = Number(u.locked || 0) === 1;
+            return '<tr><td>' + esc(u.id) + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.real_name) + '</td><td>' + esc(u.role) + '</td><td>' + esc(u.city_name || '全部') + '</td><td>' + esc(u.department || '-') + '</td><td>' + Pages.statusHtml(u.status ? '启用' : '禁用') + (locked ? ' <span class="status-warning">锁定</span>' : '') + '</td><td>' + esc(u.data_scope || 'city') + '</td><td>' + esc(u.last_login_at || '-') + '</td><td style="white-space:nowrap;"><button class="btn" onclick="Pages.showBackendUserModal(' + u.id + ')">编辑</button><button class="btn" onclick="Pages.toggleBackendUser(' + u.id + ',' + (u.status ? 0 : 1) + ')">' + (u.status ? '禁用' : '启用') + '</button><button class="btn" onclick="Pages.resetBackendUserPwd(' + u.id + ')">密码重置</button><button class="btn" onclick="Pages.lockBackendUser(' + u.id + ',' + (locked ? 0 : 1) + ')">' + (locked ? '解锁' : '锁定') + '</button></td></tr>';
+        }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无用户</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">用户管理</span><div><button class="btn btn-primary" onclick="Pages.showBackendUserModal()">+ 新增用户</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>地市</th><th>部门</th><th>状态</th><th>数据范围</th><th>最后登录</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+
+    Pages.showBackendUserModal = async function(id) {
+        var users = (await API.systemUsers()) || [];
+        var u = id ? users.find(function(x) { return x.id === id; }) : {};
+        Modal.show(id ? '编辑用户' : '新增用户',
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+            '<div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="beUserName" value="' + esc(u.username || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="beRealName" value="' + esc(u.real_name || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">角色</label><select class="form-select" id="beRole">' + opt(['admin','operator','dispatcher','viewer'], u.role || 'operator') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="beCity">' + opt(cities(), u.city_name || '全部') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">部门</label><select class="form-select" id="beDept">' + opt(departments(), u.department || '网络运维部') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">电话</label><input class="form-input" id="bePhone" value="' + esc(u.phone || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">系统角色访问权限</label><select class="form-select" id="beMenuPerm"><option>全景视图,质量画像,远程操作</option><option>全模块</option><option>只读查看</option></select></div>' +
+            '<div class="form-group"><label class="form-label">数据操作权限</label><select class="form-select" id="beOpsPerm"><option>view,execute,export</option><option>view,create,edit,delete,export</option><option>view,export</option></select></div>' +
+            '<div class="form-group"><label class="form-label">数据范围权限</label><select class="form-select" id="beScope">' + opt(['province','city','grid','self'], u.data_scope || 'city') + '</select></div>' +
+            '</div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendUser()">保存</button>', '680px');
+    };
+
+    Pages.saveBackendUser = async function() {
+        var p = {
+            username: document.getElementById('beUserName').value.trim(),
+            real_name: document.getElementById('beRealName').value.trim(),
+            role: document.getElementById('beRole').value,
+            city_name: document.getElementById('beCity').value,
+            department: document.getElementById('beDept').value,
+            phone: document.getElementById('bePhone').value.trim(),
+            menu_permissions: document.getElementById('beMenuPerm').value,
+            operation_permissions: document.getElementById('beOpsPerm').value,
+            data_scope: document.getElementById('beScope').value
+        };
+        if (!p.username) return Modal.toast('用户名必填', 'warning');
+        var r = await API.saveSystemUser(p);
+        if (r) { Modal.close(); Modal.toast('用户已保存', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+    };
+    Pages.resetBackendUserPwd = function(id) {
+        Modal.confirm('密码重置', '确定要重置该用户密码吗？', async function() {
+            var r = await API.resetSystemUserPassword(id);
+            if (r) Modal.show('重置密码', '<div style="line-height:2;">默认密码已生成：<code style="padding:3px 8px;background:#f0f5ff;color:#2b7de9;">' + esc(r.defaultPassword) + '</code><br>请通知用户首次登录后修改密码。</div>', '<button class="btn btn-primary" onclick="Modal.close();Pages.renderUserManagement(document.getElementById(\'page-user-management\'))">确定</button>', '420px');
+        });
+    };
+    Pages.lockBackendUser = function(id, locked) {
+        Modal.confirm(locked ? '锁定用户' : '解锁用户', '确定要' + (locked ? '锁定' : '解锁') + '该用户吗？', async function() {
+            var r = await API.lockSystemUser(id, { locked: locked });
+            if (r) { Modal.toast(locked ? '用户已锁定' : '用户已解锁', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+        });
+    };
+
+    Pages._logTab = Pages._logTab || 'operation';
+    Pages.renderLogManagement = async function(container, page) {
+        page = page || 1;
+        var tabs = '<div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn ' + (this._logTab === 'operation' ? 'btn-primary' : '') + '" onclick="Pages._logTab=\'operation\';Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">操作日志</button><button class="btn ' + (this._logTab === 'runtime' ? 'btn-primary' : '') + '" onclick="Pages._logTab=\'runtime\';Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">系统运行日志</button></div>';
+        if (this._logTab === 'runtime') {
+            var runtime = ['DPI文件接口同步正常','AAA认证接口心跳正常','RMS远程操作队列正常','OMCI光功率读取接口正常','网管告警接口同步正常','SFTP Result目录扫描完成'].map(function(t, i) {
+                return '<tr><td>2026-05-17 ' + String(11 - i).padStart(2,'0') + ':0' + i + ':22</td><td>' + esc(t.split('接口')[0]) + '</td><td>' + esc(t) + '</td><td><span class="status-normal">正常</span></td><td>' + (18 + i * 7) + 'ms</td></tr>';
+            }).join('');
+            container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span></div><div class="system-panel-body">' + tabs + '<table class="data-table"><thead><tr><th>时间</th><th>系统/接口</th><th>运行事件</th><th>状态</th><th>耗时</th></tr></thead><tbody>' + runtime + '</tbody></table></div></div></div>';
+            return;
+        }
+        var resp = (window.API && API.logs) ? await API.logs({ page: page, pageSize: 12, module: this._logModule || '', username: this._logKeyword || '' }) : null;
+        var rows = ((resp && resp.data) || []).map(function(l) {
+            return '<tr><td>' + esc(l.created_at || l.time || '-') + '</td><td>' + esc(l.username || l.operator || '-') + '</td><td>' + esc(l.ip || '-') + '</td><td>' + esc(l.module || '-') + '</td><td>' + esc(l.action || '-') + '</td><td>' + esc(l.content || '-') + '</td><td>' + Pages.statusHtml(l.result || '成功') + '</td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无操作日志</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span><div style="display:flex;gap:8px;"><input class="form-input" id="logSearchInput" placeholder="搜索操作人" value="' + esc(this._logKeyword || '') + '"><button class="btn" onclick="Pages._logKeyword=document.getElementById(\'logSearchInput\').value.trim();Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">搜索</button></div></div><div class="system-panel-body">' + tabs + '<table class="data-table"><thead><tr><th>时间</th><th>操作人</th><th>IP地址</th><th>模块</th><th>操作类型</th><th>操作内容</th><th>结果</th></tr></thead><tbody>' + rows + '</tbody></table>' + (Pages.paginationHtml ? Pages.paginationHtml(resp && resp.pagination || {}, 'Pages.renderLogManagement.bind(Pages,document.getElementById("page-log-management"))') : '') + '</div></div></div>';
+    };
+})();
+
 // ============ API-backed CEI boundary query and correction loop ============
 (function() {
     if (!window.Pages || !window.API) return;
@@ -2033,4 +2370,127 @@ EnhancePages.exportXdr = function() {
             '<table class="data-table"><thead><tr><th>时间</th><th>模块</th><th>对象类型</th><th>对象ID</th><th>动作</th><th>操作人</th><th>结果</th></tr></thead><tbody>' + rows + '</tbody></table>' + pager(resp.pagination, 'EnhancePages.renderAuditPage'));
     };
     EnhancePages.renderAuditPage = function(page) { this.renderAuditCenter(document.getElementById('page-audit-center'), page); };
+})();
+
+// Ultimate document-change overrides. Keep this block last so older enhancement
+// blocks cannot overwrite the Word-requested behavior.
+(function() {
+    if (!window.Pages) return;
+    var html = function(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+    var opts = function(list, val) { return list.map(function(x) { return '<option value="' + html(x) + '"' + (x === val ? ' selected' : '') + '>' + html(x) + '</option>'; }).join(''); };
+    var cityOptions = function() { return ['全部'].concat((window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边']); };
+    var deptOptions = ['网络运维部','装维中心','信息技术部','市场部','客服中心','网络优化中心'];
+    var userQualityTags = {'线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],'设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],'业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],'配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']};
+    var bizQualityTags = {'视频':{'视频高时延':['TCP建连时延','HTTP平均响应时延'],'视频卡顿':['HTTP响应成功率','视频卡顿时长占比','抖动','丢包率','下载速率']},'游戏':{'游戏高时延':['TCP建连时延','HTTP平均响应时延'],'游戏卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'在线办公':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'网站/下载':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','下载速率','抖动','丢包率','下载成功率']}};
+
+    Pages.renderUserManagement = async function(container) {
+        var users = (window.API && API.systemUsers ? await API.systemUsers() : []) || [];
+        var rows = users.map(function(u) {
+            var locked = Number(u.locked || 0) === 1;
+            return '<tr><td>' + u.id + '</td><td>' + html(u.username) + '</td><td>' + html(u.real_name) + '</td><td>' + html(u.role) + '</td><td>' + html(u.city_name || '全部') + '</td><td>' + html(u.department || '-') + '</td><td>' + Pages.statusHtml(u.status ? '启用' : '禁用') + (locked ? ' <span class="status-warning">锁定</span>' : '') + '</td><td>' + html(u.data_scope || 'city') + '</td><td>' + html(u.last_login_at || '-') + '</td><td style="white-space:nowrap;"><button class="btn" onclick="Pages.showBackendUserModal(' + u.id + ')">编辑</button><button class="btn" onclick="Pages.toggleBackendUser(' + u.id + ',' + (u.status ? 0 : 1) + ')">' + (u.status ? '禁用' : '启用') + '</button><button class="btn" onclick="Pages.resetBackendUserPwd(' + u.id + ')">密码重置</button><button class="btn" onclick="Pages.lockBackendUser(' + u.id + ',' + (locked ? 0 : 1) + ')">' + (locked ? '解锁' : '锁定') + '</button></td></tr>';
+        }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无用户</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">用户管理</span><div><button class="btn btn-primary" onclick="Pages.showBackendUserModal()">+ 新增用户</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>地市</th><th>部门</th><th>状态</th><th>数据范围</th><th>最后登录</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+    Pages.showBackendUserModal = async function(id) {
+        var users = (await API.systemUsers()) || [];
+        var u = id ? (users.find(function(x) { return x.id === id; }) || {}) : {};
+        Modal.show(id ? '编辑用户' : '新增用户',
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+            '<div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="beUserName" value="' + html(u.username || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="beRealName" value="' + html(u.real_name || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">角色</label><select class="form-select" id="beRole">' + opts(['admin','operator','dispatcher','viewer'], u.role || 'operator') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="beCity">' + opts(cityOptions(), u.city_name || '全部') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">部门</label><select class="form-select" id="beDept">' + opts(deptOptions, u.department || '网络运维部') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">电话</label><input class="form-input" id="bePhone" value="' + html(u.phone || '') + '"></div>' +
+            '<div class="form-group"><label class="form-label">系统角色访问权限</label><select class="form-select" id="beMenuPerm">' + opts(['全景视图,质量画像,远程操作','全模块','只读查看'], u.menu_permissions || '全景视图,质量画像,远程操作') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">数据操作权限</label><select class="form-select" id="beOpsPerm">' + opts(['view,execute,export','view,create,edit,delete,export','view,export'], u.operation_permissions || 'view,execute,export') + '</select></div>' +
+            '<div class="form-group"><label class="form-label">数据范围权限</label><select class="form-select" id="beScope">' + opts(['province','city','grid','self'], u.data_scope || 'city') + '</select></div></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendUser()">保存</button>', '680px');
+    };
+    Pages.saveBackendUser = async function() {
+        var p = { username: beUserName.value.trim(), real_name: beRealName.value.trim(), role: beRole.value, city_name: beCity.value, department: beDept.value, phone: bePhone.value.trim(), menu_permissions: beMenuPerm.value, operation_permissions: beOpsPerm.value, data_scope: beScope.value };
+        if (!p.username) return Modal.toast('用户名必填', 'warning');
+        var r = await API.saveSystemUser(p);
+        if (r) { Modal.close(); Modal.toast('用户已保存', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+    };
+    Pages.resetBackendUserPwd = function(id) {
+        Modal.confirm('密码重置', '确定要重置该用户密码吗？', async function() {
+            var r = await API.resetSystemUserPassword(id);
+            if (r) Modal.show('重置密码', '<div style="line-height:2;">默认密码已生成：<code style="padding:3px 8px;background:#f0f5ff;color:#2b7de9;">' + html(r.defaultPassword) + '</code><br>请通知用户首次登录后修改密码。</div>', '<button class="btn btn-primary" onclick="Modal.close();Pages.renderUserManagement(document.getElementById(\'page-user-management\'))">确定</button>', '420px');
+        });
+    };
+    Pages.lockBackendUser = function(id, locked) {
+        Modal.confirm(locked ? '锁定用户' : '解锁用户', '确定要' + (locked ? '锁定' : '解锁') + '该用户吗？', async function() {
+            var r = await API.lockSystemUser(id, { locked: locked });
+            if (r) { Modal.toast(locked ? '用户已锁定' : '用户已解锁', 'success'); Pages.renderUserManagement(document.getElementById('page-user-management')); }
+        });
+    };
+
+    Pages.renderConfigCenter = async function(container) {
+        var cfgs = (window.API && API.configs) ? await API.configs({ category: this._cfgCategory || '' }) : [];
+        var categories = ['全部分类','用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'];
+        var rows = (cfgs || []).map(function(c) {
+            return '<tr><td>' + html(c.category) + '</td><td>' + html(c.config_key) + '</td><td style="max-width:320px;word-break:break-all;">' + html(c.config_value) + '</td><td>' + html(c.description || '') + '</td><td>' + html(c.updated_by || '-') + '</td><td>' + html(c.updated_at || '-') + '</td><td><button class="btn" onclick="Pages.showBackendConfig(\'' + html(c.config_key) + '\')">编辑</button><button class="btn" onclick="Pages.deleteBackendConfig(\'' + html(c.config_key) + '\')">删除</button></td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无配置</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header" style="align-items:flex-start;gap:12px;flex-wrap:wrap;"><span class="system-panel-title">配置中心</span><div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="form-select" style="width:180px;" onchange="Pages._cfgCategory=this.value===\'全部分类\'?\'\':this.value;Pages.renderConfigCenter(document.getElementById(\'page-config-center\'))">' + opts(categories, this._cfgCategory || '全部分类') + '</select><button class="btn btn-primary" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>分类</th><th>配置键</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+    Pages.showBackendConfig = function(key) {
+        Modal.show(key ? '编辑配置' : '新增配置',
+            '<div class="form-group"><label class="form-label">分类</label><select class="form-select" id="beCfgCat" onchange="Pages.renderConfigDynamicFields(this.value)">' + opts(['用户质差模型','业务应用质差模型','AI模型参数','工单派发规则','报表配置','权限配置'], '用户质差模型') + '</select></div><div id="cfgDynamicFields"></div><div class="form-group"><label class="form-label">配置键</label><input class="form-input" id="beCfgKey" value="' + html(key || '') + '" placeholder="可自动生成，也可手填"></div><div class="form-group"><label class="form-label">配置值</label><textarea class="form-input" id="beCfgVal" rows="3"></textarea></div><div class="form-group"><label class="form-label">说明</label><input class="form-input" id="beCfgDesc"></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendConfig()">保存</button>', '700px');
+        Pages.renderConfigDynamicFields('用户质差模型');
+    };
+    Pages.renderConfigDynamicFields = function(category) {
+        var el = document.getElementById('cfgDynamicFields'); if (!el) return;
+        if (category === '用户质差模型') el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">' + opts(['小时','天'], '小时') + '</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgQualityType" onchange="Pages.syncUserQualityTags()">' + opts(Object.keys(userQualityTags), '线路质差') + '</select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode">' + opts(['固定阈值','AI动态'], 'AI动态') + '</select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 rx_power<-25dBm; packet_loss>5%"></div></div>';
+        else if (category === '业务应用质差模型') el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="cfgTime">' + opts(['小时','天'], '小时') + '</select></div><div class="form-group"><label class="form-label">业务类型</label><select class="form-select" id="cfgBizType" onchange="Pages.syncBizQualityTypes()">' + opts(Object.keys(bizQualityTags), '视频') + '</select></div><div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="cfgBizQualityType" onchange="Pages.syncBizQualityTags()"></select></div><div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="cfgTag"></select></div><div class="form-group"><label class="form-label">严重程度</label><select class="form-select" id="cfgSeverity">' + opts(['高','中','低'], '中') + '</select></div><div class="form-group"><label class="form-label">质差阈值</label><select class="form-select" id="cfgThresholdMode">' + opts(['固定阈值','AI动态'], '固定阈值') + '</select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">阈值详情</label><input class="form-input" id="cfgThresholdDetail" placeholder="如 jitter>30ms; download_speed<20Mbps"></div></div>';
+        else el.innerHTML = '';
+        if (category === '用户质差模型') Pages.syncUserQualityTags();
+        if (category === '业务应用质差模型') Pages.syncBizQualityTypes();
+    };
+    Pages.syncUserQualityTags = function() { cfgTag.innerHTML = opts(userQualityTags[cfgQualityType.value] || [], ''); };
+    Pages.syncBizQualityTypes = function() { var types = Object.keys(bizQualityTags[cfgBizType.value] || {}); cfgBizQualityType.innerHTML = opts(types, types[0]); Pages.syncBizQualityTags(); };
+    Pages.syncBizQualityTags = function() { cfgTag.innerHTML = opts((bizQualityTags[cfgBizType.value] && bizQualityTags[cfgBizType.value][cfgBizQualityType.value]) || [], ''); };
+    Pages.saveBackendConfig = async function() {
+        var cat = beCfgCat.value;
+        var payload = { time_grain: (window.cfgTime || {}).value || '', quality_type: (window.cfgQualityType || window.cfgBizQualityType || {}).value || '', app_type: (window.cfgBizType || {}).value || '', quality_tag: (window.cfgTag || {}).value || '', severity: (window.cfgSeverity || {}).value || '', threshold_mode: (window.cfgThresholdMode || {}).value || '', threshold_detail: (window.cfgThresholdDetail || {}).value || '' };
+        var key = beCfgKey.value.trim() || (cat === '用户质差模型' ? 'user_quality_custom_' : 'biz_quality_custom_') + Date.now();
+        var r = await API.saveConfig({ config_key: key, category: cat, config_value: beCfgVal.value || JSON.stringify(payload), description: beCfgDesc.value, updated_by: 'admin' });
+        if (r) { Modal.close(); Modal.toast('配置已保存', 'success'); Pages.renderConfigCenter(document.getElementById('page-config-center')); }
+    };
+
+    Pages._logTab = Pages._logTab || 'operation';
+    Pages.renderLogManagement = async function(container, page) {
+        page = page || 1;
+        var tabs = '<div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn ' + (this._logTab === 'operation' ? 'btn-primary' : '') + '" onclick="Pages._logTab=\'operation\';Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">操作日志</button><button class="btn ' + (this._logTab === 'runtime' ? 'btn-primary' : '') + '" onclick="Pages._logTab=\'runtime\';Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">系统运行日志</button></div>';
+        if (this._logTab === 'runtime') {
+            var runtimeRows = ['DPI文件接口同步正常','AAA认证接口心跳正常','RMS远程操作队列正常','OMCI光功率读取接口正常','网管告警接口同步正常','SFTP Result目录扫描完成'].map(function(t, i) { return '<tr><td>2026-05-17 ' + String(11 - i).padStart(2, '0') + ':0' + i + ':22</td><td>' + html(t.split('接口')[0]) + '</td><td>' + html(t) + '</td><td><span class="status-normal">正常</span></td><td>' + (18 + i * 7) + 'ms</td></tr>'; }).join('');
+            container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span></div><div class="system-panel-body">' + tabs + '<table class="data-table"><thead><tr><th>时间</th><th>系统/接口</th><th>运行事件</th><th>状态</th><th>耗时</th></tr></thead><tbody>' + runtimeRows + '</tbody></table></div></div></div>';
+            return;
+        }
+        var resp = window.API && API.logs ? await API.logs({ page: page, pageSize: 12, username: this._logKeyword || '' }) : { data: [] };
+        var rows = ((resp && resp.data) || []).map(function(l) { return '<tr><td>' + html(l.created_at || l.time || '-') + '</td><td>' + html(l.username || l.operator || '-') + '</td><td>' + html(l.ip || '-') + '</td><td>' + html(l.module || '-') + '</td><td>' + html(l.action || '-') + '</td><td>' + html(l.content || '-') + '</td><td>' + Pages.statusHtml(l.result || '成功') + '</td></tr>'; }).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无操作日志</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">日志管理</span><div style="display:flex;gap:8px;"><input class="form-input" id="logSearchInput" placeholder="搜索操作人" value="' + html(this._logKeyword || '') + '"><button class="btn" onclick="Pages._logKeyword=document.getElementById(\'logSearchInput\').value.trim();Pages.renderLogManagement(document.getElementById(\'page-log-management\'),1)">搜索</button></div></div><div class="system-panel-body">' + tabs + '<table class="data-table"><thead><tr><th>时间</th><th>操作人</th><th>IP地址</th><th>模块</th><th>操作类型</th><th>操作内容</th><th>结果</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+
+    Pages._kpiLevel = Pages._kpiLevel || 'province'; Pages._kpiCtx = Pages._kpiCtx || {};
+    var score = function(seed, min, max) { return Math.round((min + (Math.abs(Math.sin(seed)) * 10000 % 1) * (max - min)) * 10) / 10; };
+    Pages._buildKpiRows = function() {
+        var cityNames = (window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边'];
+        if (this._kpiLevel === 'province') return cityNames.map(function(c, i) { return { time:'2026-05-17', region:c, overall:score(i,86,96), business:score(i+10,84,95), connection:score(i+20,85,96) }; });
+        if (this._kpiLevel === 'city') return ['朝阳区','南关区','宽城区','二道区','绿园区'].map(function(d, i) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:d, overall:score(i+30,86,96), business:score(i+40,84,95), connection:score(i+50,85,96) }; });
+        if (this._kpiLevel === 'district') return [1,2,3,4,5].map(function(x) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:Pages._kpiCtx.district, bras:'JL-' + Pages._kpiCtx.city + '-' + Pages._kpiCtx.district + '-BRAS-00' + x + '-HW', overall:score(x+60,86,96), business:score(x+70,84,95), connection:score(x+80,85,96) }; });
+        return [1,2,3,4,5].map(function(x) { return { time:'2026-05-17', region:Pages._kpiCtx.city, district:Pages._kpiCtx.district, bras:Pages._kpiCtx.bras, olt:Pages._kpiCtx.bras + '-OLT-0' + x + '-ZTE-C600', overall:score(x+90,86,96), business:score(x+100,84,95), connection:score(x+110,85,96) }; });
+    };
+    Pages.renderKpiView = function(container) {
+        var rows = this._buildKpiRows();
+        var bc = '<span style="color:#2b7de9;cursor:pointer;" onclick="Pages._kpiLevel=\'province\';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">省</span>';
+        if (this._kpiCtx.city) bc += ' > <span style="color:#2b7de9;">' + html(this._kpiCtx.city) + '</span>';
+        if (this._kpiCtx.district) bc += ' > <span>' + html(this._kpiCtx.district) + '</span>';
+        var body = rows.map(function(r, i) { return '<tr><td>' + r.time + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.kpiDrill(' + i + ')">' + html(r.region) + '</a></td><td>' + html(r.district || '-') + '</td><td>' + html(r.bras || '-') + '</td><td>' + html(r.olt || '-') + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showKpiDetail(\'' + html(r.region) + '\')">' + r.overall + '</a></td><td>' + r.business + '</td><td>' + r.connection + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + html(r.region) + '\')">趋势</button></td></tr>'; }).join('');
+        container.innerHTML = '<div class="page-content"><div class="kpi-grid">' + App.kpiCardHtml('用户中断平均时长',1.8,'h',-3.1) + App.kpiCardHtml('家庭网络优良率',96.2,'%',1.2) + App.kpiCardHtml('TOP10视频平均下载速率',42.6,'Mbps',2.3) + App.kpiCardHtml('TOP10游戏平均时延',38.4,'ms',-0.8) + '</div><div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;border-bottom:1px solid #e0e4e8;">KPI详情 ' + bc + '</div><table class="data-table"><thead><tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>总体CEI分数</th><th>业务CEI分数</th><th>通断CEI分数</th><th>详情</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+    };
+    Pages.kpiDrill = function(i) { var r = this._buildKpiRows()[i]; if (!r) return; if (this._kpiLevel === 'province') { this._kpiLevel = 'city'; this._kpiCtx = { city: r.region }; } else if (this._kpiLevel === 'city') { this._kpiLevel = 'district'; this._kpiCtx.district = r.district; } else if (this._kpiLevel === 'district') { this._kpiLevel = 'bras'; this._kpiCtx.bras = r.bras; } this.renderKpiView(document.getElementById('page-kpi-view')); };
+    Pages.showKpiDetail = function(region) { Modal.show('KPI下钻详情 - ' + region, '<div style="line-height:2;">质差用户清单与质差服务器IP清单已按当前区域模拟生成，支持后续接真实DPI/CEI接口。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px'); };
+    Pages.showKpiTrend = function(region) { Modal.show('趋势详情 - ' + region, '<div style="line-height:2;">近24小时总体CEI、业务CEI、通断CEI趋势已按小时粒度模拟生成。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px'); };
 })();
