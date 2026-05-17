@@ -1499,6 +1499,705 @@ EnhancePages.exportXdr = function() {
     };
 })();
 
+// Actual last GIS metric drill binding for the dashboard view.
+(function() {
+    if (!window.Pages) return;
+    function e(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function hsh(v) { var h = 0; v = String(v || ''); for (var i = 0; i < v.length; i++) h = ((h << 5) - h + v.charCodeAt(i)) | 0; return Math.abs(h); }
+    function n(seed, min, max) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Number((min + x * (max - min)).toFixed(1)); }
+    var dm = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','安图县']
+    };
+    Pages.showGisMetricDrill = function(metricName) {
+        var level = this._gisScreenLevel || 'province';
+        var ctx = this._gisScreenCtx || {};
+        var cityRows = window.JilinData && JilinData.cities ? JilinData.cities.filter(function(c) { return c !== '长白山'; }) : Object.keys(dm);
+        var names = level === 'province' ? cityRows : (level === 'city' ? (dm[ctx.city] || dm['长春']) : ['CC-CC-朝阳-BRAS-001-HW','CC-CC-朝阳-BRAS-002-ZTE','CC-CC-朝阳-BRAS-003-HW']);
+        var headers = ['时间','地市'];
+        if (level !== 'province') headers.push('区县');
+        if (level === 'district') headers.push('BRAS');
+        headers.push('总体CEI分数','业务CEI分数','通断CEI分数','详情');
+        var rows = names.map(function(name, i) {
+            var city = level === 'province' ? name : (ctx.city || '长春');
+            var dist = level === 'city' ? name : (ctx.district || '朝阳区');
+            var tds = ['<td>2026-05-17 18:00</td><td>' + e(city) + '</td>'];
+            if (level !== 'province') tds.push('<td>' + e(dist) + '</td>');
+            if (level === 'district') tds.push('<td>' + e(name) + '</td>');
+            tds.push('<td>' + n(hsh(name) + 1, 88, 96) + '</td><td>' + n(hsh(name) + 2, 86, 95) + '</td><td>' + n(hsh(name) + 3, 87, 96) + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + e(name) + '\')">趋势</button></td>');
+            return '<tr>' + tds.join('') + '</tr>';
+        }).join('');
+        Modal.show(metricName + '下钻',
+            '<table class="data-table"><thead><tr>' + headers.map(function(x) { return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + rows + '</tbody></table>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '980px');
+    };
+})();
+
+// GIS big-screen dashboard view.
+(function() {
+    if (!window.Pages) return;
+    function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function hash(v) { var h = 0; v = String(v || ''); for (var i = 0; i < v.length; i++) h = ((h << 5) - h + v.charCodeAt(i)) | 0; return Math.abs(h); }
+    function num(seed, min, max, d) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Number((min + x * (max - min)).toFixed(d == null ? 1 : d)); }
+    var districtMap = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','安图县']
+    };
+    var metricGroups = [
+        { key:'overall', title:'总体CEI分数', subtitle:'地图当前层级趋势', kind:'score', unit:'分' },
+        { key:'business', title:'业务CEI分数', subtitle:'地图当前层级趋势', kind:'score', unit:'分' },
+        { key:'network', title:'通断CEI分数', subtitle:'地图当前层级趋势', kind:'score', unit:'分' },
+        { key:'qualityUsers', title:'质差用户数', subtitle:'地图当前层级趋势', kind:'count', unit:'户' },
+        { key:'qualityApps', title:'质差应用数', subtitle:'地图当前层级趋势', kind:'count', unit:'个' },
+        { key:'orders', title:'质差工单量', subtitle:'地图当前层级趋势', kind:'count', unit:'单' }
+    ];
+
+    Pages._gisScreenLevel = 'province';
+    Pages._gisScreenCtx = {};
+
+    function sum(rows, key) {
+        return rows.reduce(function(s, r) { return s + Number(r[key] || 0); }, 0);
+    }
+    function ceiUserDistribution(rows, key) {
+        var bins = [0, 0, 0, 0, 0];
+        (rows || []).forEach(function(r) {
+            var score = Number(r[key] || 0);
+            var users = Math.max(1, Math.round(Number(r.users || r.activeUsers || 1) * 10000));
+            if (score < 80) bins[0] += users;
+            else if (score < 90) bins[1] += users;
+            else if (score < 95) bins[2] += users;
+            else if (score < 100) bins[3] += users;
+            else bins[4] += users;
+        });
+        return bins;
+    }
+    function avg(rows, key) {
+        return rows.length ? sum(rows, key) / rows.length : 0;
+    }
+    function lastSeries(data, count) {
+        return (data || []).slice(Math.max(0, (data || []).length - count));
+    }
+    function makeSeedSeries(base, seed, spread, count, fixed) {
+        var arr = [];
+        for (var i = count - 1; i >= 0; i--) arr.push(Number((base + (Math.sin(seed + i) * spread)).toFixed(fixed == null ? 1 : fixed)));
+        return arr;
+    }
+    function dailyBuckets(records, field, city) {
+        var labels = ((window.JilinData && JilinData.dateRange && JilinData.dateRange.labels) || []).slice(-7);
+        var map = {};
+        labels.forEach(function(l) { map[l] = 0; });
+        (records || []).forEach(function(r) {
+            if (city && r.city && r.city !== city) return;
+            var dt = String(r[field] || '');
+            if (dt.length < 10) return;
+            var key = dt.slice(5, 10);
+            if (map[key] !== undefined) map[key] += 1;
+        });
+        return labels.map(function(l) { return map[l] || 0; });
+    }
+    function getCurrentGisRows() {
+        if (Pages._gisLevel === 'city' && Pages._gisCityName && Pages._drillDistrictData[Pages._gisCityName]) {
+            return { level: 'city', name: Pages._gisCityName, rows: Pages._drillDistrictData[Pages._gisCityName] };
+        }
+        return { level: 'province', name: '吉林省', rows: Pages._gisProvinceRows || [] };
+    }
+    function buildGisDashboardModel() {
+        var ctx = getCurrentGisRows();
+        var rows = ctx.rows || [];
+        var citySeries = ctx.level === 'city' ? (JilinData.getCityTimeSeriesData(ctx.name) || {}).ceiTrendData : JilinData.ceiTrendData;
+        var cityKey = ctx.level === 'city' ? ctx.name : '';
+        var summary = {
+            overall: avg(rows, 'overall') || Number((JilinData.kpiMetrics || {}).totalCeiScore || 0),
+            users: sum(rows, 'users') || Number((JilinData.kpiMetrics || {}).totalBroadbandUsers || 0),
+            activeUsers: Math.round((sum(rows, 'users') || Number((JilinData.kpiMetrics || {}).activeUsers || 0)) * 0.96 * 10) / 10,
+            qualityUsers: sum(rows, 'qualityUsers') || (JilinData.userQualityRecords || []).length,
+            closeRate: avg(rows, 'closeRate') || 80
+        };
+        var trends = {
+            overall: lastSeries((citySeries || {}).overall || [], 7),
+            business: lastSeries((citySeries || {}).business || [], 7),
+            network: lastSeries((citySeries || {}).network || [], 7),
+            users: makeSeedSeries(summary.users, hash(ctx.name + 'users'), Math.max(summary.users * 0.035, 1), 7, 1),
+            activeUsers: makeSeedSeries(summary.activeUsers, hash(ctx.name + 'active'), Math.max(summary.activeUsers * 0.035, 1), 7, 1),
+            qualityUsers: ctx.level === 'province' || ctx.level === 'city' ? dailyBuckets(JilinData.userQualityRecords, 'reportTime', cityKey) : makeSeedSeries(avg(rows, 'qualityUsers') || 120, hash(ctx.name), 18, 7, 0),
+            qualityApps: ctx.level === 'province' || ctx.level === 'city' ? dailyBuckets(JilinData.bizQualityRecords, 'reportTime', cityKey) : makeSeedSeries(avg(rows, 'qualityApps') || 10, hash(ctx.name + 'apps'), 2.4, 7, 0),
+            orders: ctx.level === 'province' || ctx.level === 'city' ? dailyBuckets(JilinData.workOrderList, 'createTime', cityKey) : makeSeedSeries(avg(rows, 'orders') || 45, hash(ctx.name + 'orders'), 7, 7, 0)
+        };
+        return { context: ctx, rows: rows, summary: summary, trends: trends };
+    }
+
+    function miniCard(m, i) {
+        return '<div class="gis-metric-card">' +
+            '<button class="gis-card-title" onclick="Pages.showGisMetricDrill(\'' + esc(m.title) + '\')">' + esc(m.title) + '<span>最新一小时指标值</span></button>' +
+            '<div class="gis-card-meta"><strong id="gisMetricValue' + i + '">--</strong><span id="gisMetricHint' + i + '">--</span></div>' +
+            '<div class="gis-card-body">' +
+                '<div class="gis-mini-chart" id="gisDashLine' + i + '"></div>' +
+                '<div class="gis-dist-chart" id="gisDashBar' + i + '"></div>' +
+            '</div>' +
+        '</div>';
+    }
+
+
+    function rightMetricCard(m, i) {
+        var distTitle = m.key === 'qualityUsers' ? '质差用户分布' : (m.key === 'qualityApps' ? '质差应用分布' : '质差工单闭环率');
+        var distDesc = m.key === 'qualityUsers'
+            ? '线路质差、设备质差、配置质差、业务质差4个分类的分布'
+            : (m.key === 'qualityApps' ? '按业务类型统计质差应用数量：视频、游戏、在线办公、网站下载' : '');
+        return '<div class="gis-metric-card gis-right-metric-card">' +
+            '<button class="gis-card-title" onclick="Pages.showGisMetricDrill(\'' + esc(m.title) + '\')">' + esc(m.title) + '</button>' +
+            '<div class="gis-right-card-body">' +
+                '<div class="gis-chart-cell">' +
+                    '<div class="gis-chart-caption"><strong>' + esc(m.title) + '</strong></div>' +
+                    '<div class="gis-mini-chart" id="gisDashLine' + i + '"></div>' +
+                '</div>' +
+                '<div class="gis-chart-cell">' +
+                    '<div class="gis-chart-caption"><strong>' + esc(distTitle) + '</strong></div>' +
+                    '<div class="gis-dist-chart" id="gisDashBar' + i + '"></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+    function summaryCard(label, key, unit, chartId) {
+        return '<div class="gis-summary-card">' +
+            '<div class="gis-summary-title">' + label + '</div>' +
+            '<div class="gis-summary-value" id="gisSummaryValue-' + key + '">--<small>' + unit + '</small></div>' +
+            (chartId ? '<div class="gis-summary-chart" id="' + chartId + '"></div>' : '') +
+        '</div>';
+    }
+
+    Pages.renderGisDashboard = function(container) {
+        this._gisScreenLevel = 'province';
+        this._gisScreenCtx = {};
+        container.innerHTML =
+            '<div class="gis-screen">' +
+                '<div class="gis-screen-top gis-screen-top-two">' +
+                    summaryCard('宽带用户总数', 'users', '万', 'gisSummaryTrendUsers') +
+                    summaryCard('活跃用户数', 'activeUsers', '万', 'gisSummaryTrendActive') +
+                '</div>' +
+                '<div class="gis-screen-main">' +
+                    '<div class="gis-side-stack">' + metricGroups.slice(0, 3).map(miniCard).join('') + '</div>' +
+                    '<div class="gis-center-panel">' +
+                        '<div class="gis-center-head"><div class="gis-dashboard-bc"><span class="gis-dashboard-bc-label">GIS 实时视图</span><div id="gisBreadcrumb" class="gis-dashboard-bc-inner"><span style="color:#2b7de9;">吉林省</span></div></div><select class="form-select" onchange="Pages.showGisMetricDrill(this.value)"><option>宽带用户总数</option><option>总体CEI分数</option><option>质差用户数</option><option>质差工单闭环率</option></select></div>' +
+                        '<div class="gis-map-stage gis-map-stage-real"><div id="leafletMapContainer" class="gis-stage-map"></div><div class="gis-stage-legend"><div class="gis-stage-legend-title">地图图例</div><div id="gisLegend"></div></div></div>' +
+                    '</div>' +
+                    '<div class="gis-side-stack gis-right-stack">' + metricGroups.slice(3).map(function(m, i) { return rightMetricCard(m, i + 3); }).join('') + '</div>' +
+                '</div>' +
+            '</div>';
+        this.refreshGisDashboardFromMap();
+        if (this._initLeafletMap) this._initLeafletMap();
+    };
+
+    Pages.gisScreenDrill = function(level, city, district) {
+        if (level === 'province') { this._gisScreenLevel = 'province'; this._gisScreenCtx = {}; }
+        else if (level === 'city') { this._gisScreenLevel = 'city'; this._gisScreenCtx = { city: city || '长春' }; }
+        else { this._gisScreenLevel = 'district'; this._gisScreenCtx = { city: city || this._gisScreenCtx.city || '长春', district: district || '朝阳区' }; }
+        this.renderGisDashboard(document.getElementById('page-gis-view'));
+    };
+
+    Pages.refreshGisDashboardFromMap = function() {
+        var model = buildGisDashboardModel();
+        var summary = model.summary;
+        var setText = function(id, value, unit) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = value + '<small>' + unit + '</small>';
+        };
+        setText('gisSummaryValue-overall', summary.overall.toFixed(1), '分');
+        setText('gisSummaryValue-users', summary.users.toFixed(1), '万');
+        setText('gisSummaryValue-activeUsers', summary.activeUsers.toFixed(1), '万');
+        setText('gisSummaryValue-qualityUsers', Math.round(summary.qualityUsers), '户');
+        this.initGisDashboardCharts(model);
+    };
+
+    Pages.initGisDashboardCharts = function(model) {
+        if (!window.echarts) return;
+        model = model || buildGisDashboardModel();
+        var rows = model.rows || [];
+        var summary = model.summary || {};
+        metricGroups.forEach(function(m, i) {
+            var lineEl = document.getElementById('gisDashLine' + i), barEl = document.getElementById('gisDashBar' + i);
+            var currentValue = m.kind === 'score' ? avg(rows, m.key) : sum(rows, m.key);
+            if (!isFinite(currentValue) || currentValue <= 0) currentValue = (summary[m.key] || 0);
+            var metricValueEl = document.getElementById('gisMetricValue' + i);
+            var metricHintEl = document.getElementById('gisMetricHint' + i);
+            if (metricValueEl) metricValueEl.textContent = (m.kind === 'score' ? currentValue.toFixed(1) : Math.round(currentValue)) + m.unit;
+            if (metricHintEl) metricHintEl.textContent = (model.context.level === 'city' ? model.context.name + '区县汇总' : '全省地市汇总');
+            if (lineEl) {
+                var c1 = echarts.init(lineEl); App.chartInstances['gisDashLine' + i] = c1;
+                c1.setOption({ grid:{left:4,right:4,top:10,bottom:4}, xAxis:{type:'category',show:false,data:['1','2','3','4','5','6','7']}, yAxis:{type:'value',show:false,scale:true}, series:[{type:'line',smooth:true,symbol:'none',lineStyle:{color:'#5b8ff9',width:2},areaStyle:{color:'rgba(91,143,249,0.12)'},data:(model.trends[m.key] || []).map(function(v){ return Number(v); })}] });
+            }
+            if (barEl) {
+                var c2 = echarts.init(barEl); App.chartInstances['gisDashBar' + i] = c2;
+                if (m.kind === 'score') {
+                    c2.setOption({
+                        grid:{left:54,right:6,top:24,bottom:34},
+                        xAxis:{type:'category',data:['80分以下','80-90分','90-95分','95-99分','100分'],axisLabel:{fontSize:8,interval:0,rotate:22,color:'#5b667a'},axisLine:{lineStyle:{color:'#d9e0ea'}},axisTick:{show:false}},
+                        yAxis:{type:'value',name:'用户数',nameLocation:'end',nameGap:8,nameTextStyle:{fontSize:9,color:'#5b667a',align:'left'},axisLabel:{fontSize:8,color:'#5b667a',formatter:function(v){ return v >= 10000 ? Math.round(v / 10000) + '万' : v; }},splitLine:{lineStyle:{color:'#edf1f7'}}},
+                        series:[{type:'bar',barWidth:12,itemStyle:{color:'#62d2a2'},data:ceiUserDistribution(rows, m.key)}]
+                    });
+                } else if (m.key === 'orders') {
+                    c2.setOption({
+                        series:[{
+                            type:'pie',radius:['52%','72%'],center:['50%','54%'],avoidLabelOverlap:false,
+                            label:{show:true,position:'center',formatter:Math.round(summary.closeRate || 80) + '%',fontSize:12,fontWeight:700,color:'#5b667a'},
+                            labelLine:{show:false},
+                            data:[
+                                { value: summary.closeRate || 80, itemStyle:{color:'#5b8ff9'} },
+                                { value: 100 - (summary.closeRate || 80), itemStyle:{color:'#e8eef9'} }
+                            ]
+                        }]
+                    });
+                } else {
+                    var distCategories = m.key === 'qualityUsers' ? ['弱光','视频卡顿','游戏时延高','WIFI干扰大'] : ['视频','游戏','在线办公','网站/下载'];
+                    var distValues = distCategories.map(function(name) {
+                        return rows.reduce(function(total, r) { return total + Math.round(Number(r[m.key] || 0) * (0.16 + ((hash(name + r.name) % 26) / 100))); }, 0);
+                    });
+                    c2.setOption({
+                        grid:{left:44,right:6,top:16,bottom:36},
+                        xAxis:{type:'category',data:distCategories,axisLabel:{fontSize:8,interval:0,rotate:22,color:'#5b667a'},axisLine:{lineStyle:{color:'#d9e0ea'}},axisTick:{show:false}},
+                        yAxis:{type:'value',name:'用户数',nameGap:8,nameTextStyle:{fontSize:9,color:'#5b667a'},axisLabel:{fontSize:8,color:'#5b667a',formatter:function(v){ return v >= 10000 ? Math.round(v / 10000) + '万' : v; }},splitLine:{lineStyle:{color:'#edf1f7'}}},
+                        series:[{type:'bar',barWidth:14,itemStyle:{color:'#62d2a2'},data:distValues}]
+                    });
+                }
+            }
+        });
+        [
+            { id:'gisSummaryTrendUsers', key:'users' },
+            { id:'gisSummaryTrendActive', key:'activeUsers' }
+        ].forEach(function(item) {
+            var trend = document.getElementById(item.id);
+            if (!trend) return;
+            var c3 = echarts.init(trend); App.chartInstances[item.id] = c3;
+            c3.setOption({ grid:{left:4,right:4,top:4,bottom:4}, xAxis:{type:'category',show:false,data:['1','2','3','4','5','6','7']}, yAxis:{type:'value',show:false,scale:true}, series:[{type:'line',smooth:true,symbol:'none',lineStyle:{color:'#5b8ff9',width:2},areaStyle:{color:'rgba(91,143,249,0.12)'},data:model.trends[item.key] || []}] });
+        });
+        var rate = document.getElementById('gisCloseRate');
+        if (rate) {
+            var c4 = echarts.init(rate); App.chartInstances.gisCloseRate = c4;
+            c4.setOption({ series:[{type:'pie',radius:['58%','76%'],center:['50%','50%'],label:{show:false},data:[{value:summary.closeRate,itemStyle:{color:'#5b8ff9'}},{value:Math.max(0,100-summary.closeRate),itemStyle:{color:'#edf1f8'}}]}], graphic:{type:'text',left:'center',top:'middle',style:{text:summary.closeRate.toFixed(1) + '%',fontSize:14,fontWeight:700,fill:'#2b7de9'}} });
+        }
+    };
+
+    var oldShowGisMetricDrill = Pages.showGisMetricDrill;
+    Pages.showGisMetricDrill = function(metricName) {
+        var level = this._gisScreenLevel || 'province';
+        var city = (this._gisScreenCtx && this._gisScreenCtx.city) || '';
+        var district = (this._gisScreenCtx && this._gisScreenCtx.district) || '';
+        var cityRows = window.JilinData && JilinData.cities ? JilinData.cities.filter(function(c) { return c !== '长白山'; }) : Object.keys(districtMap);
+        var names = level === 'province' ? cityRows : (level === 'city' ? (districtMap[city] || districtMap['长春']) : ['CC-CC-朝阳-BRAS-001-HW','CC-CC-朝阳-BRAS-002-ZTE','CC-CC-朝阳-BRAS-003-HW']);
+        var headers = ['时间','地市'];
+        if (level !== 'province') headers.push('区县');
+        if (level === 'district') headers.push('BRAS');
+        headers.push('总体CEI分数','业务CEI分数','通断CEI分数','详情');
+        var rows = names.map(function(n, i) {
+            var rCity = level === 'province' ? n : city;
+            var rDist = level === 'city' ? n : district;
+            var tds = ['<td>2026-05-17 18:00</td><td>' + esc(rCity) + '</td>'];
+            if (level !== 'province') tds.push('<td>' + esc(rDist) + '</td>');
+            if (level === 'district') tds.push('<td>' + esc(n) + '</td>');
+            tds.push('<td>' + num(hash(n) + 1, 88, 96, 1) + '</td><td>' + num(hash(n) + 2, 86, 95, 1) + '</td><td>' + num(hash(n) + 3, 87, 96, 1) + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + esc(n) + '\')">趋势</button></td>');
+            return '<tr>' + tds.join('') + '</tr>';
+        }).join('');
+        Modal.show(metricName + '下钻', '<table class="data-table"><thead><tr>' + headers.map(function(x) { return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + rows + '</tbody></table>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '980px');
+    };
+})();
+
+// Final KPI binding. This block intentionally sits at EOF because this file
+// contains several historical renderKpiView overrides.
+(function() {
+    if (!window.Pages) return;
+    function h(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function hv(s) { var x = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) x = ((x << 5) - x + s.charCodeAt(i)) | 0; return Math.abs(x); }
+    function val(seed, min, max, d) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Number((min + x * (max - min)).toFixed(d == null ? 1 : d)); }
+    var codes = { '长春':'CC', '吉林':'JL', '四平':'SP', '辽源':'LY', '通化':'TH', '白山':'BS', '松原':'SY', '白城':'BC', '延边':'YB', '长白山':'CBS' };
+    var dists = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区','九台区','榆树市','德惠市','农安县'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市','桦甸市','舒兰市','磐石市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市','双辽市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县','辉南县','柳河县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县','长白县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','和龙市','汪清县','安图县'],
+        '长白山':['池北区','池西区','池南区']
+    };
+    var vendors = ['HW','ZTE','FH','ALU'];
+    var metrics = [
+        { key:'interrupt', label:'用户中断平均时长', unit:'h', min:0.8, max:2.8 },
+        { key:'homeGood', label:'家庭网优良率', unit:'%', min:92, max:98 },
+        { key:'videoSpeed', label:'TOP10视频平均下载速率', unit:'Mbps', min:26, max:52 },
+        { key:'gameDelay', label:'TOP10游戏平均时延', unit:'ms', min:16, max:46 }
+    ];
+    var tagMap = {
+        '线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],
+        '设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],
+        '业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],
+        '配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']
+    };
+    function bras(city, district, i) {
+        var cc = codes[city] || 'JL';
+        var room = (district || city || '核心').replace(/[市区县自治州]/g, '').slice(0, 2) || 'HX';
+        return cc + '-' + cc + '-' + room + '-BRAS-' + String(i).padStart(3, '0') + '-' + vendors[i % vendors.length];
+    }
+    function olt(city, district, i) {
+        var cc = codes[city] || 'JL';
+        var site = (district || '核心').replace(/[市区县]/g, '').slice(0, 2) || 'HX';
+        return cc + '-' + cc + '-' + site + '-OLT-' + String(i).padStart(3, '0') + '-' + vendors[(i + 1) % vendors.length] + '-' + (i % 2 ? 'C600' : 'MA5800');
+    }
+    function pon(oltName, i) { return oltName + '-0-' + (Math.floor(i / 4) + 1) + '-' + ((i % 4) + 1); }
+
+    Pages._kpiLevel = 'province';
+    Pages._kpiCtx = {};
+    Pages._buildKpiRows = function() {
+        var level = this._kpiLevel || 'province', ctx = this._kpiCtx || {}, names;
+        if (level === 'province') names = window.JilinData && JilinData.cities ? JilinData.cities : Object.keys(codes);
+        else if (level === 'city') names = dists[ctx.city] || dists['长春'];
+        else if (level === 'district') names = [1,2,3,4,5].map(function(i) { return bras(ctx.city, ctx.district, i); });
+        else if (level === 'bras') names = [1,2,3,4,5,6].map(function(i) { return olt(ctx.city, ctx.district, i); });
+        else names = [1,2,3,4,5,6,7,8].map(function(i) { return pon(ctx.olt, i); });
+        return names.map(function(name, i) {
+            var r = { time:'2026-05-17 18:00', region:level === 'province' ? name : ctx.city, district:level === 'city' ? name : ctx.district, bras:level === 'district' ? name : ctx.bras, olt:level === 'bras' ? name : ctx.olt, pon:level === 'olt' ? name : '', drillName:name, level:level };
+            var seed = hv([level, name, r.region, r.district, r.bras, r.olt].join('|')) + i;
+            metrics.forEach(function(m) { r[m.key] = val(seed + hv(m.key), m.min, m.max, 1); });
+            return r;
+        });
+    };
+    Pages._kpiBreadcrumbHtml = function() {
+        var c = this._kpiCtx || {}, s = '<button class="kpi-bc" onclick="Pages._kpiLevel=\'province\';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">省</button>';
+        if (c.city) s += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'city\';Pages._kpiCtx={city:\'' + h(c.city) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(c.city) + '</button>';
+        if (c.district) s += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'district\';Pages._kpiCtx={city:\'' + h(c.city) + '\',district:\'' + h(c.district) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(c.district) + '</button>';
+        if (c.bras) s += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'bras\';Pages._kpiCtx={city:\'' + h(c.city) + '\',district:\'' + h(c.district) + '\',bras:\'' + h(c.bras) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(c.bras) + '</button>';
+        if (c.olt) s += '<span>›</span><button class="kpi-bc active">' + h(c.olt) + '</button>';
+        return s;
+    };
+    Pages.renderKpiView = function(container) {
+        var rows = this._buildKpiRows();
+        var cards = metrics.map(function(m, i) {
+            var avg = rows.reduce(function(sum, r) { return sum + Number(r[m.key] || 0); }, 0) / Math.max(rows.length, 1);
+            return '<div class="kpi-trend-card"><div class="kpi-trend-title">' + h(m.label) + '<span>最新一小时</span></div><div class="kpi-trend-value">' + avg.toFixed(1) + '<small>' + h(m.unit) + '</small></div><div class="mini-line" id="kpiMiniFinal' + i + '"></div></div>';
+        }).join('');
+        var head = '<tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>PON口</th>' + metrics.map(function(m) { return '<th>' + h(m.label) + '</th>'; }).join('') + '<th>详情</th></tr>';
+        var body = rows.map(function(r, i) {
+            var metricCells = metrics.map(function(m) { return '<td><a class="drill-link" onclick="Pages.showKpiQualityList(\'' + h(r.drillName) + '\',\'' + h(m.label) + '\')">' + r[m.key] + h(m.unit) + '</a></td>'; }).join('');
+            return '<tr><td>' + h(r.time) + '</td><td><a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + h(r.region || '-') + '</a></td><td>' + (r.level === 'city' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + h(r.district) + '</a>' : h(r.district || '-')) + '</td><td>' + (r.level === 'district' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + h(r.bras) + '</a>' : h(r.bras || '-')) + '</td><td>' + (r.level === 'bras' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + h(r.olt) + '</a>' : h(r.olt || '-')) + '</td><td>' + h(r.pon || '-') + '</td>' + metricCells + '<td><button class="btn" onclick="Pages.showKpiTrend(\'' + h(r.drillName) + '\')">趋势</button></td></tr>';
+        }).join('');
+        container.innerHTML = '<div class="page-content"><div class="kpi-trend-grid">' + cards + '</div><div class="data-table-wrapper" style="margin-top:8px;"><div class="kpi-detail-head"><span>KPI详情</span><div class="kpi-breadcrumb">' + this._kpiBreadcrumbHtml() + '</div></div><table class="data-table kpi-detail-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div></div>';
+        if (window.echarts) metrics.forEach(function(m, i) {
+            var el = document.getElementById('kpiMiniFinal' + i); if (!el) return;
+            var c = echarts.init(el); App.chartInstances['kpiMiniFinal' + i] = c;
+            c.setOption({ grid:{left:4,right:4,top:6,bottom:4}, xAxis:{type:'category',show:false,data:['-5','-4','-3','-2','-1','now']}, yAxis:{type:'value',show:false,scale:true}, series:[{type:'line',smooth:true,symbol:'none',lineStyle:{color:'#5b8ff9',width:2},areaStyle:{color:'rgba(91,143,249,0.12)'},data:[1,2,3,4,5,6].map(function(x) { return val(hv(m.key) + x, m.min, m.max, 1); })}] });
+        });
+    };
+    Pages.kpiDrill = function(i) {
+        var r = this._buildKpiRows()[i]; if (!r) return;
+        if (this._kpiLevel === 'province') { this._kpiLevel = 'city'; this._kpiCtx = { city:r.region }; }
+        else if (this._kpiLevel === 'city') { this._kpiLevel = 'district'; this._kpiCtx = { city:r.region, district:r.district }; }
+        else if (this._kpiLevel === 'district') { this._kpiLevel = 'bras'; this._kpiCtx = { city:r.region, district:r.district, bras:r.bras }; }
+        else if (this._kpiLevel === 'bras') { this._kpiLevel = 'olt'; this._kpiCtx = { city:r.region, district:r.district, bras:r.bras, olt:r.olt }; }
+        this.renderKpiView(document.getElementById('page-kpi-view'));
+    };
+    Pages.showKpiQualityList = function(region, metricName) {
+        var types = Object.keys(tagMap);
+        var users = [1,2,3,4,5,6].map(function(i) { var type = types[(hv(region) + i) % types.length], tags = tagMap[type]; return '<tr><td>JL' + (20260000 + hv(region + i) % 899999).toString().padStart(6, '0') + '</td><td>' + h(region) + '</td><td>' + type + '</td><td>' + tags[i % tags.length] + '</td><td>' + val(i + hv(region), 58, 82, 1) + '</td></tr>'; }).join('');
+        var ips = [1,2,3,4,5].map(function(i) { return '<tr><td>10.' + (20 + i) + '.' + (hv(region) % 200) + '.' + (30 + i) + '</td><td>' + ['视频','游戏','下载','DNS','IPTV'][i - 1] + '</td><td>' + val(i + 4, 24, 92, 1) + 'ms</td><td>' + val(i + 7, 0.2, 3.8, 2) + '%</td><td>' + Math.round(val(i + 11, 40, 360, 0)) + '</td></tr>'; }).join('');
+        Modal.show(metricName + ' - ' + region, '<div class="modal-tabs"><button class="btn btn-primary" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'block\';document.getElementById(\'kpiIpTab\').style.display=\'none\'">质差用户</button><button class="btn" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'none\';document.getElementById(\'kpiIpTab\').style.display=\'block\'">质差服务器IP</button></div><div id="kpiUsersTab"><table class="data-table"><thead><tr><th>用户账号</th><th>区域</th><th>质差类型</th><th>质差标签</th><th>CEI</th></tr></thead><tbody>' + users + '</tbody></table></div><div id="kpiIpTab" style="display:none;"><table class="data-table"><thead><tr><th>服务器IP</th><th>业务</th><th>平均时延</th><th>丢包率</th><th>影响用户</th></tr></thead><tbody>' + ips + '</tbody></table></div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '900px');
+    };
+    Pages.showKpiTrend = function(region) {
+        Modal.show('趋势详情 - ' + region, '<div style="height:280px;" id="kpiTrendModalChart"></div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '760px');
+        setTimeout(function() {
+            if (!window.echarts) return;
+            var el = document.getElementById('kpiTrendModalChart'); if (!el) return;
+            var c = echarts.init(el);
+            c.setOption({
+                tooltip:{ trigger:'axis' }, legend:{ top:4, data:['用户中断平均时长','家庭网优良率','视频下载速率','游戏平均时延'] },
+                grid:{ top:42, left:42, right:24, bottom:28 }, xAxis:{ type:'category', data:['00','04','08','12','16','18','20','24'] }, yAxis:{ type:'value', scale:true },
+                series:[
+                    { name:'用户中断平均时长', type:'line', smooth:true, data:[2.1,2.0,1.9,1.7,1.6,1.8,1.7,1.6] },
+                    { name:'家庭网优良率', type:'line', smooth:true, data:[94.8,95.1,95.6,96.0,96.2,96.1,96.4,96.3] },
+                    { name:'视频下载速率', type:'line', smooth:true, data:[34,36,38,41,42,43,44,45] },
+                    { name:'游戏平均时延', type:'line', smooth:true, data:[39,38,36,35,34,35,33,32] }
+                ]
+            });
+        }, 60);
+    };
+})();
+
+// ============ Requirement 7/8 final implementation: GIS metric drill + KPI drill ============
+(function() {
+    if (!window.Pages) return;
+
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+    function seedValue(seed, min, max, fixed) {
+        var x = Math.abs(Math.sin(seed) * 10000) % 1;
+        var v = min + x * (max - min);
+        return Number(v.toFixed(fixed == null ? 1 : fixed));
+    }
+    function hashText(str) {
+        var h = 0;
+        str = String(str || '');
+        for (var i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+        return Math.abs(h);
+    }
+    var cityCodes = { '长春':'CC', '吉林':'JL', '四平':'SP', '辽源':'LY', '通化':'TH', '白山':'BS', '松原':'SY', '白城':'BC', '延边':'YB', '长白山':'CBS' };
+    var vendorCodes = ['HW', 'ZTE', 'FH', 'ALU'];
+    var districtsByCity = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区','九台区','榆树市','德惠市','农安县'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市','桦甸市','舒兰市','磐石市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市','双辽市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县','辉南县','柳河县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县','长白县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','和龙市','汪清县','安图县'],
+        '长白山':['池北区','池西区','池南区']
+    };
+
+    function makeBras(city, district, idx) {
+        var cc = cityCodes[city] || 'JL';
+        var room = (district || city || '省干').replace(/[市区县自治州]/g, '').slice(0, 2) || 'HX';
+        return cc + '-' + cc + '-' + room + '-BRAS-' + String(idx).padStart(3, '0') + '-' + vendorCodes[idx % vendorCodes.length];
+    }
+    function makeOlt(city, district, bras, idx) {
+        var cc = cityCodes[city] || 'JL';
+        var dc = (district || '核心').replace(/[市区县]/g, '').slice(0, 2) || 'HX';
+        return cc + '-' + cc + '-' + dc + '-OLT-' + String(idx).padStart(3, '0') + '-' + vendorCodes[(idx + 1) % vendorCodes.length] + '-' + (idx % 2 ? 'C600' : 'MA5800');
+    }
+    function makePon(olt, idx) {
+        return olt + '-0-' + (Math.floor(idx / 4) + 1) + '-' + ((idx % 4) + 1);
+    }
+
+    var kpiMetricDefs = [
+        { key:'interrupt', label:'用户中断平均时长', unit:'h', goodLow:true, min:0.8, max:2.8 },
+        { key:'homeGood', label:'家庭网优良率', unit:'%', min:92, max:98 },
+        { key:'videoSpeed', label:'TOP10视频平均下载速率', unit:'Mbps', min:26, max:52 },
+        { key:'gameDelay', label:'TOP10游戏平均时延', unit:'ms', goodLow:true, min:16, max:46 }
+    ];
+    var qualityTypeTags = {
+        '线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],
+        '设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],
+        '业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],
+        '配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']
+    };
+    var gisMetricDefs = [
+        '总体CEI分数','总体CEI分数用户分布','业务CEI分数','业务CEI分数用户分布','通断CEI分数','通断CEI分数用户分布',
+        '质差用户数','质差用户分布','质差应用数','质差应用分布','质差工单量','质差工单闭环率'
+    ];
+
+    function currentTimeLabel() { return '2026-05-17 18:00'; }
+    function buildKpiValue(seed, def) {
+        return seedValue(seed + def.key.length * 13, def.min, def.max, def.key === 'homeGood' ? 1 : 1);
+    }
+
+    Pages._kpiLevel = 'province';
+    Pages._kpiCtx = {};
+    Pages._buildKpiRows = function() {
+        var level = this._kpiLevel || 'province';
+        var ctx = this._kpiCtx || {};
+        var names;
+        if (level === 'province') names = (window.JilinData && JilinData.cities ? JilinData.cities : Object.keys(cityCodes));
+        else if (level === 'city') names = districtsByCity[ctx.city] || districtsByCity['长春'];
+        else if (level === 'district') names = [1,2,3,4,5].map(function(i) { return makeBras(ctx.city, ctx.district, i); });
+        else if (level === 'bras') names = [1,2,3,4,5,6].map(function(i) { return makeOlt(ctx.city, ctx.district, ctx.bras, i); });
+        else names = [1,2,3,4,5,6,7,8].map(function(i) { return makePon(ctx.olt, i); });
+
+        return names.map(function(name, i) {
+            var row = {
+                time: currentTimeLabel(),
+                region: level === 'province' ? name : ctx.city,
+                district: level === 'city' ? name : ctx.district,
+                bras: level === 'district' ? name : ctx.bras,
+                olt: level === 'bras' ? name : ctx.olt,
+                pon: level === 'olt' ? name : '',
+                drillName: name,
+                level: level
+            };
+            var seed = hashText([level, name, row.region, row.district, row.bras, row.olt].join('|')) + i;
+            kpiMetricDefs.forEach(function(def) { row[def.key] = buildKpiValue(seed, def); });
+            row.overall = seedValue(seed + 10, 88, 96, 1);
+            row.business = seedValue(seed + 20, 86, 95, 1);
+            row.connection = seedValue(seed + 30, 87, 96, 1);
+            return row;
+        });
+    };
+
+    Pages._kpiBreadcrumbHtml = function() {
+        var ctx = this._kpiCtx || {};
+        var html = '<button class="kpi-bc" onclick="Pages._kpiLevel=\'province\';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">省</button>';
+        if (ctx.city) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'city\';Pages._kpiCtx={city:\'' + esc(ctx.city) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + esc(ctx.city) + '</button>';
+        if (ctx.district) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'district\';Pages._kpiCtx={city:\'' + esc(ctx.city) + '\',district:\'' + esc(ctx.district) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + esc(ctx.district) + '</button>';
+        if (ctx.bras) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'bras\';Pages._kpiCtx={city:\'' + esc(ctx.city) + '\',district:\'' + esc(ctx.district) + '\',bras:\'' + esc(ctx.bras) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + esc(ctx.bras) + '</button>';
+        if (ctx.olt) html += '<span>›</span><button class="kpi-bc active">' + esc(ctx.olt) + '</button>';
+        return html;
+    };
+
+    Pages.renderKpiView = function(container) {
+        var rows = this._buildKpiRows();
+        var first = rows[0] || {};
+        var cards = kpiMetricDefs.map(function(def, idx) {
+            var avg = rows.reduce(function(s, r) { return s + Number(r[def.key] || 0); }, 0) / Math.max(rows.length, 1);
+            return '<div class="kpi-trend-card">' +
+                '<div class="kpi-trend-title">' + esc(def.label) + '<span>最新一小时</span></div>' +
+                '<div class="kpi-trend-value">' + avg.toFixed(1) + '<small>' + esc(def.unit) + '</small></div>' +
+                '<div class="mini-line" id="kpiMini' + idx + '"></div>' +
+            '</div>';
+        }).join('');
+        var th = '<tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>PON口</th>' +
+            kpiMetricDefs.map(function(d) { return '<th>' + esc(d.label) + '</th>'; }).join('') + '<th>详情</th></tr>';
+        var body = rows.map(function(r, i) {
+            var metricTds = kpiMetricDefs.map(function(def) {
+                return '<td><a class="drill-link" onclick="Pages.showKpiQualityList(\'' + esc(r.drillName) + '\',\'' + esc(def.label) + '\')">' + r[def.key] + esc(def.unit) + '</a></td>';
+            }).join('');
+            return '<tr><td>' + esc(r.time) + '</td>' +
+                '<td><a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + esc(r.region || '-') + '</a></td>' +
+                '<td>' + (r.level === 'city' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + esc(r.district) + '</a>' : esc(r.district || '-')) + '</td>' +
+                '<td>' + (r.level === 'district' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + esc(r.bras) + '</a>' : esc(r.bras || '-')) + '</td>' +
+                '<td>' + (r.level === 'bras' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + i + ')">' + esc(r.olt) + '</a>' : esc(r.olt || '-')) + '</td>' +
+                '<td>' + esc(r.pon || '-') + '</td>' + metricTds +
+                '<td><button class="btn" onclick="Pages.showKpiTrend(\'' + esc(r.drillName) + '\')">趋势</button></td></tr>';
+        }).join('');
+        container.innerHTML =
+            '<div class="page-content">' +
+                '<div class="kpi-trend-grid">' + cards + '</div>' +
+                '<div class="data-table-wrapper" style="margin-top:8px;">' +
+                    '<div class="kpi-detail-head"><span>KPI详情</span><div class="kpi-breadcrumb">' + this._kpiBreadcrumbHtml() + '</div></div>' +
+                    '<table class="data-table kpi-detail-table"><thead>' + th + '</thead><tbody>' + body + '</tbody></table>' +
+                '</div>' +
+            '</div>';
+        this.initRequirementKpiCharts(rows, first);
+    };
+
+    Pages.kpiDrill = function(index) {
+        var r = this._buildKpiRows()[index];
+        if (!r) return;
+        if (this._kpiLevel === 'province') { this._kpiLevel = 'city'; this._kpiCtx = { city: r.region }; }
+        else if (this._kpiLevel === 'city') { this._kpiLevel = 'district'; this._kpiCtx = { city: r.region, district: r.district }; }
+        else if (this._kpiLevel === 'district') { this._kpiLevel = 'bras'; this._kpiCtx = { city: r.region, district: r.district, bras: r.bras }; }
+        else if (this._kpiLevel === 'bras') { this._kpiLevel = 'olt'; this._kpiCtx = { city: r.region, district: r.district, bras: r.bras, olt: r.olt }; }
+        this.renderKpiView(document.getElementById('page-kpi-view'));
+    };
+
+    Pages.initRequirementKpiCharts = function(rows) {
+        if (!window.echarts) return;
+        kpiMetricDefs.forEach(function(def, idx) {
+            var el = document.getElementById('kpiMini' + idx);
+            if (!el) return;
+            var chart = echarts.init(el);
+            App.chartInstances['kpiMini' + idx] = chart;
+            var base = rows[0] ? rows[0][def.key] : 10;
+            var data = [5,4,3,2,1,0].reverse().map(function(i) { return Number((base + Math.sin(i + idx) * (def.goodLow ? 0.18 : 1.2)).toFixed(1)); });
+            chart.setOption({
+                grid:{ left:4, right:4, top:6, bottom:4 },
+                xAxis:{ type:'category', show:false, data:['-5','-4','-3','-2','-1','now'] },
+                yAxis:{ type:'value', show:false, scale:true },
+                series:[{ type:'line', smooth:true, symbol:'none', lineStyle:{ color:'#5b8ff9', width:2 }, areaStyle:{ color:'rgba(91,143,249,0.12)' }, data:data }]
+            });
+        });
+    };
+
+    Pages.showKpiTrend = function(region) {
+        var id = 'kpiTrendModalChart';
+        Modal.show('趋势详情 - ' + region,
+            '<div style="height:280px;" id="' + id + '"></div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '760px');
+        setTimeout(function() {
+            if (!window.echarts) return;
+            var c = echarts.init(document.getElementById(id));
+            c.setOption({
+                tooltip:{ trigger:'axis' },
+                legend:{ top:4, data:['用户中断平均时长','家庭网优良率','视频下载速率','游戏平均时延'] },
+                grid:{ top:42, left:42, right:24, bottom:28 },
+                xAxis:{ type:'category', data:['00','04','08','12','16','18','20','24'] },
+                yAxis:{ type:'value', scale:true },
+                series:[
+                    { name:'用户中断平均时长', type:'line', smooth:true, data:[2.1,2.0,1.9,1.7,1.6,1.8,1.7,1.6] },
+                    { name:'家庭网优良率', type:'line', smooth:true, data:[94.8,95.1,95.6,96.0,96.2,96.1,96.4,96.3] },
+                    { name:'视频下载速率', type:'line', smooth:true, data:[34,36,38,41,42,43,44,45] },
+                    { name:'游戏平均时延', type:'line', smooth:true, data:[39,38,36,35,34,35,33,32] }
+                ]
+            });
+        }, 60);
+    };
+
+    Pages.showKpiQualityList = function(region, metricName) {
+        var qTypes = Object.keys(qualityTypeTags);
+        var users = [1,2,3,4,5,6].map(function(i) {
+            var type = qTypes[(hashText(region) + i) % qTypes.length];
+            var tags = qualityTypeTags[type];
+            return '<tr><td>JL' + (20260000 + hashText(region + i) % 899999).toString().padStart(6, '0') + '</td><td>' + esc(region) + '</td><td>' + type + '</td><td>' + tags[i % tags.length] + '</td><td>' + seedValue(i + hashText(region), 58, 82, 1) + '</td></tr>';
+        }).join('');
+        var ips = [1,2,3,4,5].map(function(i) {
+            return '<tr><td>10.' + (20 + i) + '.' + (hashText(region) % 200) + '.' + (30 + i) + '</td><td>' + ['视频','游戏','下载','DNS','IPTV'][i - 1] + '</td><td>' + seedValue(i + 4, 24, 92, 1) + 'ms</td><td>' + seedValue(i + 7, 0.2, 3.8, 2) + '%</td><td>' + Math.round(seedValue(i + 11, 40, 360, 0)) + '</td></tr>';
+        }).join('');
+        Modal.show(metricName + ' - ' + region,
+            '<div class="modal-tabs"><button class="btn btn-primary" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'block\';document.getElementById(\'kpiIpTab\').style.display=\'none\'">质差用户</button><button class="btn" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'none\';document.getElementById(\'kpiIpTab\').style.display=\'block\'">质差服务器IP</button></div>' +
+            '<div id="kpiUsersTab"><table class="data-table"><thead><tr><th>用户账号</th><th>区域</th><th>质差类型</th><th>质差标签</th><th>CEI</th></tr></thead><tbody>' + users + '</tbody></table></div>' +
+            '<div id="kpiIpTab" style="display:none;"><table class="data-table"><thead><tr><th>服务器IP</th><th>业务</th><th>平均时延</th><th>丢包率</th><th>影响用户</th></tr></thead><tbody>' + ips + '</tbody></table></div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '900px');
+    };
+
+    Pages.showGisMetricDrill = function(metricName) {
+        var level = (window.GridMap && GridMap.currentLevel) || 0;
+        var city = (window.GridMap && GridMap.currentCityName) || '';
+        var district = (window.GridMap && GridMap.currentDistrictName) || '';
+        var headers = ['时间','地市'];
+        if (level >= 1) headers.push('区县');
+        if (level >= 2) headers.push('BRAS');
+        if (level >= 2) headers.push('OLT');
+        headers.push('总体CEI分数','业务CEI分数','通断CEI分数','详情');
+        var rowNames = level === 0 ? ((window.JilinData && JilinData.cities) ? JilinData.cities : Object.keys(cityCodes)) :
+            (level === 1 ? (districtsByCity[city] || districtsByCity['长春']) : [1,2,3,4,5].map(function(i) { return makeBras(city, district, i); }));
+        var body = rowNames.map(function(name, i) {
+            var rowCity = level === 0 ? name : city;
+            var rowDistrict = level === 1 ? name : district;
+            var bras = level >= 2 ? name : '';
+            var olt = level >= 2 ? makeOlt(rowCity, rowDistrict, bras, i + 1) : '';
+            var seed = hashText(metricName + name + i);
+            var tds = ['<td>' + currentTimeLabel() + '</td>', '<td>' + esc(rowCity) + '</td>'];
+            if (level >= 1) tds.push('<td>' + esc(rowDistrict) + '</td>');
+            if (level >= 2) tds.push('<td>' + esc(bras) + '</td>');
+            if (level >= 2) tds.push('<td>' + esc(olt) + '</td>');
+            tds.push('<td>' + seedValue(seed, 88, 96, 1) + '</td><td>' + seedValue(seed + 11, 86, 95, 1) + '</td><td>' + seedValue(seed + 22, 87, 96, 1) + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + esc(name) + '\')">趋势</button></td>');
+            return '<tr>' + tds.join('') + '</tr>';
+        }).join('');
+        Modal.show(metricName + '下钻',
+            '<table class="data-table"><thead><tr>' + headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' + body + '</tbody></table>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '980px');
+    };
+
+    window.renderGisMetricPanel = function() {
+        var container = document.getElementById('mapContainer');
+        if (!container) return;
+        var old = document.getElementById('gisMetricPanel');
+        if (old) old.parentNode.removeChild(old);
+        var panel = document.createElement('div');
+        panel.id = 'gisMetricPanel';
+        panel.className = 'gis-metric-panel';
+        panel.innerHTML = '<div class="gis-metric-panel-title">指标下钻</div>' +
+            gisMetricDefs.map(function(name) {
+                return '<button class="gis-metric-chip" onclick="Pages.showGisMetricDrill(\'' + esc(name) + '\')">' + esc(name) + '</button>';
+            }).join('');
+        container.appendChild(panel);
+    };
+})();
+
 (function() {
     if (!window.Pages) return;
     const safe = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2380,6 +3079,16 @@ EnhancePages.exportXdr = function() {
     var opts = function(list, val) { return list.map(function(x) { return '<option value="' + html(x) + '"' + (x === val ? ' selected' : '') + '>' + html(x) + '</option>'; }).join(''); };
     var cityOptions = function() { return ['全部'].concat((window.JilinData && JilinData.cities) ? JilinData.cities : ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边']); };
     var deptOptions = ['网络运维部','装维中心','信息技术部','市场部','客服中心','网络优化中心'];
+    var menuPermOptions = ['全模块','全景视图,质量画像,远程操作','全景视图,质量画像,质差定界定位,远程操作,工单闭环','全景视图','质量画像','质差定界定位','远程操作','工单闭环','用户管理','系统管理','只读查看'];
+    var operationPermMap = {'view,execute,export':'查看,执行,导出','view,create,edit,delete,export':'查看,新增,编辑,删除,导出','view,export':'查看,导出'};
+    var operationPermOptions = ['查看,执行,导出','查看,新增,编辑,删除,导出','查看,导出'];
+    var dataScopeMap = {'province':'省级','city':'地市','grid':'网格','self':'本人'};
+    var dataScopeOptions = ['省级','地市','区县','网格','本人'];
+    function displayPermission(value, map) { return map[value] || value || '-'; }
+    function normalizeOption(value, list, map, fallback) {
+        var mapped = map && map[value] ? map[value] : value;
+        return list.indexOf(mapped) >= 0 ? mapped : fallback;
+    }
     var userQualityTags = {'线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],'设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],'业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],'配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']};
     var bizQualityTags = {'视频':{'视频高时延':['TCP建连时延','HTTP平均响应时延'],'视频卡顿':['HTTP响应成功率','视频卡顿时长占比','抖动','丢包率','下载速率']},'游戏':{'游戏高时延':['TCP建连时延','HTTP平均响应时延'],'游戏卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'在线办公':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},'网站/下载':{'应用高时延':['TCP建连时延','HTTP平均响应时延'],'应用卡顿':['HTTP响应成功率','下载速率','抖动','丢包率','下载成功率']}};
 
@@ -2387,7 +3096,7 @@ EnhancePages.exportXdr = function() {
         var users = (window.API && API.systemUsers ? await API.systemUsers() : []) || [];
         var rows = users.map(function(u) {
             var locked = Number(u.locked || 0) === 1;
-            return '<tr><td>' + u.id + '</td><td>' + html(u.username) + '</td><td>' + html(u.real_name) + '</td><td>' + html(u.role) + '</td><td>' + html(u.city_name || '全部') + '</td><td>' + html(u.department || '-') + '</td><td>' + Pages.statusHtml(u.status ? '启用' : '禁用') + (locked ? ' <span class="status-warning">锁定</span>' : '') + '</td><td>' + html(u.data_scope || 'city') + '</td><td>' + html(u.last_login_at || '-') + '</td><td style="white-space:nowrap;"><button class="btn" onclick="Pages.showBackendUserModal(' + u.id + ')">编辑</button><button class="btn" onclick="Pages.toggleBackendUser(' + u.id + ',' + (u.status ? 0 : 1) + ')">' + (u.status ? '禁用' : '启用') + '</button><button class="btn" onclick="Pages.resetBackendUserPwd(' + u.id + ')">密码重置</button><button class="btn" onclick="Pages.lockBackendUser(' + u.id + ',' + (locked ? 0 : 1) + ')">' + (locked ? '解锁' : '锁定') + '</button></td></tr>';
+            return '<tr><td>' + u.id + '</td><td>' + html(u.username) + '</td><td>' + html(u.real_name) + '</td><td>' + html(u.role) + '</td><td>' + html(u.city_name || '全部') + '</td><td>' + html(u.department || '-') + '</td><td>' + Pages.statusHtml(u.status ? '启用' : '禁用') + (locked ? ' <span class="status-warning">锁定</span>' : '') + '</td><td>' + html(displayPermission(u.data_scope, dataScopeMap)) + '</td><td>' + html(u.last_login_at || '-') + '</td><td style="white-space:nowrap;"><button class="btn" onclick="Pages.showBackendUserModal(' + u.id + ')">编辑</button><button class="btn" onclick="Pages.toggleBackendUser(' + u.id + ',' + (u.status ? 0 : 1) + ')">' + (u.status ? '禁用' : '启用') + '</button><button class="btn" onclick="Pages.resetBackendUserPwd(' + u.id + ')">密码重置</button><button class="btn" onclick="Pages.lockBackendUser(' + u.id + ',' + (locked ? 0 : 1) + ')">' + (locked ? '解锁' : '锁定') + '</button></td></tr>';
         }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无用户</td></tr>';
         container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header"><span class="system-panel-title">用户管理</span><div><button class="btn btn-primary" onclick="Pages.showBackendUserModal()">+ 新增用户</button></div></div><div class="system-panel-body" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>地市</th><th>部门</th><th>状态</th><th>数据范围</th><th>最后登录</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
     };
@@ -2402,9 +3111,9 @@ EnhancePages.exportXdr = function() {
             '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="beCity">' + opts(cityOptions(), u.city_name || '全部') + '</select></div>' +
             '<div class="form-group"><label class="form-label">部门</label><select class="form-select" id="beDept">' + opts(deptOptions, u.department || '网络运维部') + '</select></div>' +
             '<div class="form-group"><label class="form-label">电话</label><input class="form-input" id="bePhone" value="' + html(u.phone || '') + '"></div>' +
-            '<div class="form-group"><label class="form-label">系统角色访问权限</label><select class="form-select" id="beMenuPerm">' + opts(['全景视图,质量画像,远程操作','全模块','只读查看'], u.menu_permissions || '全景视图,质量画像,远程操作') + '</select></div>' +
-            '<div class="form-group"><label class="form-label">数据操作权限</label><select class="form-select" id="beOpsPerm">' + opts(['view,execute,export','view,create,edit,delete,export','view,export'], u.operation_permissions || 'view,execute,export') + '</select></div>' +
-            '<div class="form-group"><label class="form-label">数据范围权限</label><select class="form-select" id="beScope">' + opts(['province','city','grid','self'], u.data_scope || 'city') + '</select></div></div>',
+            '<div class="form-group"><label class="form-label">系统角色访问权限</label><select class="form-select" id="beMenuPerm">' + opts(menuPermOptions, normalizeOption(u.menu_permissions, menuPermOptions, null, '全景视图,质量画像,远程操作')) + '</select></div>' +
+            '<div class="form-group"><label class="form-label">数据操作权限</label><select class="form-select" id="beOpsPerm">' + opts(operationPermOptions, normalizeOption(u.operation_permissions, operationPermOptions, operationPermMap, '查看,执行,导出')) + '</select></div>' +
+            '<div class="form-group"><label class="form-label">数据范围权限</label><select class="form-select" id="beScope">' + opts(dataScopeOptions, normalizeOption(u.data_scope, dataScopeOptions, dataScopeMap, '地市')) + '</select></div></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendUser()">保存</button>', '680px');
     };
     Pages.saveBackendUser = async function() {
@@ -2494,3 +3203,346 @@ EnhancePages.exportXdr = function() {
     Pages.showKpiDetail = function(region) { Modal.show('KPI下钻详情 - ' + region, '<div style="line-height:2;">质差用户清单与质差服务器IP清单已按当前区域模拟生成，支持后续接真实DPI/CEI接口。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px'); };
     Pages.showKpiTrend = function(region) { Modal.show('趋势详情 - ' + region, '<div style="line-height:2;">近24小时总体CEI、业务CEI、通断CEI趋势已按小时粒度模拟生成。</div>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '520px'); };
 })();
+
+// Actual last KPI binding. Keep this after the legacy block above.
+(function() {
+    if (!window.Pages) return;
+    function h(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function hv(s) { var x = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) x = ((x << 5) - x + s.charCodeAt(i)) | 0; return Math.abs(x); }
+    function val(seed, min, max, d) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Number((min + x * (max - min)).toFixed(d == null ? 1 : d)); }
+    function ceiUserDistribution(rows, key) {
+        var bins = [0, 0, 0, 0, 0];
+        (rows || []).forEach(function(r) {
+            var score = Number(r[key] || 0);
+            var users = Math.max(1, Math.round(Number(r.users || r.activeUsers || 1) * 10000));
+            if (score < 80) bins[0] += users;
+            else if (score < 90) bins[1] += users;
+            else if (score < 95) bins[2] += users;
+            else if (score < 100) bins[3] += users;
+            else bins[4] += users;
+        });
+        return bins;
+    }
+    function avg(rows, key) { return rows.reduce(function(sum, row) { return sum + Number(row[key] || 0); }, 0) / Math.max(rows.length, 1); }
+    var cityCodes = { '长春':'CC', '吉林':'JL', '四平':'SP', '辽源':'LY', '通化':'TH', '白山':'BS', '松原':'SY', '白城':'BC', '延边':'YB', '长白山':'CBS' };
+    var districtMap = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区','九台区','榆树市','德惠市','农安县'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市','桦甸市','舒兰市','磐石市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市','双辽市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县','辉南县','柳河县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县','长白县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','和龙市','汪清县','安图县'],
+        '长白山':['池北区','池西区','池南区']
+    };
+    var districtCodes = {
+        '朝阳区':'cy','南关区':'ng','宽城区':'kc','二道区':'ed','绿园区':'ly','双阳区':'sy','九台区':'jt','榆树市':'ys','德惠市':'dh','农安县':'na',
+        '昌邑区':'cy','龙潭区':'lt','船营区':'cyg','丰满区':'fm','永吉县':'yj','蛟河市':'jh','桦甸市':'hd','舒兰市':'sl','磐石市':'ps',
+        '铁西区':'tx','铁东区':'td','梨树县':'ls','伊通县':'yt','公主岭市':'gzl','双辽市':'sl',
+        '龙山区':'ls','西安区':'xa','东丰县':'df','东辽县':'dl',
+        '东昌区':'dc','二道江区':'edj','梅河口市':'mhk','集安市':'ja','通化县':'th','辉南县':'hn','柳河县':'lh',
+        '浑江区':'hj','江源区':'jy','临江市':'lj','抚松县':'fs','靖宇县':'jyx','长白县':'cb',
+        '宁江区':'nj','前郭县':'qg','长岭县':'cl','乾安县':'qa','扶余市':'fy',
+        '洮北区':'tb','镇赉县':'zl','通榆县':'ty','洮南市':'tn','大安市':'da',
+        '延吉市':'yj','图们市':'tm','敦化市':'dh','珲春市':'hc','龙井市':'lj','和龙市':'hl','汪清县':'wq','安图县':'at',
+        '池北区':'cb','池西区':'cx','池南区':'cn'
+    };
+    function districtCode(name) {
+        if (!name) return 'hx';
+        if (/^[a-z0-9]+$/i.test(name)) return String(name).toLowerCase();
+        return districtCodes[name] || String(name).replace(/[市区县州]/g, '').slice(0, 2).toLowerCase() || 'hx';
+    }
+    var vendors = ['HW', 'ZTE', 'FH', 'ALU'];
+    var metrics = [
+        { key:'interrupt', label:'用户中断平均时长', unit:'h', min:0.8, max:2.8, better:'low' },
+        { key:'homeGood', label:'家庭网优良率', unit:'%', min:92, max:98, better:'high' },
+        { key:'videoSpeed', label:'TOP10视频平均下载速率', unit:'Mbps', min:26, max:52, better:'high' },
+        { key:'gameDelay', label:'TOP10游戏平均时延', unit:'ms', min:16, max:46, better:'low' }
+    ];
+    var tagMap = {
+        '线路质差':['ONU接收光功率弱光','ONU接收光功率强光','网关高误码'],
+        '设备质差':['网关CPU占用高','网关CPU跳变高','网关内存占用高','网关内存利用率跳变高','网关频繁重启','路由器频繁异常掉线','路由器短时频繁上下线'],
+        '业务质差':['上网视频卡顿','游戏时延高','下载业务时延高'],
+        '配置质差':['WIFI干扰大','网关WIFI信道底噪高','网关WIFI2.4G单频','WIFI2.4G信号占比高','网关WIFI信道信道利用率高']
+    };
+
+    function makeBrasName(city, district, index) {
+        var cityCode = cityCodes[city] || 'JL';
+        var distCode = districtCode(district);
+        return 'JL-' + cityCode + '-' + distCode.toUpperCase() + '-BRAS-' + String(index).padStart(3, '0') + '-' + vendors[index % vendors.length];
+    }
+
+    function makeOltName(city, district, index) {
+        var cityCode = cityCodes[city] || 'JL';
+        var distCode = districtCode(district);
+        return 'JL-' + cityCode + '-' + distCode.toUpperCase() + '-OLT-' + String(index).padStart(3, '0') + '-' + vendors[(index + 1) % vendors.length] + '-' + (index % 2 ? 'C600' : 'MA5800');
+    }
+
+    function makeTrendData(name, metric) {
+        return ['13:00','14:00','15:00','16:00','17:00','18:00'].map(function(_, idx) {
+            return val(hv(name + '|' + metric.key + '|' + idx), metric.min, metric.max, 1);
+        });
+    }
+
+    function makeDelta(metric, current, trend) {
+        var previous = trend[Math.max(0, trend.length - 2)] || current;
+        var delta = Number((current - previous).toFixed(1));
+        return metric.better === 'low' ? Number((-delta).toFixed(1)) : delta;
+    }
+
+    function buildAggregateTrend(rows, metric) {
+        return ['13:00','14:00','15:00','16:00','17:00','18:00'].map(function(_, idx) {
+            var values = rows.map(function(row) { return Number((row[metric.key + 'Trend'] || [])[idx] || row[metric.key] || 0); });
+            var total = values.reduce(function(sum, value) { return sum + value; }, 0);
+            return Number((total / Math.max(values.length, 1)).toFixed(1));
+        });
+    }
+
+    function buildMetricCell(row, metric) {
+        var canOpenList = (Pages._kpiLevel || 'province') === 'province';
+        var text = row[metric.key] + metric.unit;
+        if (!canOpenList) return '<td>' + text + '</td>';
+        return '<td><a class="drill-link" onclick="Pages.showKpiQualityList(\'' + h(row.drillName) + '\',\'' + h(metric.label) + '\')">' + text + '</a></td>';
+    }
+
+    Pages._kpiLevel = 'province';
+    Pages._kpiCtx = {};
+    Pages._buildKpiRows = function() {
+        var level = this._kpiLevel || 'province';
+        var ctx = this._kpiCtx || {};
+        var names;
+        if (level === 'province') names = window.JilinData && JilinData.cities ? JilinData.cities.filter(function(name) { return name !== '长白山'; }) : Object.keys(cityCodes).filter(function(name) { return name !== '长白山'; });
+        else if (level === 'city') names = districtMap[ctx.city] || districtMap['长春'];
+        else if (level === 'district') names = [1,2,3,4,5].map(function(i) { return makeBrasName(ctx.city, ctx.district, i); });
+        else names = [1,2,3,4,5,6].map(function(i) { return makeOltName(ctx.city, ctx.district, i); });
+
+        return names.map(function(name, index) {
+            var row = {
+                time: '2026-05-17 18:00',
+                level: level,
+                region: level === 'province' ? name : ctx.city,
+                district: level === 'province' ? '' : (level === 'city' ? name : (ctx.districtName || ctx.district || '')),
+                districtCode: level === 'province' ? '' : (level === 'city' ? districtCode(name) : districtCode(ctx.districtName || ctx.district || '')),
+                districtName: level === 'province' ? '' : (level === 'city' ? name : (ctx.districtName || ctx.district || '')),
+                bras: level === 'district' ? name : (ctx.bras || ''),
+                olt: level === 'bras' ? name : '',
+                drillName: name
+            };
+            var seed = hv([level, row.region, row.district, row.bras, row.olt, name, index].join('|'));
+            metrics.forEach(function(metric) {
+                row[metric.key] = val(seed + hv(metric.key), metric.min, metric.max, 1);
+                row[metric.key + 'Trend'] = makeTrendData(name + '|' + level, metric);
+            });
+            return row;
+        });
+    };
+
+    Pages._kpiBreadcrumbHtml = function() {
+        var ctx = this._kpiCtx || {};
+        var html = '<button class="kpi-bc" onclick="Pages._kpiLevel=\'province\';Pages._kpiCtx={};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">省</button>';
+        if (ctx.city) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'city\';Pages._kpiCtx={city:\'' + h(ctx.city) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(ctx.city) + '</button>';
+        if (ctx.district) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'district\';Pages._kpiCtx={city:\'' + h(ctx.city) + '\',district:\'' + h(ctx.district) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(ctx.district) + '</button>';
+        if (ctx.bras) html += '<span>›</span><button class="kpi-bc" onclick="Pages._kpiLevel=\'bras\';Pages._kpiCtx={city:\'' + h(ctx.city) + '\',district:\'' + h(ctx.district) + '\',bras:\'' + h(ctx.bras) + '\'};Pages.renderKpiView(document.getElementById(\'page-kpi-view\'))">' + h(ctx.bras) + '</button>';
+        if (ctx.olt) html += '<span>›</span><button class="kpi-bc active">' + h(ctx.olt) + '</button>';
+        return html;
+    };
+
+    Pages.renderKpiView = function(container) {
+        var rows = this._buildKpiRows();
+        var cards = metrics.map(function(metric, idx) {
+            var current = avg(rows, metric.key);
+            var trend = buildAggregateTrend(rows, metric);
+            var delta = makeDelta(metric, current, trend);
+            return '<div class="kpi-trend-card">'
+                + '<div class="kpi-trend-title">' + h(metric.label) + '<span>最新一小时指标值</span></div>'
+                + '<div class="kpi-trend-value">' + current.toFixed(1) + '<small>' + h(metric.unit) + '</small></div>'
+                + '<div class="kpi-trend-delta ' + (delta >= 0 ? 'up' : 'down') + '">' + (delta >= 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(1) + '%</div>'
+                + '<div class="mini-line" id="kpiMiniFinalLast' + idx + '"></div>'
+                + '</div>';
+        }).join('');
+
+        var head = '<tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th>'
+            + metrics.map(function(metric) { return '<th>' + h(metric.label) + '</th>'; }).join('')
+            + '<th>详情</th></tr>';
+
+        var body = rows.map(function(row, index) {
+            var regionCell = '<a class="drill-link" onclick="Pages.kpiDrill(' + index + ')">' + h(row.region || '-') + '</a>';
+            var districtCell = row.level === 'city' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + index + ')">' + h(row.district || '-') + '</a>' : h(row.district || '-');
+            var brasCell = row.level === 'district' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + index + ')">' + h(row.bras || '-') + '</a>' : h(row.bras || '-');
+            var oltCell = row.level === 'bras' ? '<a class="drill-link" onclick="Pages.kpiDrill(' + index + ')">' + h(row.olt || '-') + '</a>' : h(row.olt || '-');
+            var metricCells = metrics.map(function(metric) { return buildMetricCell(row, metric); }).join('');
+            return '<tr>'
+                + '<td>' + h(row.time) + '</td>'
+                + '<td>' + regionCell + '</td>'
+                + '<td>' + districtCell + '</td>'
+                + '<td>' + brasCell + '</td>'
+                + '<td>' + oltCell + '</td>'
+                + metricCells
+                + '<td><button class="btn" onclick="Pages.showKpiTrend(\'' + h(row.drillName) + '\')">趋势</button></td>'
+                + '</tr>';
+        }).join('');
+
+        container.innerHTML = '<div class="page-content">'
+            + '<div class="kpi-trend-grid">' + cards + '</div>'
+            + '<div class="data-table-wrapper" style="margin-top:8px;">'
+            + '<div class="kpi-detail-head"><span>KPI详情</span><div class="kpi-breadcrumb">' + this._kpiBreadcrumbHtml() + '</div></div>'
+            + '<table class="data-table kpi-detail-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>'
+            + '</div></div>';
+
+        if (window.echarts) metrics.forEach(function(metric, idx) {
+            var el = document.getElementById('kpiMiniFinalLast' + idx);
+            if (!el) return;
+            var chart = echarts.init(el);
+            App.chartInstances['kpiMiniFinalLast' + idx] = chart;
+            chart.setOption({
+                grid: { left: 4, right: 4, top: 6, bottom: 4 },
+                xAxis: { type: 'category', show: false, data: ['13:00','14:00','15:00','16:00','17:00','18:00'] },
+                yAxis: { type: 'value', show: false, scale: true },
+                series: [{
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    lineStyle: { color: '#5b8ff9', width: 2 },
+                    areaStyle: { color: 'rgba(91,143,249,0.12)' },
+                    data: buildAggregateTrend(rows, metric)
+                }]
+            });
+        });
+    };
+
+    Pages.kpiDrill = function(index) {
+        var row = this._buildKpiRows()[index];
+        if (!row) return;
+        if (this._kpiLevel === 'province') {
+            this._kpiLevel = 'city';
+            this._kpiCtx = { city: row.region };
+        } else if (this._kpiLevel === 'city') {
+            this._kpiLevel = 'district';
+            this._kpiCtx = { city: row.region, district: row.districtName || row.district, districtName: row.districtName || row.district, districtCode: row.districtCode || districtCode(row.district) };
+        } else if (this._kpiLevel === 'district') {
+            this._kpiLevel = 'bras';
+            this._kpiCtx = { city: row.region, district: row.districtName || row.district, districtName: row.districtName || row.district, districtCode: row.districtCode || districtCode(row.district), bras: row.bras };
+        } else if (this._kpiLevel === 'bras') {
+            this._kpiLevel = 'olt';
+            this._kpiCtx = { city: row.region, district: row.districtName || row.district, districtName: row.districtName || row.district, districtCode: row.districtCode || districtCode(row.district), bras: row.bras, olt: row.olt };
+        }
+        this.renderKpiView(document.getElementById('page-kpi-view'));
+    };
+
+    Pages.showKpiQualityList = function(region, metricName) {
+        var typeNames = Object.keys(tagMap);
+        var users = [1,2,3,4,5,6].map(function(i) {
+            var type = typeNames[(hv(region) + i) % typeNames.length];
+            var tags = tagMap[type] || [];
+            return '<tr>'
+                + '<td>JL' + String(20260000 + (hv(region + '|' + i) % 899999)).padStart(8, '0') + '</td>'
+                + '<td>' + h(region) + '</td>'
+                + '<td>' + h(type) + '</td>'
+                + '<td>' + h(tags[i % tags.length] || '') + '</td>'
+                + '<td>' + val(i + hv(region), 58, 82, 1) + '</td>'
+                + '</tr>';
+        }).join('');
+        var ips = [1,2,3,4,5].map(function(i) {
+            return '<tr>'
+                + '<td>10.' + (20 + i) + '.' + (hv(region) % 200) + '.' + (30 + i) + '</td>'
+                + '<td>' + ['视频','游戏','下载','DNS','IPTV'][i - 1] + '</td>'
+                + '<td>' + val(i + 4, 24, 92, 1) + 'ms</td>'
+                + '<td>' + val(i + 7, 0.2, 3.8, 2) + '%</td>'
+                + '<td>' + Math.round(val(i + 11, 40, 360, 0)) + '</td>'
+                + '</tr>';
+        }).join('');
+        Modal.show(metricName + ' - ' + region,
+            '<div class="modal-tabs">'
+            + '<button class="btn btn-primary" id="kpiUsersBtn" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'block\';document.getElementById(\'kpiIpTab\').style.display=\'none\';this.classList.add(\'btn-primary\');document.getElementById(\'kpiIpsBtn\').classList.remove(\'btn-primary\')">质差用户</button>'
+            + '<button class="btn" id="kpiIpsBtn" onclick="document.getElementById(\'kpiUsersTab\').style.display=\'none\';document.getElementById(\'kpiIpTab\').style.display=\'block\';this.classList.add(\'btn-primary\');document.getElementById(\'kpiUsersBtn\').classList.remove(\'btn-primary\')">质差服务器IP</button>'
+            + '</div>'
+            + '<div id="kpiUsersTab"><table class="data-table"><thead><tr><th>用户账号</th><th>区域</th><th>质差类型</th><th>质差标签</th><th>CEI</th></tr></thead><tbody>' + users + '</tbody></table></div>'
+            + '<div id="kpiIpTab" style="display:none;"><table class="data-table"><thead><tr><th>服务器IP</th><th>业务</th><th>平均时延</th><th>丢包率</th><th>影响用户</th></tr></thead><tbody>' + ips + '</tbody></table></div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>',
+            '900px');
+    };
+
+    Pages.showKpiTrend = function(region) {
+        var cards = metrics.map(function(metric, idx) {
+            return '<div style="padding:12px;border:1px solid #e6ebf2;border-radius:6px;background:#fff;">'
+                + '<div style="font-size:14px;font-weight:600;color:#1f2a44;">' + h(metric.label) + '</div>'
+                + '<div class="mini-line" id="kpiTrendModal' + idx + '" style="height:160px;margin-top:8px;"></div>'
+                + '</div>';
+        }).join('');
+        Modal.show('趋势详情 - ' + region,
+            '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">' + cards + '</div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>',
+            '980px');
+        if (window.echarts) {
+            metrics.forEach(function(metric, idx) {
+                var el = document.getElementById('kpiTrendModal' + idx);
+                if (!el) return;
+                var chart = echarts.init(el);
+                App.chartInstances['kpiTrendModal' + idx] = chart;
+                chart.setOption({
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: 40, right: 20, top: 20, bottom: 28 },
+                    xAxis: { type: 'category', data: ['13:00','14:00','15:00','16:00','17:00','18:00'] },
+                    yAxis: { type: 'value', scale: true },
+                    series: [{
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 6,
+                        lineStyle: { color: '#2b7de9', width: 2 },
+                        areaStyle: { color: 'rgba(43,125,233,0.12)' },
+                        data: makeTrendData(region, metric)
+                    }]
+                });
+            });
+        }
+    };
+})();// EOF GIS dashboard metric drill override.
+(function() {
+    if (!window.Pages) return;
+    function e(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function hs(v) { var h = 0; v = String(v || ''); for (var i = 0; i < v.length; i++) h = ((h << 5) - h + v.charCodeAt(i)) | 0; return Math.abs(h); }
+    function nv(seed, min, max) { var x = Math.abs(Math.sin(seed) * 10000) % 1; return Number((min + x * (max - min)).toFixed(1)); }
+    var dmap = {
+        '长春':['朝阳区','南关区','宽城区','二道区','绿园区','双阳区'],
+        '吉林':['昌邑区','龙潭区','船营区','丰满区','永吉县','蛟河市'],
+        '四平':['铁西区','铁东区','梨树县','伊通县','公主岭市'],
+        '辽源':['龙山区','西安区','东丰县','东辽县'],
+        '通化':['东昌区','二道江区','梅河口市','集安市','通化县'],
+        '白山':['浑江区','江源区','临江市','抚松县','靖宇县'],
+        '松原':['宁江区','前郭县','长岭县','乾安县','扶余市'],
+        '白城':['洮北区','镇赉县','通榆县','洮南市','大安市'],
+        '延边':['延吉市','图们市','敦化市','珲春市','龙井市','安图县']
+    };
+    Pages.showGisMetricDrill = function(metricName) {
+        var useLeafletLevel = this._gisLevel === 'city' || this._gisLevel === 'province';
+        var level = useLeafletLevel ? this._gisLevel : (this._gisScreenLevel || 'province');
+        var ctx = useLeafletLevel ? { city: this._gisCityName || '' } : (this._gisScreenCtx || {});
+        var cityRows = window.JilinData && JilinData.cities ? JilinData.cities.filter(function(c) { return c !== '长白山'; }) : Object.keys(dmap);
+        var names = level === 'province' ? cityRows : (level === 'city' ? (dmap[ctx.city] || dmap['长春']) : ['CC-CC-朝阳-BRAS-001-HW','CC-CC-朝阳-BRAS-002-ZTE','CC-CC-朝阳-BRAS-003-HW']);
+        var headers = ['时间','地市'];
+        if (level !== 'province') headers.push('区县');
+        if (level === 'district') headers.push('BRAS');
+        headers.push('总体CEI分数','业务CEI分数','通断CEI分数','详情');
+        var rows = names.map(function(name) {
+            var city = level === 'province' ? name : (ctx.city || '长春');
+            var district = level === 'city' ? name : (ctx.district || '朝阳区');
+            var tds = ['<td>2026-05-17 18:00</td><td>' + e(city) + '</td>'];
+            if (level !== 'province') tds.push('<td>' + e(district) + '</td>');
+            if (level === 'district') tds.push('<td>' + e(name) + '</td>');
+            tds.push('<td>' + nv(hs(name) + 1, 88, 96) + '</td><td>' + nv(hs(name) + 2, 86, 95) + '</td><td>' + nv(hs(name) + 3, 87, 96) + '</td><td><button class="btn" onclick="Pages.showKpiTrend(\'' + e(name) + '\')">趋势</button></td>');
+            return '<tr>' + tds.join('') + '</tr>';
+        }).join('');
+        Modal.show(metricName + '下钻', '<table class="data-table"><thead><tr>' + headers.map(function(x) { return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + rows + '</tbody></table>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '980px');
+    };
+})();
+
+
+
+
+
+
+
+

@@ -394,6 +394,12 @@ function showGridPopup(latlng, name, metrics, levelName) {
         '<div class="qp-row"><span class="qp-k">丢包率</span><span class="qp-v" style="color:' + (metrics.packetLoss > 1 ? '#e74c3c' : '#27ae60') + '">' + metrics.packetLoss + '%</span></div>' +
         '<div class="qp-row"><span class="qp-k">在线率</span><span class="qp-v">' + metrics.onlineRate + '%</span></div>' +
         '<div class="qp-row"><span class="qp-k">千兆渗透率</span><span class="qp-v">' + metrics.gigabitRate + '%</span></div>';
+    var drillHtml =
+        '<div class="gp-drill-row">' +
+            '<button onclick="Pages.showGisMetricDrill(\'总体CEI分数\')">总体CEI趋势</button>' +
+            '<button onclick="Pages.showGisMetricDrill(\'质差用户数\')">质差用户</button>' +
+            '<button onclick="Pages.showGisMetricDrill(\'质差工单闭环率\')">闭环率</button>' +
+        '</div>';
 
     var popupContent =
         '<div class="grid-popup">' +
@@ -405,6 +411,7 @@ function showGridPopup(latlng, name, metrics, levelName) {
                 '<span class="gp-score" style="background:' + scoreColor + '">' + metrics.ceiScore + '<small>分</small></span>' +
             '</div>' +
             '<div class="gp-main">' + mainHtml + '</div>' +
+            drillHtml +
         '</div>';
 
     L.popup({
@@ -510,6 +517,7 @@ function showGisMap() {
         container.style.display = 'flex';
         setTimeout(function() {
             initGridMap();
+            if (typeof renderGisMetricPanel === 'function') renderGisMetricPanel();
         }, 100);
     }
 }

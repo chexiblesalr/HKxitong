@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 家宽网络质量分析平台 - 子页面渲染模块 (增强版)
  * 所有"开发中"页面已实现：筛选、图表、分页、详情
  */
@@ -103,15 +103,16 @@ var Pages = {
             attributionControl: false
         });
 
-        // CartoDB Voyager (light colored map with Chinese labels)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            maxZoom: 18,
-            subdomains: 'abcd'
+        var tileCfg = window.MAP_CFG || {};
+        L.tileLayer(tileCfg.tileUrl || 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            maxZoom: tileCfg.maxZoom || 18,
+            minZoom: tileCfg.minZoom || 5,
+            subdomains: tileCfg.subdomains || '1234',
+            attribution: tileCfg.attribution || '&copy; 高德地图'
         }).addTo(map);
 
-        // Add attribution
         L.control.attribution({ position: 'bottomright', prefix: '' })
-            .addAttribution('© <a href="https://www.openstreetmap.org/">OSM</a> © <a href="https://carto.com/">CARTO</a>')
+            .addAttribution(tileCfg.attribution || '&copy; 高德地图')
             .addTo(map);
 
         this._leafletMap = map;
@@ -137,6 +138,7 @@ var Pages = {
         var self = this;
         this._gisLevel = 'province';
         this._clearMarkers();
+        this._gisProvinceRows = [];
 
         var bc = document.getElementById('gisBreadcrumb');
         if (bc) bc.innerHTML = '<span style="color:#2b7de9;">吉林省</span>';
@@ -166,6 +168,17 @@ var Pages = {
                 marker.bindPopup(popupContent, { maxWidth: 260 });
 
                 self._leafletMarkers.push(marker);
+                self._gisProvinceRows.push({
+                    name: cityName,
+                    overall: Number(c.ceiScore),
+                    business: Number((JilinData.ceiDistribution[cityName] || {}).business || c.ceiScore),
+                    network: Number((JilinData.ceiDistribution[cityName] || {}).network || c.ceiScore),
+                    users: Number(users || 0),
+                    qualityUsers: Number((JilinData.userQualityRecords || []).filter(function(r) { return r.city === cityName; }).length),
+                    qualityApps: Number((JilinData.bizQualityRecords || []).filter(function(r) { return r.city === cityName; }).length),
+                    orders: Number((JilinData.workOrderCityDistribution || {})[cityName] || 0),
+                    closeRate: Number((88 + (c.ceiScore - 88) * 2).toFixed(1))
+                });
                 legendHtml += '<div style="display:flex;align-items:center;gap:6px;color:#333;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span><span style="cursor:pointer;color:#2b7de9;" onclick="Pages.gisDrillTo(\'' + cityName + '\')">' + cityName + '</span>: <strong>' + c.ceiScore + '</strong>分 | ' + users + '万</div>';
             })(city);
         }
@@ -174,6 +187,7 @@ var Pages = {
         if (el) el.innerHTML = legendHtml;
 
         map.setView([43.5, 126.5], 7);
+        if (this.refreshGisDashboardFromMap) this.refreshGisDashboardFromMap();
     },
 
     // 预定义各地市下辖区县坐标
@@ -263,6 +277,7 @@ var Pages = {
         // 使用预定义区县数据
         SeededRandom.reset(20251202 + target.charCodeAt(0));
         var districts = this._getDistrictData(target);
+        var districtRows = [];
         var legendHtml = '';
 
         districts.forEach(function(dist) {
@@ -270,6 +285,11 @@ var Pages = {
             var color = score >= 93 ? '#27ae60' : (score >= 91 ? '#f39c12' : '#e74c3c');
             var userCount = SeededRandom.int(2, 25);
             var qualityCount = SeededRandom.int(50, 500);
+            var businessScore = SeededRandom.float(Math.max(85, score - 2.3), Math.min(96, score + 1.2), 1);
+            var networkScore = SeededRandom.float(Math.max(86, score - 1.4), Math.min(96, score + 1.6), 1);
+            var qualityApps = SeededRandom.int(3, 18);
+            var workOrders = SeededRandom.int(16, 92);
+            var closeRate = SeededRandom.float(78, 96, 1);
 
             var marker = L.marker([dist.lat, dist.lng], {
                 icon: self._createCeiIcon(score, dist.name, 30)
@@ -285,14 +305,27 @@ var Pages = {
             marker.bindPopup(popupContent, { maxWidth: 220 });
 
             self._leafletMarkers.push(marker);
+            districtRows.push({
+                name: dist.name,
+                overall: Number(score),
+                business: Number(businessScore),
+                network: Number(networkScore),
+                users: Number(userCount),
+                qualityUsers: Number(qualityCount),
+                qualityApps: Number(qualityApps),
+                orders: Number(workOrders),
+                closeRate: Number(closeRate)
+            });
             legendHtml += '<div style="display:flex;align-items:center;gap:6px;color:#333;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>' + dist.name + ': ' + score + '分</div>';
         });
+        this._drillDistrictData[target] = districtRows;
 
         // Reset random seed
         SeededRandom.reset(20251202);
 
         var el = document.getElementById('gisLegend');
         if (el) el.innerHTML = legendHtml || '<div style="color:#666;">暂无区县数据</div>';
+        if (this.refreshGisDashboardFromMap) this.refreshGisDashboardFromMap();
     },
 
     _clearMarkers: function() {
@@ -3708,3 +3741,4 @@ var Pages = {
         return originalGatewayRender.call(this, container, page);
     };
 })();
+

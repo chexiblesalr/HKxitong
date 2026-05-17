@@ -453,7 +453,13 @@
         }
 
         function showGisMapPage() {
-            showGisMap();
+            hideGisMap();
+            var container = document.getElementById('page-gis-view');
+            if (window.Pages && Pages.renderGisDashboard) {
+                Pages.renderGisDashboard(container);
+            } else {
+                Pages.renderGisView(container);
+            }
         }
     </script>
 </body>
