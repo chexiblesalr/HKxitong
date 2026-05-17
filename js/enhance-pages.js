@@ -3546,3 +3546,245 @@ EnhancePages.exportXdr = function() {
 
 
 
+
+// ============ Final config center override: category driven editor ============
+(function() {
+    if (!window.Pages) return;
+    function h(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function opt(list, val) { return (list || []).map(function(x) { return '<option value="' + h(x) + '"' + (x === val ? ' selected' : '') + '>' + h(x) + '</option>'; }).join(''); }
+    function input(id, value, ph) { return '<input class="form-input" id="' + id + '" value="' + h(value || '') + '"' + (ph ? ' placeholder="' + h(ph) + '"' : '') + '>'; }
+    function select(id, list, val, extra) { return '<select class="form-select" id="' + id + '" ' + (extra || '') + '>' + opt(list, val) + '</select>'; }
+    function fg(label, body, cls) { return '<div class="form-group ' + (cls || '') + '"><label class="form-label">' + h(label) + '</label>' + body + '</div>'; }
+    function radio(name, list, val) { return '<div class="cfg-radio-row">' + list.map(function(x) { return '<label><input type="radio" name="' + name + '" value="' + h(x) + '"' + (x === val ? ' checked' : '') + '> ' + h(x) + '</label>'; }).join('') + '</div>'; }
+    function checks(name, list, vals) { vals = vals || []; return '<div class="cfg-check-grid">' + list.map(function(x) { return '<label><input type="checkbox" name="' + name + '" value="' + h(x) + '"' + (vals.indexOf(x) >= 0 ? ' checked' : '') + '> ' + h(x) + '</label>'; }).join('') + '</div>'; }
+    function readJson(v) { try { return JSON.parse(v || '{}') || {}; } catch(e) { return {}; } }
+    function fieldVal(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function checkedVals(name) { return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(function(el) { return el.value; }); }
+    function radioVal(name) { var el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
+
+    var cfgCats = ['用户质差模型','业务应用质差模型','业务CEI评分','通断CEI评分','用户总体CEI评分','工单派发'];
+    var userTagMap = {
+        '线路质差':['弱光','强光','高误码'],
+        '设备质差':['CPU占用高','CPU跳变高','内存占用高','内存跳变高','频繁重启','频繁掉线'],
+        '业务质差':['视频卡顿','游戏时延高','下载业务时延高'],
+        '配置质差':['WIFI干扰大','WIFI信道底噪高','WIFI2.4G单频','WIFI2.4G信号占比高','WIFI信道利用率高']
+    };
+    var bizMap = {
+        '视频': {'视频高时延':['TCP建连时延','HTTP平均响应时延'], '视频卡顿':['HTTP响应成功率','视频卡顿时长占比','抖动','丢包率','下载速率']},
+        '游戏': {'游戏高时延':['TCP建连时延','HTTP平均响应时延'], '游戏卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},
+        '在线办公': {'应用高时延':['TCP建连时延','HTTP平均响应时延'], '应用卡顿':['HTTP响应成功率','抖动','丢包率','下载速率']},
+        '网站/下载': {'应用高时延':['TCP建连时延','HTTP平均响应时延'], '应用卡顿':['HTTP响应成功率','下载速率','抖动','丢包率','下载成功率']}
+    };
+    var kqiRows = {
+        '视频': [['TCP建连时延','60ms','150ms','负向'],['HTTP平均响应时延','70ms','180ms','负向'],['HTTP响应成功率','99%','90%','正向'],['视频卡顿时长占比','0.10%','1%','正向'],['抖动','5ms','20ms','负向'],['丢包率','0.30%','1.50%','负向'],['下载速率','8000Kbps','1000Kbps','正向']],
+        '游戏': [['TCP建连时延','60ms','150ms','负向'],['HTTP平均响应时延','70ms','180ms','负向'],['HTTP响应成功率','99%','90%','正向'],['抖动','5ms','20ms','负向'],['丢包率','0.10%','2%','负向'],['下载速率','8000Kbps','1000Kbps','正向']],
+        '在线办公': [['TCP建连时延','60ms','150ms','负向'],['HTTP平均响应时延','70ms','180ms','负向'],['HTTP响应成功率','99%','90%','正向'],['抖动','5ms','20ms','负向'],['丢包率','0.30%','1.50%','负向'],['下载速率','8000Kbps','1000Kbps','正向']],
+        '网站/下载类': [['TCP建连时延','60ms','150ms','负向'],['HTTP平均响应时延','70ms','180ms','负向'],['HTTP响应成功率','99%','90%','正向'],['下载速率','8000Kbps','1000Kbps','正向'],['抖动','5ms','20ms','负向'],['丢包率','0.30%','1.50%','负向'],['下载成功率','99%','90%','正向']]
+    };
+
+    function thresholdMode(mode) {
+        return '<div class="cfg-inline-radio"><span>质差阈值：</span>' + radio('cfgThresholdMode', ['固定阈值','AI动态'], mode || '固定阈值') + '</div>';
+    }
+    function qualityThresholdRow(prefix, index, data) {
+        data = data || {};
+        return '<div class="cfg-rule-row">' +
+            fg('标签类型', select(prefix + 'Type' + index, Object.keys(userTagMap), data.type || '线路质差', 'onchange="Pages.syncConfigUserTagRow(\'' + prefix + '\',' + index + ')"')) +
+            fg('质差标签', '<select class="form-select cfg-user-tag" id="' + prefix + 'Tag' + index + '"></select>') +
+            thresholdMode(data.mode || '固定阈值') +
+            fg('阈值详情', input(prefix + 'Threshold' + index, data.threshold || '< -27', '如 < -27 / > 90%'), 'cfg-threshold-detail') +
+            '<button class="cfg-icon-btn" type="button">-</button>' +
+        '</div>';
+    }
+    function bizThresholdRow(index, data) {
+        data = data || {};
+        return '<div class="cfg-rule-row cfg-rule-row-wide">' +
+            fg('业务类型', select('cfgBizType' + index, Object.keys(bizMap), data.biz || '视频', 'onchange="Pages.syncConfigBizTypeRow(' + index + ')"')) +
+            fg('标签类型', '<select class="form-select" id="cfgBizQualityType' + index + '" onchange="Pages.syncConfigBizTagRow(' + index + ')"></select>') +
+            fg('质差标签', '<select class="form-select" id="cfgBizTag' + index + '"></select>') +
+            fg('严重程度', select('cfgSeverity' + index, ['高','中','低'], data.severity || '高')) +
+            thresholdMode(data.mode || '固定阈值') +
+            fg('阈值详情', input('cfgBizThreshold' + index, data.threshold || '< -27', '如 > 30ms'), 'cfg-threshold-detail') +
+            '<button class="cfg-icon-btn" type="button">-</button>' +
+        '</div>';
+    }
+    function kqiSection(name, rows) {
+        return '<div class="cfg-score-section"><div class="cfg-section-title">' + h(name) + '业务</div>' + rows.map(function(r, i) {
+            var id = name.replace(/[\/]/g, '') + i;
+            return '<div class="cfg-score-row">' +
+                fg('指标', select('kqiMetric' + id, rows.map(function(x){ return x[0]; }), r[0])) +
+                '<div class="cfg-radio-mini"><span>正负向：</span>' + radio('kqiDir' + id, ['正向','负向'], r[3]) + '</div>' +
+                fg('100分阈值', input('kqi100' + id, r[1])) +
+                fg('60分阈值', input('kqi60' + id, r[2])) +
+                fg('指标权重', input('kqiWeight' + id, '', '%'), 'cfg-weight-field') +
+                '<button class="cfg-icon-btn" type="button">-</button>' +
+            '</div>';
+        }).join('') + '<button class="cfg-add-line" type="button">+</button></div>';
+    }
+    function netDeductSection(title, mode, rows) {
+        rows = rows || [];
+        return '<div class="cfg-deduct-section"><div class="cfg-section-title">' + h(title) + '</div>' +
+            fg('扣分方式', select('netDeduct' + title, ['门限扣分','区间扣分'], mode || '门限扣分')) +
+            '<div class="cfg-deduct-head"><span>' + (mode === '区间扣分' ? '区间' : '门限') + '</span><span>扣分</span></div>' +
+            rows.map(function(r) { return '<div class="cfg-deduct-row">' + select('op', ['=','>=','>','<','<='], r[0]) + input('limit', r[1]) + (r.length > 3 ? '<span>-</span>' + input('limit2', r[2]) + input('score', r[3]) : input('score', r[2])) + '<button class="cfg-icon-btn" type="button">-</button></div>'; }).join('') +
+            '<button class="cfg-add-line" type="button">+</button></div>';
+    }
+
+    function userQualityHtml(data) {
+        return '<div class="cfg-grid cfg-grid-3">' +
+            fg('时间粒度', select('cfgTime', ['小时','天'], data.time_grain || '小时')) +
+        '</div>' +
+        '<div id="cfgUserRows">' + qualityThresholdRow('cfgUser', 0, data.rows && data.rows[0]) + qualityThresholdRow('cfgUser', 1, data.rows && data.rows[1] || { type:'线路质差', tag:'强光', mode:'AI动态' }) + '</div>' +
+        '<button class="cfg-add-line" type="button">+</button>';
+    }
+    function bizQualityHtml(data) {
+        return '<div class="cfg-grid cfg-grid-3">' + fg('时间粒度', select('cfgTime', ['小时','天'], data.time_grain || '小时')) + '</div>' +
+        '<div id="cfgBizRows">' + bizThresholdRow(0, data.rows && data.rows[0]) + bizThresholdRow(1, data.rows && data.rows[1]) + '</div><button class="cfg-add-line" type="button">+</button>';
+    }
+    function businessCeiHtml(data) {
+        return '<div class="cfg-grid cfg-grid-4">' +
+            fg('指标粒度', select('cfgMetricGrain', ['5分钟','小时'], data.metric_grain || '5分钟')) +
+            fg('评估粒度', select('cfgEvalGrain', ['小时','天'], data.eval_grain || '小时')) +
+            fg('业务权重', select('cfgBizWeight', ['使用时长占比'], data.biz_weight || '使用时长占比')) +
+            fg('指标权重', select('cfgWeightMode', ['固定权重','AI动态'], data.weight_mode || '固定权重', 'onchange="Pages.toggleConfigWeightFields()"')) +
+        '</div>' + Object.keys(kqiRows).map(function(k) { return kqiSection(k, kqiRows[k]); }).join('');
+    }
+    function networkCeiHtml(data) {
+        return '<div class="cfg-grid cfg-grid-4">' +
+            fg('指标粒度', select('cfgMetricGrain', ['小时','天'], data.metric_grain || '小时')) +
+            fg('评估粒度', select('cfgEvalGrain', ['小时','天'], data.eval_grain || '小时')) +
+        '</div>' +
+        netDeductSection('异常掉线次数', '门限扣分', [['=', '1', '10'], ['=', '2', '30'], ['>=', '3', '50']]) +
+        netDeductSection('掉线时长', '区间扣分', [['', '1', '60', '10-50']]);
+    }
+    function overallCeiHtml(data) {
+        return '<div class="cfg-grid cfg-grid-4">' +
+            fg('指标粒度', select('cfgMetricGrain', ['小时','天'], data.metric_grain || '小时')) +
+            fg('评估粒度', select('cfgEvalGrain', ['小时','天'], data.eval_grain || '小时')) +
+            fg('评估指标', checks('overallMetrics', ['业务CEI','通断CEI'], data.metrics || ['业务CEI','通断CEI']), 'cfg-span-2') +
+            fg('自学习模型', select('cfgModel', ['梯度提升树 GBDT','随机森林 RF','XGBoost','LightGBM'], data.model || '梯度提升树 GBDT')) +
+            fg('是否周期训练', radio('cfgTrainCycle', ['是','否'], data.cycle || '是')) +
+            fg('训练周期', select('cfgTrainPeriod', ['天','周','月'], data.period || '天')) +
+        '</div><div class="cfg-note">CEI打分指标权重关联用户满意度、投诉等质差数据，进行动态优化；体验质差用户与非质差用户 CEI 均分差异度目标 > 25%。</div><div class="cfg-action-row"><button class="btn btn-primary" onclick="Pages.saveBackendConfig()">保存</button><button class="btn" onclick="Pages.configTrainModel()">训练</button><button class="btn" onclick="Pages.showConfigTrainingRecords()">训练记录</button></div>';
+    }
+    function workOrderHtml(data) {
+        var tags = [].concat(userTagMap['线路质差'], userTagMap['设备质差'], userTagMap['业务质差'], userTagMap['配置质差']);
+        return '<div class="cfg-grid cfg-grid-3">' +
+            fg('时间粒度', select('cfgTime', ['小时','天'], data.time_grain || '小时')) +
+            fg('质差类型', checks('dispatchType', ['质差用户'], data.types || ['质差用户']), 'cfg-span-2') +
+            fg('质差标签', checks('dispatchTags', tags, data.tags || ['弱光','强光','高误码','CPU占用高']), 'cfg-span-3') +
+            fg('派发方式', select('cfgDispatchMode', ['自动','手动'], data.mode || '自动')) +
+            fg('派发周期', select('cfgDispatchPeriod', ['天','周','月'], data.period || '天')) +
+        '</div>';
+    }
+
+    Pages.renderConfigCenter = async function(container) {
+        var cfgs = (window.API && API.configs) ? await API.configs({ category: this._cfgCategory || '' }) : [];
+        var filter = this._cfgCategory || '';
+        var filtered = filter ? (cfgs || []).filter(function(c) { return c.category === filter; }) : (cfgs || []);
+        var rows = filtered.map(function(c) {
+            var parsed = readJson(c.config_value);
+            var ruleName = parsed.rule_name || c.config_key;
+            return '<tr><td>' + h(c.category) + '</td><td>' + h(ruleName) + '</td><td><code>' + h(c.config_key) + '</code></td><td style="max-width:360px;word-break:break-all;">' + h(c.description || c.config_value || '') + '</td><td>' + h(c.updated_by || '-') + '</td><td>' + h(c.updated_at || '-') + '</td><td><button class="btn" onclick="Pages.showBackendConfig(\'' + h(c.config_key) + '\')">编辑</button><button class="btn" onclick="Pages.deleteBackendConfig(\'' + h(c.config_key) + '\')">删除</button></td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:#999;padding:18px;">暂无配置</td></tr>';
+        container.innerHTML = '<div class="page-content"><div class="system-panel"><div class="system-panel-header cfg-center-header"><span class="system-panel-title">配置中心</span><div class="cfg-toolbar"><select class="form-select" onchange="Pages._cfgCategory=this.value;Pages.renderConfigCenter(document.getElementById(\'page-config-center\'))"><option value="">全部分类</option>' + opt(cfgCats, filter) + '</select><button class="btn btn-primary" onclick="Pages.showBackendConfig()">+ 新增配置</button></div></div><div class="system-panel-body"><table class="data-table"><thead><tr><th>分类</th><th>规则名称</th><th>配置键</th><th>说明/配置摘要</th><th>修改人</th><th>修改时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    };
+
+    Pages.showBackendConfig = async function(key) {
+        var cfgs = (window.API && API.configs) ? await API.configs({}) : [];
+        var c = key ? (cfgs || []).find(function(x) { return x.config_key === key; }) : null;
+        var data = readJson(c && c.config_value);
+        var category = (c && c.category) || this._cfgModalCategory || '用户质差模型';
+        var title = key ? '编辑配置' : '新增配置';
+        Modal.show(title,
+            '<div class="cfg-editor">' +
+            '<div class="cfg-grid cfg-grid-3">' +
+            fg('规则名称', input('cfgRuleName', data.rule_name || (c && c.config_key) || '')) +
+            fg('分类', select('beCfgCat', cfgCats, category, 'onchange="Pages.renderConfigDynamicFields(this.value)"')) +
+            fg('配置键', input('beCfgKey', c && c.config_key || '', '不填则自动生成')) +
+            '</div><div id="cfgDynamicFields"></div>' +
+            '<div class="cfg-grid cfg-grid-2 cfg-save-meta">' + fg('配置摘要', input('beCfgDesc', c && c.description || '')) + '<input type="hidden" id="beCfgVal" value="">' + '</div></div>',
+            '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.saveBackendConfig()">保存</button>',
+            '1120px');
+        Pages.renderConfigDynamicFields(category, data);
+    };
+
+    Pages.renderConfigDynamicFields = function(category, data) {
+        data = data || {};
+        this._cfgModalCategory = category;
+        var el = document.getElementById('cfgDynamicFields');
+        if (!el) return;
+        if (category === '用户质差模型') el.innerHTML = userQualityHtml(data);
+        else if (category === '业务应用质差模型') el.innerHTML = bizQualityHtml(data);
+        else if (category === '业务CEI评分') el.innerHTML = businessCeiHtml(data);
+        else if (category === '通断CEI评分') el.innerHTML = networkCeiHtml(data);
+        else if (category === '用户总体CEI评分') el.innerHTML = overallCeiHtml(data);
+        else if (category === '工单派发') el.innerHTML = workOrderHtml(data);
+        Pages.syncAllConfigSelects();
+        Pages.toggleConfigWeightFields();
+        Pages.toggleConfigThresholdFields();
+        Array.from(document.querySelectorAll('input[name="cfgThresholdMode"]')).forEach(function(el) { el.addEventListener('change', Pages.toggleConfigThresholdFields); });
+    };
+    Pages.syncAllConfigSelects = function() {
+        for (var i = 0; i < 4; i++) {
+            if (document.getElementById('cfgUserType' + i)) Pages.syncConfigUserTagRow('cfgUser', i);
+            if (document.getElementById('cfgBizType' + i)) Pages.syncConfigBizTypeRow(i);
+        }
+    };
+    Pages.syncConfigUserTagRow = function(prefix, i) {
+        var typeEl = document.getElementById(prefix + 'Type' + i), tagEl = document.getElementById(prefix + 'Tag' + i);
+        if (!typeEl || !tagEl) return;
+        var old = tagEl.value;
+        tagEl.innerHTML = opt(userTagMap[typeEl.value] || [], old || (userTagMap[typeEl.value] || [])[0]);
+    };
+    Pages.syncConfigBizTypeRow = function(i) {
+        var bizEl = document.getElementById('cfgBizType' + i), typeEl = document.getElementById('cfgBizQualityType' + i);
+        if (!bizEl || !typeEl) return;
+        var types = Object.keys(bizMap[bizEl.value] || {});
+        typeEl.innerHTML = opt(types, typeEl.value || types[0]);
+        Pages.syncConfigBizTagRow(i);
+    };
+    Pages.syncConfigBizTagRow = function(i) {
+        var bizEl = document.getElementById('cfgBizType' + i), typeEl = document.getElementById('cfgBizQualityType' + i), tagEl = document.getElementById('cfgBizTag' + i);
+        if (!bizEl || !typeEl || !tagEl) return;
+        tagEl.innerHTML = opt((bizMap[bizEl.value] && bizMap[bizEl.value][typeEl.value]) || [], tagEl.value);
+    };
+    Pages.toggleConfigWeightFields = function() {
+        var mode = fieldVal('cfgWeightMode');
+        Array.from(document.querySelectorAll('.cfg-weight-field')).forEach(function(el) { el.style.display = mode === 'AI动态' ? 'none' : ''; });
+    };
+    Pages.toggleConfigThresholdFields = function() {
+        var mode = radioVal('cfgThresholdMode');
+        Array.from(document.querySelectorAll('.cfg-threshold-detail')).forEach(function(el) { el.style.display = mode === 'AI动态' ? 'none' : ''; });
+    };
+    Pages.collectConfigPayload = function() {
+        var cat = fieldVal('beCfgCat');
+        var payload = { rule_name: fieldVal('cfgRuleName'), category: cat };
+        if (cat === '用户质差模型') {
+            payload.time_grain = fieldVal('cfgTime'); payload.rows = [0,1].map(function(i) { return { type: fieldVal('cfgUserType' + i), tag: fieldVal('cfgUserTag' + i), threshold: fieldVal('cfgUserThreshold' + i), mode: radioVal('cfgThresholdMode') }; });
+        } else if (cat === '业务应用质差模型') {
+            payload.time_grain = fieldVal('cfgTime'); payload.rows = [0,1].map(function(i) { return { biz: fieldVal('cfgBizType' + i), quality_type: fieldVal('cfgBizQualityType' + i), tag: fieldVal('cfgBizTag' + i), severity: fieldVal('cfgSeverity' + i), threshold: fieldVal('cfgBizThreshold' + i), mode: radioVal('cfgThresholdMode') }; });
+        } else if (cat === '业务CEI评分') {
+            payload.metric_grain = fieldVal('cfgMetricGrain'); payload.eval_grain = fieldVal('cfgEvalGrain'); payload.biz_weight = fieldVal('cfgBizWeight'); payload.weight_mode = fieldVal('cfgWeightMode');
+        } else if (cat === '通断CEI评分') {
+            payload.metric_grain = fieldVal('cfgMetricGrain'); payload.eval_grain = fieldVal('cfgEvalGrain'); payload.deduct_mode = '门限扣分/区间扣分';
+        } else if (cat === '用户总体CEI评分') {
+            payload.metric_grain = fieldVal('cfgMetricGrain'); payload.eval_grain = fieldVal('cfgEvalGrain'); payload.metrics = checkedVals('overallMetrics'); payload.model = fieldVal('cfgModel'); payload.cycle = radioVal('cfgTrainCycle'); payload.period = fieldVal('cfgTrainPeriod');
+        } else if (cat === '工单派发') {
+            payload.time_grain = fieldVal('cfgTime'); payload.types = checkedVals('dispatchType'); payload.tags = checkedVals('dispatchTags'); payload.mode = fieldVal('cfgDispatchMode'); payload.period = fieldVal('cfgDispatchPeriod');
+        }
+        return payload;
+    };
+    Pages.saveBackendConfig = async function() {
+        var cat = fieldVal('beCfgCat');
+        var payload = Pages.collectConfigPayload();
+        var key = fieldVal('beCfgKey').trim() || cat.replace(/[\/\s]/g, '_') + '_' + Date.now();
+        var desc = fieldVal('beCfgDesc') || payload.rule_name || cat;
+        if (!payload.rule_name) return Modal.toast('规则名称必填', 'warning');
+        var r = await API.saveConfig({ config_key: key, category: cat, config_value: JSON.stringify(payload), description: desc, updated_by: 'admin' });
+        if (r) { Modal.close(); Modal.toast('配置已保存', 'success'); Pages.renderConfigCenter(document.getElementById('page-config-center')); }
+    };
+    Pages.configTrainModel = function() { Modal.toast('已启动模型训练任务', 'success'); };
+    Pages.showConfigTrainingRecords = function() {
+        Modal.show('训练记录', '<table class="data-table"><thead><tr><th>时间</th><th>模型</th><th>样本量</th><th>质差/非质差CEI差异</th><th>结果</th></tr></thead><tbody><tr><td>2026-05-17 18:00</td><td>梯度提升树 GBDT</td><td>128,430</td><td>28.6%</td><td>通过</td></tr><tr><td>2026-05-16 18:00</td><td>梯度提升树 GBDT</td><td>126,902</td><td>27.9%</td><td>通过</td></tr></tbody></table>', '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '760px');
+    };
+})();

@@ -3007,3 +3007,35 @@ html, body {
     min-height: 0;
     height: 100%;
 }
+/* ============ Config Center Category Editor ============ */
+.cfg-center-header { align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.cfg-toolbar { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cfg-toolbar .form-select { width: 180px; }
+.cfg-editor { max-height: 68vh; overflow: auto; padding-right: 4px; }
+.cfg-grid { display: grid; gap: 12px; align-items: end; }
+.cfg-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cfg-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cfg-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cfg-span-2 { grid-column: span 2; }
+.cfg-span-3 { grid-column: span 3; }
+.cfg-rule-row { display: grid; grid-template-columns: 160px 170px 220px minmax(180px, 1fr) 28px; gap: 10px; align-items: end; padding: 10px; border: 1px solid #d8dee8; background: #fbfcfe; margin-bottom: 8px; }
+.cfg-rule-row-wide { grid-template-columns: 120px 145px 145px 100px 210px minmax(150px, 1fr) 28px; }
+.cfg-radio-row, .cfg-inline-radio, .cfg-radio-mini { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #334155; flex-wrap: wrap; }
+.cfg-inline-radio { padding-bottom: 12px; }
+.cfg-check-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 16px; font-size: 12px; color: #334155; }
+.cfg-icon-btn, .cfg-add-line { border: 1px solid #b9c3d0; background: #fff; color: #405066; height: 26px; min-width: 26px; border-radius: 14px; cursor: pointer; }
+.cfg-add-line { width: 26px; margin: 4px 0 10px; }
+.cfg-score-section, .cfg-deduct-section { border: 1px solid #b7c0cc; background: #fff; margin-top: 12px; padding: 10px; }
+.cfg-section-title { font-weight: 700; color: #1f2937; margin-bottom: 10px; }
+.cfg-score-row { display: grid; grid-template-columns: 150px 150px 110px 110px 110px 28px; gap: 10px; align-items: end; margin-bottom: 8px; }
+.cfg-deduct-head { display: grid; grid-template-columns: 140px 120px; gap: 16px; margin: 4px 0 6px 42px; font-size: 12px; color: #4b5563; }
+.cfg-deduct-row { display: grid; grid-template-columns: 42px 70px 20px 70px 88px 28px; gap: 8px; align-items: center; margin-bottom: 8px; max-width: 360px; }
+.cfg-deduct-row .form-input, .cfg-deduct-row .form-select { height: 28px; }
+.cfg-note { margin-top: 12px; padding: 10px 12px; background: #f7faff; border: 1px solid #d8e4f6; color: #42526b; font-size: 12px; line-height: 1.7; }
+.cfg-action-row { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
+.cfg-save-meta { margin-top: 12px; }
+@media (max-width: 1200px) {
+  .cfg-grid-3, .cfg-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cfg-rule-row, .cfg-rule-row-wide, .cfg-score-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cfg-check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
