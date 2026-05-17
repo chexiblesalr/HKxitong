@@ -3538,3 +3538,173 @@ var Pages = {
         container.innerHTML = '<div class="empty-state" style="height:100%;"><div class="empty-icon" style="font-size:36px;opacity:0.2;">[ ]</div><div class="empty-text" style="font-size:14px;color:#999;">' + title + '</div></div>';
     }
 };
+
+// Legacy fallback cleanup for remote-operation pages. enhance-pages.js will replace
+// these when backend APIs are available; this keeps cached/old render paths consistent.
+(function() {
+    if (!window.Pages) return;
+
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+
+    function normalizeOnuId(value, seed) {
+        var raw = String(value || '').trim().toUpperCase();
+        if (/^(HWTC|ZTEG|FHTT|ALCL)[0-9A-F]{12}$/.test(raw)) return raw;
+        var vendors = ['HWTC', 'ZTEG', 'FHTT', 'ALCL'];
+        var n = 0;
+        for (var i = 0; i < raw.length; i++) n = (n * 31 + raw.charCodeAt(i)) >>> 0;
+        n = n || Number(seed || Date.now());
+        return vendors[n % vendors.length] + String(n % 1000000000000).padStart(12, '0');
+    }
+
+    function normalizeOperator(value) {
+        var v = String(value || '').trim();
+        var names = ['张建国', '王志强', '赵玉海', '郑志勇', '梁建军', '金成日', '陈明亮', '周文斌'];
+        var map = {
+            '刘工': '张建国',
+            '李工': '王志强',
+            '赵工': '赵玉海',
+            '王工': '郑志勇',
+            '黄工': '梁建军',
+            '张工': '金成日',
+            '杨工': '陈明亮',
+            '陈工': '陈明亮',
+            '周工': '周文斌'
+        };
+        if (!v || v === 'system' || v === 'admin') return names[Math.floor(Math.random() * names.length)];
+        return map[v] || v;
+    }
+
+    function normalizeReason(value) {
+        var v = String(value || '').trim();
+        return (!v || /\?/.test(v)) ? '用户申报故障' : v;
+    }
+
+    Pages._pingLastOutput = Pages._pingLastOutput || '';
+    Pages._pingLastStats = Pages._pingLastStats || null;
+    Pages._pingCity = Pages._pingCity || '';
+    Pages._pingTarget = Pages._pingTarget || '';
+    Pages._pingOnt = Pages._pingOnt || '';
+    Pages._pingStatus = Pages._pingStatus || '';
+
+    Pages.renderPingTest = function(container, page) {
+        this._pingPage = page || this._pingPage || 1;
+        var data = (JilinData.pingTestHistory || []).map(function(r, idx) {
+            return Object.assign({}, r, { ontId: normalizeOnuId(r.ontId, idx + 1) });
+        });
+        if (this._pingCity) data = data.filter(function(r) { return r.city === Pages._pingCity; });
+        if (this._pingTarget) data = data.filter(function(r) { return String(r.target || '').indexOf(Pages._pingTarget) >= 0; });
+        if (this._pingOnt) data = data.filter(function(r) { return String(r.ontId || '').indexOf(Pages._pingOnt.toUpperCase()) >= 0; });
+        if (this._pingStatus) data = data.filter(function(r) { return r.status === Pages._pingStatus; });
+        var p = this.paginate(data, this._pingPage, 12);
+        var rows = p.data.map(function(r) {
+            return '<tr><td>' + esc(r.time) + '</td><td>' + esc(r.ontId) + '</td><td>' + esc(r.target) + '</td><td>' + esc(r.packetSize || 64) + '</td><td>' + esc(r.count || 10) + '</td><td>' + esc(r.interval || 1) + 's</td><td>' + esc(r.city || '-') + '</td><td>' + esc(r.avgDelay) + 'ms</td><td>' + esc(r.maxDelay) + 'ms</td><td>' + esc(r.minDelay || '-') + 'ms</td><td>' + esc(r.packetLoss) + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
+        }).join('') || '<tr><td colspan="12" style="text-align:center;color:#999;padding:18px;">暂无PING历史记录</td></tr>';
+        var statusOpts = ['正常', '告警', '异常'].map(function(s) {
+            return '<option value="' + s + '"' + (s === Pages._pingStatus ? ' selected' : '') + '>' + s + '</option>';
+        }).join('');
+        container.innerHTML =
+            '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">PING测试工具</div>' +
+            '<div class="remote-form">' +
+            this.cityFilterHtml('pingCityFilter', 'Pages._pingCity=this.value;Pages.renderPingTest(document.getElementById("page-ping-test"),1)', this._pingCity) +
+            '<div class="form-group"><label class="form-label">ONT设备ID</label><input class="form-input" id="pingOntId" value="' + esc(this._pingOnt) + '" placeholder="请输入ONT设备ID"></div>' +
+            '<div class="form-group"><label class="form-label">目标IP/域名</label><input class="form-input" id="pingTarget" value="' + esc(this._pingTarget) + '" placeholder="请输入目标IP或域名"></div>' +
+            '<div class="form-group"><label class="form-label">ping包大小</label><input class="form-input" id="pingSize" type="number" min="32" max="1500" value="64"></div>' +
+            '<div class="form-group"><label class="form-label">次数</label><input class="form-input" id="pingCount" type="number" min="1" max="100" value="10"></div>' +
+            '<div class="form-group"><label class="form-label">间隔</label><input class="form-input" id="pingInterval" type="number" min="1" max="60" value="1" placeholder="秒"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" id="pingStartBtn" onclick="Pages.executePing()">开始PING</button><button class="btn" onclick="Pages.resetPingFilters()">重置</button></div></div>' +
+            '<div class="ping-result" id="pingResult" style="min-height:220px;max-height:360px;overflow:auto;">' + (this._pingLastOutput || '<span style="color:#f39c12;">等待执行PING测试...</span>') + '</div></div>' +
+            '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">历史测试记录 (共' + data.length + '条)' +
+            '<input class="form-input" style="width:180px;height:30px;" id="pingTargetFilter" value="' + esc(this._pingTarget) + '" placeholder="目标IP/域名">' +
+            '<input class="form-input" style="width:160px;height:30px;" id="pingOntFilter" value="' + esc(this._pingOnt) + '" placeholder="ONT设备ID">' +
+            '<select class="form-select" style="width:110px;height:30px;" id="pingStatusFilter"><option value="">全部状态</option>' + statusOpts + '</select>' +
+            '<button class="btn" onclick="Pages.applyPingHistoryFilter()">查询</button></div>' +
+            '<table class="data-table"><thead><tr><th>时间</th><th>ONT设备ID</th><th>目标IP/域名</th><th>ping包大小</th><th>次数</th><th>间隔</th><th>地市</th><th>平均时延</th><th>最大时延</th><th>最小时延</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            this.paginationHtml(p, 'Pages.renderPingTest.bind(Pages,document.getElementById("page-ping-test"))') + '</div></div>';
+    };
+
+    Pages.applyPingHistoryFilter = function() {
+        this._pingTarget = (document.getElementById('pingTargetFilter') || {}).value || '';
+        this._pingOnt = (document.getElementById('pingOntFilter') || {}).value || '';
+        this._pingStatus = (document.getElementById('pingStatusFilter') || {}).value || '';
+        this.renderPingTest(document.getElementById('page-ping-test'), 1);
+    };
+
+    Pages.resetPingFilters = function() {
+        this._pingTarget = '';
+        this._pingOnt = '';
+        this._pingStatus = '';
+        this._pingCity = '';
+        this._pingLastOutput = '';
+        this._pingLastStats = null;
+        this.renderPingTest(document.getElementById('page-ping-test'), 1);
+    };
+
+    Pages.executePing = function() {
+        if (this._pingRunning) { Modal.toast('PING测试正在执行中，请等待完成', 'warning'); return; }
+        var result = document.getElementById('pingResult');
+        var target = (document.getElementById('pingTarget') || {}).value.trim();
+        var size = parseInt((document.getElementById('pingSize') || {}).value, 10) || 64;
+        var count = parseInt((document.getElementById('pingCount') || {}).value, 10) || 10;
+        var pingInterval = parseInt((document.getElementById('pingInterval') || {}).value, 10) || 1;
+        var ontId = normalizeOnuId((document.getElementById('pingOntId') || {}).value, Date.now());
+        if (!target) { Modal.toast('请输入目标IP或域名', 'warning'); return; }
+        this._pingRunning = true;
+        this._pingTarget = target;
+        this._pingOnt = ontId;
+        var startBtn = document.getElementById('pingStartBtn');
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = '执行中...'; }
+        if (result) {
+            result.innerHTML = '<span style="color:#f39c12;">发送给RMS ...</span>';
+            this._pingLastOutput = result.innerHTML;
+        }
+        var self = this;
+        setTimeout(function() {
+            var delays = [];
+            for (var i = 0; i < count; i++) delays.push(Math.random() * 15 + 2 + (Math.random() > 0.9 ? Math.random() * 50 : 0));
+            var avg = delays.reduce(function(s, d) { return s + d; }, 0) / delays.length;
+            var min = Math.min.apply(null, delays);
+            var max = Math.max.apply(null, delays);
+            var lossRate = parseFloat((delays.filter(function(d) { return d > 100; }).length / count * 100).toFixed(1));
+            var html = '<span style="color:#f39c12;">发送给RMS ...</span><br><span style="color:#27ae60;font-weight:600;">RMS返回ping结果</span>' +
+                '<br><span style="color:#00ff88;">--- ' + esc(target) + ' ping统计 ---</span>' +
+                '<br><span style="color:#00ff88;">ONT设备ID：' + esc(ontId) + '</span>' +
+                '<br><span style="color:#00ff88;">' + count + ' 个包已发送，' + (count - Math.round(lossRate * count / 100)) + ' 个已接收，丢包率 ' + lossRate.toFixed(1) + '%</span>' +
+                '<br><span style="color:#00ff88;">rtt 最小/平均/最大 = ' + min.toFixed(1) + '/' + avg.toFixed(1) + '/' + max.toFixed(1) + ' ms</span>';
+            if (result) result.innerHTML = html;
+            self._pingLastOutput = html;
+            JilinData.pingTestHistory.unshift({
+                time: new Date().toLocaleString('zh-CN'),
+                ontId: ontId,
+                target: target,
+                city: Pages._pingCity || App.currentCity || '全省',
+                packetSize: size,
+                count: count,
+                interval: pingInterval,
+                avgDelay: parseFloat(avg.toFixed(1)),
+                maxDelay: parseFloat(max.toFixed(1)),
+                minDelay: parseFloat(min.toFixed(1)),
+                packetLoss: lossRate,
+                status: lossRate > 20 ? '异常' : (lossRate > 5 || avg > 25 ? '告警' : '正常')
+            });
+            self._pingRunning = false;
+            if (startBtn) { startBtn.disabled = false; startBtn.textContent = '开始PING'; }
+            self.renderPingTest(document.getElementById('page-ping-test'), 1);
+        }, 800);
+    };
+
+    var originalGatewayRender = Pages.renderGatewayRestart;
+    Pages.renderGatewayRestart = function(container, page) {
+        if (!JilinData.gatewayRestartRecords) return originalGatewayRender.call(this, container, page);
+        JilinData.gatewayRestartRecords.forEach(function(r, idx) {
+            r.gwId = normalizeOnuId(r.gwId, idx + 1);
+            r.sn = /^211\d{8}$/.test(String(r.sn || '')) ? r.sn : ('211' + String(idx + 1).padStart(8, '0'));
+            r.reason = normalizeReason(r.reason);
+            r.operator = normalizeOperator(r.operator);
+        });
+        return originalGatewayRender.call(this, container, page);
+    };
+})();

@@ -41,6 +41,38 @@ function mockOnuId(prefix) {
     return s.slice(0, 16);
 }
 
+function normalizedOnuId(value, seed) {
+    const raw = String(value || '').trim().toUpperCase();
+    if (/^(HWTC|ZTEG|FHTT|ALCL)[0-9A-F]{12}$/.test(raw)) return raw;
+    const vendors = ['HWTC', 'ZTEG', 'FHTT', 'ALCL'];
+    const n = Math.abs(Number(seed) || Array.from(raw).reduce((sum, ch) => sum + ch.charCodeAt(0), 0) || 1);
+    const suffix = String(n).padStart(12, '0').slice(-12);
+    return vendors[n % vendors.length] + suffix;
+}
+
+function realOperatorBySeed(seed) {
+    const names = ['张建国', '王志强', '赵玉海', '郑志勇', '梁建军', '金成日', '陈明亮', '周文斌'];
+    const n = Math.abs(Number(seed) || 0);
+    return names[n % names.length];
+}
+
+function normalizeOperatorName(value, seed) {
+    const name = String(value || '').trim();
+    const map = {
+        '刘工': '张建国',
+        '李工': '王志强',
+        '赵工': '赵玉海',
+        '王工': '郑志勇',
+        '黄工': '梁建军',
+        '张工': '金成日',
+        '杨工': '陈明亮',
+        '陈工': '陈明亮',
+        '周工': '周文斌'
+    };
+    if (!name || name === 'system' || name === 'admin') return realOperatorBySeed(seed);
+    return map[name] || name;
+}
+
 function mockUserAccount() {
     let s = '211';
     while (s.length < 11) s += Math.floor(Math.random() * 10);
@@ -179,6 +211,27 @@ function ensurePingSchema() {
     saveDb();
 }
 
+function normalizeExistingRemoteIds() {
+    queryAll('SELECT id, ont_id FROM ping_tests').forEach(r => {
+        const next = normalizedOnuId(r.ont_id, r.id);
+        if (r.ont_id !== next) execute('UPDATE ping_tests SET ont_id=? WHERE id=?', [next, r.id]);
+    });
+    queryAll('SELECT id, ont_id FROM ont_power_records').forEach(r => {
+        const next = normalizedOnuId(r.ont_id, r.id);
+        if (r.ont_id !== next) execute('UPDATE ont_power_records SET ont_id=? WHERE id=?', [next, r.id]);
+    });
+    queryAll('SELECT id, gateway_id FROM gateway_restarts').forEach(r => {
+        const next = normalizedOnuId(r.gateway_id, r.id);
+        if (r.gateway_id !== next) execute('UPDATE gateway_restarts SET gateway_id=? WHERE id=?', [next, r.id]);
+    });
+    execute("UPDATE gateway_restarts SET restart_reason='用户申报故障' WHERE restart_reason IS NULL OR restart_reason='' OR restart_reason LIKE '%?%'");
+    queryAll('SELECT id, operator FROM gateway_restarts').forEach(r => {
+        const next = normalizeOperatorName(r.operator, r.id);
+        if (r.operator !== next) execute('UPDATE gateway_restarts SET operator=? WHERE id=?', [next, r.id]);
+    });
+    saveDb();
+}
+
 function round1(n) {
     return Math.round(Number(n || 0) * 10) / 10;
 }
@@ -254,6 +307,7 @@ async function startServer() {
     await initSchema();
     ensureAnalysisDefaults();
     ensurePingSchema();
+    normalizeExistingRemoteIds();
     ensurePlatformCompletionDefaults();
     // Check if data exists
     const cnt = queryOne('SELECT COUNT(*) as c FROM cities');
@@ -662,10 +716,11 @@ async function startServer() {
         if(city_id){w+=' AND pt.city_id=?';p.push(parseInt(city_id));}
         if(city_name){w+=' AND c.city_name=?';p.push(city_name);}
         if(target){w+=" AND (pt.target_ip LIKE '%'||?||'%' OR pt.target_name LIKE '%'||?||'%')";p.push(target,target);}
-        if(ont_id){w+=" AND pt.ont_id LIKE '%'||?||'%'";p.push(ont_id);}
+        if(ont_id){w+=" AND pt.normalized_ont_id LIKE '%'||?||'%'";p.push(ont_id);}
         if(status){w+=' AND pt.status=?';p.push(status);}
-        res.json(ok(paginate(`SELECT pt.*, c.city_name FROM ping_tests pt LEFT JOIN cities c ON pt.city_id=c.id ${w} ORDER BY pt.test_time DESC`,
-            `SELECT COUNT(*) as total FROM ping_tests pt ${w}`, p, page, pageSize)));
+        const pingBase = `(SELECT pt.*, CASE WHEN UPPER(pt.ont_id) GLOB 'HWTC[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]' OR UPPER(pt.ont_id) GLOB 'ZTEG[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]' OR UPPER(pt.ont_id) GLOB 'FHTT[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]' OR UPPER(pt.ont_id) GLOB 'ALCL[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]' THEN UPPER(pt.ont_id) ELSE (CASE pt.id % 4 WHEN 0 THEN 'HWTC' WHEN 1 THEN 'ZTEG' WHEN 2 THEN 'FHTT' ELSE 'ALCL' END) || printf('%012d', pt.id) END as normalized_ont_id FROM ping_tests pt) pt LEFT JOIN cities c ON pt.city_id=c.id`;
+        res.json(ok(paginate(`SELECT pt.*, normalized_ont_id as ont_id, c.city_name FROM ${pingBase} ${w} ORDER BY pt.test_time DESC`,
+            `SELECT COUNT(*) as total FROM ${pingBase} ${w}`, p, page, pageSize)));
     });
     app.post('/api/ping-test', (req, res) => {
         const body = req.body || {};
@@ -675,7 +730,7 @@ async function startServer() {
         const packetSize = Math.min(1500, Math.max(32, parseInt(body.packetSize) || 64));
         const count = Math.min(100, Math.max(1, parseInt(body.count) || 10));
         const interval = Math.min(60, Math.max(1, parseInt(body.interval) || 1));
-        const ontId = String(body.ontId || '').trim();
+        const ontId = normalizedOnuId(String(body.ontId || '').trim(), Date.now());
         const operator = body.operator || '系统';
         const targetType = /^[\d.]+$/.test(target) ? 'IP' : 'DOMAIN';
         const cityId = body.city_id ? parseInt(body.city_id) : null;
@@ -720,10 +775,14 @@ async function startServer() {
             results, stats: { sent, received, loss: lossRate, avg, min, max, jitter, status }, testTime: now }));
     });
     app.get('/api/ont-power', (req, res) => {
-        const { city_id, status, keyword, page, pageSize } = req.query;
-        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND o.city_id=?';p.push(parseInt(city_id));}if(status){w+=' AND o.status=?';p.push(status);}if(keyword){w+=" AND (o.ont_id LIKE '%'||?||'%' OR u.user_account LIKE '%'||?||'%' OR printf('211%08d', o.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
+        const { city_id, city_name, status, keyword, page, pageSize } = req.query;
+        let w=' WHERE 1=1',p=[];
+        if(city_id && !isNaN(parseInt(city_id))){w+=' AND o.city_id=?';p.push(parseInt(city_id));}
+        if(city_name){w+=' AND c.city_name=?';p.push(city_name);}
+        if(status){w+=' AND o.status=?';p.push(status);}
+        if(keyword){w+=" AND (o.ont_id LIKE '%'||?||'%' OR u.user_account LIKE '%'||?||'%' OR printf('211%08d', o.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
         res.json(ok(paginate(`SELECT o.*, c.city_name, CASE WHEN u.user_account LIKE '211%' THEN u.user_account ELSE printf('211%08d', o.id % 100000000) END as user_account FROM ont_power_records o JOIN cities c ON o.city_id=c.id LEFT JOIN broadband_users u ON o.user_id=u.id ${w} ORDER BY o.query_time DESC`,
-            `SELECT COUNT(*) as total FROM ont_power_records o LEFT JOIN broadband_users u ON o.user_id=u.id ${w}`, p, page, pageSize)));
+            `SELECT COUNT(*) as total FROM ont_power_records o JOIN cities c ON o.city_id=c.id LEFT JOIN broadband_users u ON o.user_id=u.id ${w}`, p, page, pageSize)));
     });
     app.post('/api/ont-power/query', (req, res) => {
         const b = req.body || {};
@@ -736,7 +795,7 @@ async function startServer() {
         const tx = Math.round((2 + Math.random() * 3) * 10) / 10;
         const bias = Math.round((10 + Math.random()*20)*10)/10;
         const status = rx < -25 || bias < 7 || bias > 30 ? '异常' : (rx < -22 ? '告警' : '正常');
-        const ontId = input && !/^211\d{8}$/.test(input) ? input : mockOnuId();
+        const ontId = input && !/^211\d{8}$/.test(input) ? normalizedOnuId(input, Date.now()) : mockOnuId();
         execute(`INSERT INTO ont_power_records(user_id,ont_id,city_id,ont_model,tx_power,rx_power,temperature,voltage,bias_current,olt_rx_power,optical_distance,status,query_time)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`, [user.id, ontId, city.id, 'HG8245H', tx, rx, Math.round((35 + Math.random()*15)*10)/10, 0, bias, rx - 1.5, Math.round((1 + Math.random()*8)*10)/10, status]);
         audit('远程操作', 'ont_power', ontId, 'ONT光功率实时读取', { rx, tx, bias, status }, b.operator || 'system', status === '正常' ? '成功' : '告警');
@@ -745,10 +804,35 @@ async function startServer() {
         res.json(ok({ ontId, user_account: account, city_name: city.city_name, tx_power: tx, rx_power: rx, bias_current: bias, status }));
     });
     app.get('/api/gateway-restarts', (req, res) => {
-        const { city_id, keyword, page, pageSize } = req.query;
-        let w=' WHERE 1=1',p=[];if(city_id){w+=' AND g.city_id=?';p.push(parseInt(city_id));}if(keyword){w+=" AND (g.gateway_id LIKE '%'||?||'%' OR g.gateway_sn LIKE '%'||?||'%' OR printf('211%08d', g.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
-        res.json(ok(paginate(`SELECT g.*, CASE WHEN g.gateway_sn LIKE '211%' THEN g.gateway_sn ELSE printf('211%08d', g.id % 100000000) END as gateway_sn, c.city_name FROM gateway_restarts g JOIN cities c ON g.city_id=c.id ${w} ORDER BY g.restart_time DESC`,
-            `SELECT COUNT(*) as total FROM gateway_restarts g ${w}`, p, page, pageSize)));
+        const { city_id, city_name, keyword, page, pageSize } = req.query;
+        let w=' WHERE 1=1',p=[];
+        if(city_id && !isNaN(parseInt(city_id))){w+=' AND g.city_id=?';p.push(parseInt(city_id));}
+        if(city_name){w+=' AND c.city_name=?';p.push(city_name);}
+        if(keyword){w+=" AND (g.gateway_id LIKE '%'||?||'%' OR g.gateway_sn LIKE '%'||?||'%' OR printf('211%08d', g.id % 100000000) LIKE '%'||?||'%')";p.push(keyword,keyword,keyword);}
+        res.json(ok(paginate(`SELECT g.id,g.gateway_id,
+            CASE WHEN g.gateway_sn LIKE '211%' THEN g.gateway_sn ELSE printf('211%08d', g.id % 100000000) END as gateway_sn,
+            g.user_id,g.city_id,
+            CASE WHEN g.restart_reason IS NULL OR g.restart_reason='' OR g.restart_reason LIKE '%?%' THEN '用户申报故障' ELSE g.restart_reason END as restart_reason,
+            g.restart_type,
+            CASE g.operator
+                WHEN '刘工' THEN '张建国'
+                WHEN '李工' THEN '王志强'
+                WHEN '赵工' THEN '赵玉海'
+                WHEN '王工' THEN '郑志勇'
+                WHEN '黄工' THEN '梁建军'
+                WHEN '张工' THEN '金成日'
+                WHEN '杨工' THEN '陈明亮'
+                WHEN '陈工' THEN '陈明亮'
+                WHEN '周工' THEN '周文斌'
+                WHEN 'system' THEN (CASE g.id % 8 WHEN 0 THEN '张建国' WHEN 1 THEN '王志强' WHEN 2 THEN '赵玉海' WHEN 3 THEN '郑志勇' WHEN 4 THEN '梁建军' WHEN 5 THEN '金成日' WHEN 6 THEN '陈明亮' ELSE '周文斌' END)
+                WHEN 'admin' THEN (CASE g.id % 8 WHEN 0 THEN '张建国' WHEN 1 THEN '王志强' WHEN 2 THEN '赵玉海' WHEN 3 THEN '郑志勇' WHEN 4 THEN '梁建军' WHEN 5 THEN '金成日' WHEN 6 THEN '陈明亮' ELSE '周文斌' END)
+                WHEN '' THEN (CASE g.id % 8 WHEN 0 THEN '张建国' WHEN 1 THEN '王志强' WHEN 2 THEN '赵玉海' WHEN 3 THEN '郑志勇' WHEN 4 THEN '梁建军' WHEN 5 THEN '金成日' WHEN 6 THEN '陈明亮' ELSE '周文斌' END)
+                ELSE COALESCE(g.operator,(CASE g.id % 8 WHEN 0 THEN '张建国' WHEN 1 THEN '王志强' WHEN 2 THEN '赵玉海' WHEN 3 THEN '郑志勇' WHEN 4 THEN '梁建军' WHEN 5 THEN '金成日' WHEN 6 THEN '陈明亮' ELSE '周文斌' END))
+            END as operator,
+            CASE WHEN g.result LIKE '%失败%' THEN '重启失败' ELSE '重启成功' END as result,
+            g.error_message,g.duration_seconds,g.pre_status,g.post_status,g.restart_time,g.complete_time,g.created_at,c.city_name
+            FROM gateway_restarts g JOIN cities c ON g.city_id=c.id ${w} ORDER BY g.restart_time DESC`,
+            `SELECT COUNT(*) as total FROM gateway_restarts g JOIN cities c ON g.city_id=c.id ${w}`, p, page, pageSize)));
     });
     app.post('/api/gateway-restart', (req, res) => {
         const b = req.body || {};
@@ -758,12 +842,12 @@ async function startServer() {
             ? (queryOne('SELECT id, user_account, gateway_id, gateway_sn FROM broadband_users WHERE user_account=?', [input]) || { id: null, user_account: input })
             : (queryOne('SELECT id, user_account, gateway_id, gateway_sn FROM broadband_users WHERE city_id=? ORDER BY RANDOM() LIMIT 1', [city.id]) || { id: null, user_account: mockUserAccount() });
         const duration = Math.floor(Math.random()*120+15);
-        const gwId = input && !/^211\d{8}$/.test(input) ? input : mockOnuId();
+        const gwId = input && !/^211\d{8}$/.test(input) ? normalizedOnuId(input, Date.now()) : mockOnuId();
         const result = '重启成功';
         execute(`INSERT INTO gateway_restarts(gateway_id,gateway_sn,user_id,city_id,restart_reason,restart_type,operator,result,duration_seconds,pre_status,post_status,restart_time,complete_time)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))`,
-            [gwId, /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount(), user.id, city.id, b.reason || '用户申报故障', b.restartType || '远程重启', b.operator || 'system', result, duration, JSON.stringify({ online: true, cpu: 92 }), JSON.stringify({ online: true, cpu: 35 })]);
-        audit('远程操作', 'gateway_restart', gwId, 'ONU远程重启', { result, duration, reason: b.reason || '' }, b.operator || 'system', '成功');
+            [gwId, /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount(), user.id, city.id, b.reason || '用户申报故障', b.restartType || '远程重启', normalizeOperatorName(b.operator, Date.now()), result, duration, JSON.stringify({ online: true, cpu: 92 }), JSON.stringify({ online: true, cpu: 35 })]);
+        audit('远程操作', 'gateway_restart', gwId, 'ONU远程重启', { result, duration, reason: b.reason || '' }, normalizeOperatorName(b.operator, Date.now()), '成功');
         saveDb();
         res.json(ok({ result, duration: duration + 's', gateway_id: gwId, onu_id: gwId, user_account: /^211\d{8}$/.test(user.user_account || '') ? user.user_account : mockUserAccount(), city_name: city.city_name }));
     });
