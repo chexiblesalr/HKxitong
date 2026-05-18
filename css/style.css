@@ -3324,3 +3324,53 @@ html, body {
     border-top: 1px solid #f0f2f5;
 }
 
+/* ============ CEI聚类分析 — 地图浮窗（Tooltip） ============ */
+.district-tooltip-container {
+    background: rgba(255,255,255,0.97) !important;
+    border: 1px solid #d0dae6 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13) !important;
+    padding: 0 !important;
+}
+.district-tooltip-container::before {
+    border-top-color: #d0dae6 !important;
+}
+.map-hover-tip {
+    padding: 10px 14px;
+    min-width: 160px;
+}
+.map-hover-tip .tip-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2636;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eef1f5;
+}
+.map-hover-tip .tip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 3px 0;
+}
+.map-hover-tip .tip-label {
+    font-size: 11px;
+    color: #7a8a9a;
+    white-space: nowrap;
+}
+.map-hover-tip .tip-val {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+.map-hover-tip .tip-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+

@@ -254,6 +254,8 @@
                 var shortName = (typeof CITY_SHORT_NAMES !== 'undefined' && CITY_SHORT_NAMES[name]) || name;
                 var center = feature.properties.centroid || feature.properties.center;
                 var score = genCeiScore(hs(shortName + 'cluster'));
+                var bizCei = nv(hs(shortName + 'biz'), score - 3, score + 1, 1);
+                var connCei = nv(hs(shortName + 'conn'), score - 2, score + 2, 1);
 
                 // 标注
                 if (center) {
@@ -267,10 +269,15 @@
                     }).addTo(self._clusterMarkerGroup);
                 }
 
-                // tooltip
+                // tooltip（含业务CEI / 通断CEI / 总体CEI）
                 layer.bindTooltip(
-                    '<div class="map-hover-tip"><b>' + name + '</b><br/>' +
-                    '<span class="tip-sub">CEI: ' + score + '分 | 等级: ' + ceiLabel5(score) + '</span></div>',
+                    '<div class="map-hover-tip">' +
+                    '<div class="tip-title">' + name + '</div>' +
+                    '<div class="tip-row"><span class="tip-label">业务CEI</span><span class="tip-val" style="color:#5b8ff9;">' + bizCei + '</span></div>' +
+                    '<div class="tip-row"><span class="tip-label">通断CEI</span><span class="tip-val" style="color:#5ad8a6;">' + connCei + '</span></div>' +
+                    '<div class="tip-row"><span class="tip-label">总体CEI</span><span class="tip-val" style="color:' + ceiColor5(score) + ';font-weight:700;">' + score + '</span>' +
+                    '<span class="tip-tag" style="background:' + ceiColor5(score) + '22;color:' + ceiColor5(score) + ';">' + ceiLabel5(score) + '</span></div>' +
+                    '</div>',
                     { className: 'district-tooltip-container', direction: 'top', offset: [0, -10], sticky: true }
                 );
 
