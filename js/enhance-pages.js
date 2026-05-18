@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 家宽网络质量分析平台 - 增强页面渲染模块
  * 增强DPI-XDR明细查询、质差标签管理、聚类告警等页面
  */
@@ -1642,7 +1642,7 @@ EnhancePages.exportXdr = function () {
 
     function miniCard(m, i) {
         return '<div class="gis-metric-card">' +
-            '<button class="gis-card-title" onclick="Pages.showGisMetricDrill(\'' + esc(m.title) + '\')">' + esc(m.title) + '<span>最新一小时指标值</span></button>' +
+            '<button class="gis-card-title" onclick="Pages.showGisMetricDrill(\'' + esc(m.title) + '\')">' + esc(m.title) + '<span></span></button>' +
             '<div class="gis-card-meta"><strong id="gisMetricValue' + i + '">--</strong><span id="gisMetricHint' + i + '">--</span></div>' +
             '<div class="gis-card-body">' +
             '<div class="gis-mini-chart" id="gisDashLine' + i + '"></div>' +
@@ -1887,7 +1887,7 @@ EnhancePages.exportXdr = function () {
         var rows = this._buildKpiRows();
         var cards = metrics.map(function (m, i) {
             var avg = rows.reduce(function (sum, r) { return sum + Number(r[m.key] || 0); }, 0) / Math.max(rows.length, 1);
-            return '<div class="kpi-trend-card"><div class="kpi-trend-title">' + h(m.label) + '<span>最新一小时</span></div><div class="kpi-trend-value">' + avg.toFixed(1) + '<small>' + h(m.unit) + '</small></div><div class="mini-line" id="kpiMiniFinal' + i + '"></div></div>';
+            return '<div class="kpi-trend-card"><div class="kpi-trend-title">' + h(m.label) + '<span></span></div><div class="kpi-trend-value">' + avg.toFixed(1) + '<small>' + h(m.unit) + '</small></div><div class="mini-line" id="kpiMiniFinal' + i + '"></div></div>';
         }).join('');
         var head = '<tr><th>时间</th><th>区域</th><th>区县</th><th>BRAS</th><th>OLT</th><th>PON口</th>' + metrics.map(function (m) { return '<th>' + h(m.label) + '</th>'; }).join('') + '<th>详情</th></tr>';
         var body = rows.map(function (r, i) {
@@ -2861,7 +2861,7 @@ EnhancePages.exportXdr = function () {
         var ontAccountById = {};
         var rows = (resp.data || []).map(function (r) {
             var ontKey = String(r.ont_id || '').toUpperCase();
-            if (ontKey && !ontAccountById[ontKey]) ontAccountById[ontKey] = r.user_account || ('211' + String(10000000 + (Math.abs(ontKey.split('').reduce(function(s, ch) { return s + ch.charCodeAt(0); }, 0)) % 90000000)).slice(-8));
+            if (ontKey && !ontAccountById[ontKey]) ontAccountById[ontKey] = r.user_account || ('211' + String(10000000 + (Math.abs(ontKey.split('').reduce(function (s, ch) { return s + ch.charCodeAt(0); }, 0)) % 90000000)).slice(-8));
             var userAccount = ontKey ? ontAccountById[ontKey] : (r.user_account || '-');
             var rxCls = n(r.rx_power) < -25 ? 'status-error' : (n(r.rx_power) < -22 ? 'status-warning' : 'status-normal');
             var bias = n(r.bias_current);
@@ -3360,7 +3360,7 @@ EnhancePages.exportXdr = function () {
             var trend = buildAggregateTrend(rows, metric);
             var delta = makeDelta(metric, current, trend);
             return '<div class="kpi-trend-card">'
-                + '<div class="kpi-trend-title">' + h(metric.label) + '<span>最新一小时指标值</span></div>'
+                + '<div class="kpi-trend-title">' + h(metric.label) + '<span></span></div>'
                 + '<div class="kpi-trend-value">' + current.toFixed(1) + '<small>' + h(metric.unit) + '</small></div>'
                 + '<div class="kpi-trend-delta ' + (delta >= 0 ? 'up' : 'down') + '">' + (delta >= 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(1) + '%</div>'
                 + '<div class="mini-line" id="kpiMiniFinalLast' + idx + '"></div>'
@@ -3586,29 +3586,60 @@ EnhancePages.exportXdr = function () {
         '网站/下载类': [['TCP建连时延', '60ms', '150ms', '负向'], ['HTTP平均响应时延', '70ms', '180ms', '负向'], ['HTTP响应成功率', '99%', '90%', '正向'], ['下载速率', '8000Kbps', '1000Kbps', '正向'], ['抖动', '5ms', '20ms', '负向'], ['丢包率', '0.30%', '1.50%', '负向'], ['下载成功率', '99%', '90%', '正向']]
     };
 
-    function thresholdMode(mode) {
-        return '<div class="cfg-inline-radio"><span>质差阈值：</span>' + radio('cfgThresholdMode', ['固定阈值', 'AI动态'], mode || '固定阈值') + '</div>';
+    function thresholdMode(name, mode) {
+        return '<div class="cfg-inline-radio"><span>质差阈值：</span>' + radio(name, ['固定阈值', 'AI动态'], mode || '固定阈值') + '</div>';
     }
-    function qualityThresholdRow(prefix, index, data) {
-        data = data || {};
+    function nextRowId() {
+        Pages._cfgRowSeq = (Pages._cfgRowSeq || 0) + 1;
+        return Pages._cfgRowSeq;
+    }
+    function normalizeUserRow(row) {
+        row = row || {};
+        return {
+            _id: row._id || nextRowId(),
+            type: row.type || '线路质差',
+            tag: row.tag || '',
+            threshold: row.threshold || '< -27',
+            mode: row.mode || '固定阈值'
+        };
+    }
+    function normalizeBizRow(row) {
+        row = row || {};
+        return {
+            _id: row._id || nextRowId(),
+            biz: row.biz || '视频',
+            quality_type: row.quality_type || '',
+            tag: row.tag || '',
+            severity: row.severity || '高',
+            threshold: row.threshold || '< -27',
+            mode: row.mode || '固定阈值'
+        };
+    }
+    function ensureRowList(rows, factory) {
+        var list = Array.isArray(rows) ? rows.filter(Boolean).map(factory) : [];
+        if (!list.length) list.push(factory({}));
+        return list;
+    }
+    function qualityThresholdRow(prefix, row, index) {
+        var radioName = prefix + 'ThresholdMode' + row._id;
         return '<div class="cfg-rule-row">' +
-            fg('标签类型', select(prefix + 'Type' + index, Object.keys(userTagMap), data.type || '线路质差', 'onchange="Pages.syncConfigUserTagRow(\'' + prefix + '\',' + index + ')"')) +
-            fg('质差标签', '<select class="form-select cfg-user-tag" id="' + prefix + 'Tag' + index + '"></select>') +
-            thresholdMode(data.mode || '固定阈值') +
-            fg('阈值详情', input(prefix + 'Threshold' + index, data.threshold || '< -27', '如 < -27 / > 90%'), 'cfg-threshold-detail') +
-            '<button class="cfg-icon-btn" type="button">-</button>' +
+            fg('标签类型', select(prefix + 'Type' + index, Object.keys(userTagMap), row.type, 'onchange="Pages.syncConfigUserTagRow(\'' + prefix + '\',' + index + ')"')) +
+            fg('质差标签', '<select class="form-select cfg-user-tag" id="' + prefix + 'Tag' + index + '" data-value="' + h(row.tag || '') + '"></select>') +
+            thresholdMode(radioName, row.mode) +
+            fg('阈值详情', input(prefix + 'Threshold' + index, row.threshold, '如 < -27 / > 90%'), 'cfg-threshold-detail') +
+            '<button class="cfg-icon-btn" type="button" onclick="Pages.removeConfigRuleRow(\'user\',' + row._id + ')" title="删除">-</button>' +
             '</div>';
     }
-    function bizThresholdRow(index, data) {
-        data = data || {};
+    function bizThresholdRow(row, index) {
+        var radioName = 'cfgBizThresholdMode' + row._id;
         return '<div class="cfg-rule-row cfg-rule-row-wide">' +
-            fg('业务类型', select('cfgBizType' + index, Object.keys(bizMap), data.biz || '视频', 'onchange="Pages.syncConfigBizTypeRow(' + index + ')"')) +
-            fg('标签类型', '<select class="form-select" id="cfgBizQualityType' + index + '" onchange="Pages.syncConfigBizTagRow(' + index + ')"></select>') +
-            fg('质差标签', '<select class="form-select" id="cfgBizTag' + index + '"></select>') +
-            fg('严重程度', select('cfgSeverity' + index, ['高', '中', '低'], data.severity || '高')) +
-            thresholdMode(data.mode || '固定阈值') +
-            fg('阈值详情', input('cfgBizThreshold' + index, data.threshold || '< -27', '如 > 30ms'), 'cfg-threshold-detail') +
-            '<button class="cfg-icon-btn" type="button">-</button>' +
+            fg('业务类型', select('cfgBizType' + index, Object.keys(bizMap), row.biz, 'onchange="Pages.syncConfigBizTypeRow(' + index + ')"')) +
+            fg('标签类型', '<select class="form-select" id="cfgBizQualityType' + index + '" data-value="' + h(row.quality_type || '') + '" onchange="Pages.syncConfigBizTagRow(' + index + ')"></select>') +
+            fg('质差标签', '<select class="form-select" id="cfgBizTag' + index + '" data-value="' + h(row.tag || '') + '"></select>') +
+            fg('严重程度', select('cfgSeverity' + index, ['高', '中', '低'], row.severity)) +
+            thresholdMode(radioName, row.mode) +
+            fg('阈值详情', input('cfgBizThreshold' + index, row.threshold, '如 > 30ms'), 'cfg-threshold-detail') +
+            '<button class="cfg-icon-btn" type="button" onclick="Pages.removeConfigRuleRow(\'biz\',' + row._id + ')" title="删除">-</button>' +
             '</div>';
     }
     function kqiSection(name, rows) {
@@ -3634,15 +3665,17 @@ EnhancePages.exportXdr = function () {
     }
 
     function userQualityHtml(data) {
+        var rows = ensureRowList(data.rows, normalizeUserRow);
         return '<div class="cfg-grid cfg-grid-3">' +
             fg('时间粒度', select('cfgTime', ['小时', '天'], data.time_grain || '小时')) +
             '</div>' +
-            '<div id="cfgUserRows">' + qualityThresholdRow('cfgUser', 0, data.rows && data.rows[0]) + qualityThresholdRow('cfgUser', 1, data.rows && data.rows[1] || { type: '线路质差', tag: '强光', mode: 'AI动态' }) + '</div>' +
-            '<button class="cfg-add-line" type="button">+</button>';
+            '<div id="cfgUserRows">' + rows.map(function (row, index) { return qualityThresholdRow('cfgUser', row, index); }).join('') + '</div>' +
+            '<button class="cfg-add-line" type="button" onclick="Pages.addConfigRuleRow(\'user\')">+</button>';
     }
     function bizQualityHtml(data) {
+        var rows = ensureRowList(data.rows, normalizeBizRow);
         return '<div class="cfg-grid cfg-grid-3">' + fg('时间粒度', select('cfgTime', ['小时', '天'], data.time_grain || '小时')) + '</div>' +
-            '<div id="cfgBizRows">' + bizThresholdRow(0, data.rows && data.rows[0]) + bizThresholdRow(1, data.rows && data.rows[1]) + '</div><button class="cfg-add-line" type="button">+</button>';
+            '<div id="cfgBizRows">' + rows.map(function (row, index) { return bizThresholdRow(row, index); }).join('') + '</div><button class="cfg-add-line" type="button" onclick="Pages.addConfigRuleRow(\'biz\')">+</button>';
     }
     function businessCeiHtml(data) {
         return '<div class="cfg-grid cfg-grid-4">' +
@@ -3715,58 +3748,129 @@ EnhancePages.exportXdr = function () {
     Pages.renderConfigDynamicFields = function (category, data) {
         data = data || {};
         this._cfgModalCategory = category;
+        this._cfgDraftData = this.normalizeConfigDraft(category, data);
         var el = document.getElementById('cfgDynamicFields');
         if (!el) return;
-        if (category === '用户质差模型') el.innerHTML = userQualityHtml(data);
-        else if (category === '业务应用质差模型') el.innerHTML = bizQualityHtml(data);
-        else if (category === '业务CEI评分') el.innerHTML = businessCeiHtml(data);
-        else if (category === '通断CEI评分') el.innerHTML = networkCeiHtml(data);
-        else if (category === '用户总体CEI评分') el.innerHTML = overallCeiHtml(data);
-        else if (category === '工单派发') el.innerHTML = workOrderHtml(data);
+        if (category === '用户质差模型') el.innerHTML = userQualityHtml(this._cfgDraftData);
+        else if (category === '业务应用质差模型') el.innerHTML = bizQualityHtml(this._cfgDraftData);
+        else if (category === '业务CEI评分') el.innerHTML = businessCeiHtml(this._cfgDraftData);
+        else if (category === '通断CEI评分') el.innerHTML = networkCeiHtml(this._cfgDraftData);
+        else if (category === '用户总体CEI评分') el.innerHTML = overallCeiHtml(this._cfgDraftData);
+        else if (category === '工单派发') el.innerHTML = workOrderHtml(this._cfgDraftData);
         Pages.syncAllConfigSelects();
         Pages.toggleConfigWeightFields();
         Pages.toggleConfigThresholdFields();
-        Array.from(document.querySelectorAll('input[name="cfgThresholdMode"]')).forEach(function (el) { el.addEventListener('change', Pages.toggleConfigThresholdFields); });
+        Array.from(document.querySelectorAll('.cfg-inline-radio input[type="radio"]')).forEach(function (el) { el.addEventListener('change', Pages.toggleConfigThresholdFields); });
+    };
+    Pages.normalizeConfigDraft = function (category, data) {
+        var draft = Object.assign({}, data || {});
+        if (category === '用户质差模型') draft.rows = ensureRowList(draft.rows, normalizeUserRow);
+        if (category === '业务应用质差模型') draft.rows = ensureRowList(draft.rows, normalizeBizRow);
+        return draft;
+    };
+    Pages.captureConfigDynamicDraft = function () {
+        var cat = this._cfgModalCategory || fieldVal('beCfgCat');
+        var draft = Object.assign({}, this._cfgDraftData || {});
+        if (cat === '用户质差模型') {
+            draft.time_grain = fieldVal('cfgTime');
+            draft.rows = Array.from(document.querySelectorAll('#cfgUserRows .cfg-rule-row')).map(function (_, i) {
+                var current = (draft.rows || [])[i] || normalizeUserRow({});
+                return normalizeUserRow({
+                    _id: current._id,
+                    type: fieldVal('cfgUserType' + i),
+                    tag: fieldVal('cfgUserTag' + i),
+                    threshold: fieldVal('cfgUserThreshold' + i),
+                    mode: radioVal('cfgUserThresholdMode' + current._id)
+                });
+            });
+        } else if (cat === '业务应用质差模型') {
+            draft.time_grain = fieldVal('cfgTime');
+            draft.rows = Array.from(document.querySelectorAll('#cfgBizRows .cfg-rule-row')).map(function (_, i) {
+                var current = (draft.rows || [])[i] || normalizeBizRow({});
+                return normalizeBizRow({
+                    _id: current._id,
+                    biz: fieldVal('cfgBizType' + i),
+                    quality_type: fieldVal('cfgBizQualityType' + i),
+                    tag: fieldVal('cfgBizTag' + i),
+                    severity: fieldVal('cfgSeverity' + i),
+                    threshold: fieldVal('cfgBizThreshold' + i),
+                    mode: radioVal('cfgBizThresholdMode' + current._id)
+                });
+            });
+        }
+        this._cfgDraftData = this.normalizeConfigDraft(cat, draft);
+        return this._cfgDraftData;
+    };
+    Pages.addConfigRuleRow = function (kind) {
+        var cat = this._cfgModalCategory || fieldVal('beCfgCat');
+        var draft = this.captureConfigDynamicDraft();
+        if (!draft.rows) draft.rows = [];
+        draft.rows.push(kind === 'biz' ? normalizeBizRow({}) : normalizeUserRow({}));
+        this.renderConfigDynamicFields(cat, draft);
+    };
+    Pages.removeConfigRuleRow = function (kind, rowId) {
+        var cat = this._cfgModalCategory || fieldVal('beCfgCat');
+        var draft = this.captureConfigDynamicDraft();
+        draft.rows = (draft.rows || []).filter(function (row) { return row._id !== rowId; });
+        if (!draft.rows.length) draft.rows.push(kind === 'biz' ? normalizeBizRow({}) : normalizeUserRow({}));
+        this.renderConfigDynamicFields(cat, draft);
     };
     Pages.syncAllConfigSelects = function () {
-        for (var i = 0; i < 4; i++) {
-            if (document.getElementById('cfgUserType' + i)) Pages.syncConfigUserTagRow('cfgUser', i);
-            if (document.getElementById('cfgBizType' + i)) Pages.syncConfigBizTypeRow(i);
-        }
+        Array.from(document.querySelectorAll('[id^="cfgUserType"]')).forEach(function (el) {
+            Pages.syncConfigUserTagRow('cfgUser', Number(el.id.replace('cfgUserType', '')));
+        });
+        Array.from(document.querySelectorAll('[id^="cfgBizType"]')).forEach(function (el) {
+            Pages.syncConfigBizTypeRow(Number(el.id.replace('cfgBizType', '')));
+        });
     };
     Pages.syncConfigUserTagRow = function (prefix, i) {
         var typeEl = document.getElementById(prefix + 'Type' + i), tagEl = document.getElementById(prefix + 'Tag' + i);
         if (!typeEl || !tagEl) return;
-        var old = tagEl.value;
+        var old = tagEl.value || tagEl.getAttribute('data-value') || '';
         tagEl.innerHTML = opt(userTagMap[typeEl.value] || [], old || (userTagMap[typeEl.value] || [])[0]);
+        tagEl.removeAttribute('data-value');
     };
     Pages.syncConfigBizTypeRow = function (i) {
         var bizEl = document.getElementById('cfgBizType' + i), typeEl = document.getElementById('cfgBizQualityType' + i);
         if (!bizEl || !typeEl) return;
         var types = Object.keys(bizMap[bizEl.value] || {});
-        typeEl.innerHTML = opt(types, typeEl.value || types[0]);
+        var old = typeEl.value || typeEl.getAttribute('data-value') || '';
+        typeEl.innerHTML = opt(types, old || types[0]);
+        typeEl.removeAttribute('data-value');
         Pages.syncConfigBizTagRow(i);
     };
     Pages.syncConfigBizTagRow = function (i) {
         var bizEl = document.getElementById('cfgBizType' + i), typeEl = document.getElementById('cfgBizQualityType' + i), tagEl = document.getElementById('cfgBizTag' + i);
         if (!bizEl || !typeEl || !tagEl) return;
-        tagEl.innerHTML = opt((bizMap[bizEl.value] && bizMap[bizEl.value][typeEl.value]) || [], tagEl.value);
+        var old = tagEl.value || tagEl.getAttribute('data-value') || '';
+        tagEl.innerHTML = opt((bizMap[bizEl.value] && bizMap[bizEl.value][typeEl.value]) || [], old);
+        tagEl.removeAttribute('data-value');
     };
     Pages.toggleConfigWeightFields = function () {
         var mode = fieldVal('cfgWeightMode');
         Array.from(document.querySelectorAll('.cfg-weight-field')).forEach(function (el) { el.style.display = mode === 'AI动态' ? 'none' : ''; });
     };
     Pages.toggleConfigThresholdFields = function () {
-        var mode = radioVal('cfgThresholdMode');
-        Array.from(document.querySelectorAll('.cfg-threshold-detail')).forEach(function (el) { el.style.display = mode === 'AI动态' ? 'none' : ''; });
+        Array.from(document.querySelectorAll('.cfg-rule-row')).forEach(function (rowEl) {
+            var radioEl = rowEl.querySelector('.cfg-inline-radio input[type="radio"]:checked');
+            var detailEl = rowEl.querySelector('.cfg-threshold-detail');
+            if (!detailEl) return;
+            detailEl.style.display = radioEl && radioEl.value === 'AI动态' ? 'none' : '';
+        });
     };
     Pages.collectConfigPayload = function () {
         var cat = fieldVal('beCfgCat');
         var payload = { rule_name: fieldVal('cfgRuleName'), category: cat };
         if (cat === '用户质差模型') {
-            payload.time_grain = fieldVal('cfgTime'); payload.rows = [0, 1].map(function (i) { return { type: fieldVal('cfgUserType' + i), tag: fieldVal('cfgUserTag' + i), threshold: fieldVal('cfgUserThreshold' + i), mode: radioVal('cfgThresholdMode') }; });
+            payload.time_grain = fieldVal('cfgTime');
+            payload.rows = this.captureConfigDynamicDraft().rows.map(function (row) {
+                return { type: row.type, tag: row.tag, threshold: row.threshold, mode: row.mode };
+            });
         } else if (cat === '业务应用质差模型') {
-            payload.time_grain = fieldVal('cfgTime'); payload.rows = [0, 1].map(function (i) { return { biz: fieldVal('cfgBizType' + i), quality_type: fieldVal('cfgBizQualityType' + i), tag: fieldVal('cfgBizTag' + i), severity: fieldVal('cfgSeverity' + i), threshold: fieldVal('cfgBizThreshold' + i), mode: radioVal('cfgThresholdMode') }; });
+            payload.time_grain = fieldVal('cfgTime');
+            payload.rows = this.captureConfigDynamicDraft().rows.map(function (row) {
+                return { biz: row.biz, quality_type: row.quality_type, tag: row.tag, severity: row.severity, threshold: row.threshold, mode: row.mode };
+            });
         } else if (cat === '业务CEI评分') {
             payload.metric_grain = fieldVal('cfgMetricGrain'); payload.eval_grain = fieldVal('cfgEvalGrain'); payload.biz_weight = fieldVal('cfgBizWeight'); payload.weight_mode = fieldVal('cfgWeightMode');
         } else if (cat === '通断CEI评分') {
@@ -3901,3 +4005,4 @@ EnhancePages.exportXdr = function () {
             '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '1080px');
     };
 })();
+

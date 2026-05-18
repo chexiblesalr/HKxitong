@@ -95,14 +95,25 @@
                             <span class="menu-group-arrow">&#9654;</span>
                         </div>
                         <div class="menu-children">
-                            <div class="menu-item" data-page="cei-query" onclick="handleMenuClick(this)">用户和业务CEI查询
-                            </div>
+                            <div class="menu-item" data-page="cei-query" onclick="handleMenuClick(this)">用户和业务CEI查询</div>
                             <div class="menu-item" data-page="cei-cluster" onclick="handleMenuClick(this)">CEI聚类分析</div>
+                        </div>
+                    </div>
+
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                                </svg></span>
+                            <span>质差识别</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
                             <div class="menu-item" data-page="quality-model" onclick="handleMenuClick(this)">质差模型</div>
                             <div class="menu-item" data-page="user-quality" onclick="handleMenuClick(this)">用户质差</div>
                             <div class="menu-item" data-page="quality-tags" onclick="handleMenuClick(this)">质差标签管理</div>
-                            <div class="menu-item" data-page="quality-cluster" onclick="handleMenuClick(this)">质差聚类质差
-                            </div>
+                            <div class="menu-item" data-page="quality-cluster" onclick="handleMenuClick(this)">质差聚类质差</div>
                             <div class="menu-item" data-page="cluster-alert" onclick="handleMenuClick(this)">多维聚类告警</div>
                             <div class="menu-item" data-page="biz-quality" onclick="handleMenuClick(this)">业务质差</div>
                             <div class="menu-item" data-page="biz-cluster" onclick="handleMenuClick(this)">业务聚类质差</div>
@@ -368,6 +379,8 @@
     <script src="js/app.js"></script>
     <script src="js/mapdata.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/gis-drill.js"></script>
+
     <script>
         // Menu click handler
         function handleMenuClick(el) {
@@ -391,7 +404,8 @@
 
         function loadPageContent(page) {
             // Hide GIS map if navigating away
-            if (page !== 'gis-view') { hideGisMap(); }
+            if (window.Pages && Pages._restoreCeiClusterMapHome && page === 'gis-view') { Pages._restoreCeiClusterMapHome(); }
+            if (page !== 'gis-view' && page !== 'cei-cluster') { hideGisMap(); }
 
             // Hide all pages
             document.querySelectorAll('.page-container').forEach(function (c) { c.classList.remove('active'); });
