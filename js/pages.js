@@ -2826,8 +2826,11 @@ var Pages = {
         }
         return ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿', '游戏高时延', 'DNS解析慢', 'HTTP响应慢', 'TCP重传高', '高时延', '高丢包', 'WiFi干扰', '网关CPU高', '网关频繁重启', '带宽不足'];
     },
+    _getWoEvalTrendTags: function() {
+        return ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿'];
+    },
     _buildWoEvalDrillRows: function(dimension) {
-        var tags = this._getStandardQualityTags();
+        var tags = this._getWoEvalTrendTags();
         var rows = [];
         var networks = ['长春朝阳网格', '吉林昌邑网格', '四平铁西网格', '延边延吉网格', '松原宁江网格'];
         var maintainers = ['张建国', '赵玉海', '郑志勇', '金成日', '梁建军'];
@@ -2851,7 +2854,7 @@ var Pages = {
         return rows;
     },
     showWoEvalTrend: function(seedName) {
-        var tags = this._getStandardQualityTags().slice(0, 5);
+        var tags = this._getWoEvalTrendTags();
         var labels = ['05-17 12:00', '05-17 13:00', '05-17 14:00', '05-17 15:00', '05-17 16:00', '05-17 17:00', '05-17 18:00'];
         Modal.show('趋势评估 - ' + seedName,
             '<div style="display:grid;grid-template-columns:1fr;gap:8px;">' +
@@ -3754,6 +3757,325 @@ var Pages = {
     renderModulePlaceholder: function(container, title) {
         container.innerHTML = '<div class="empty-state" style="height:100%;"><div class="empty-icon" style="font-size:36px;opacity:0.2;">[ ]</div><div class="empty-text" style="font-size:14px;color:#999;">' + title + '</div></div>';
     }
+};
+
+// Business CEI boundary adjustments for the split page.
+Pages._businessBoundaryAccount = function(idx) {
+    return '211' + String(20250018 + (idx || 0)).padStart(8, '0');
+};
+
+Pages._renderBizBoundaryDistribution = function(chartId, sides, totalUsers) {
+    var el = document.getElementById(chartId);
+    if (!el) return;
+    el.setAttribute('data-series', sides.map(function(s) { return s.name + ':' + s.value + ':' + s.count; }).join('|'));
+
+    var chart = echarts.init(el);
+    App.chartInstances[chartId] = chart;
+
+    // Reverse for ECharts (bottom-to-top rendering)
+    var reversedSides = sides.slice().reverse();
+    var names = reversedSides.map(function(s) { return s.name; });
+    var values = reversedSides.map(function(s) { return s.value; });
+    var colors = reversedSides.map(function(s) { return s.color; });
+    var counts = reversedSides.map(function(s) { return s.count; });
+
+    chart.setOption({
+        grid: { top: 30, right: 130, bottom: 40, left: 80 },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: function(params) {
+                var p = params[0];
+                var idx = p.dataIndex;
+                return '<strong>' + names[idx] + '</strong><br/>' +
+                    '占比：' + values[idx] + '%<br/>' +
+                    '用户数：' + counts[idx] + '户';
+            }
+        },
+        xAxis: {
+            type: 'value',
+            max: 100,
+            axisLabel: { show: false },
+            axisTick: { show: false },
+            axisLine: { show: false },
+            splitLine: { show: false }
+        },
+        yAxis: {
+            type: 'category',
+            data: names,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+                fontSize: 13,
+                color: '#333',
+                fontWeight: 600
+            }
+        },
+        series: [{
+            type: 'bar',
+            data: values.map(function(v, i) {
+                return {
+                    value: v,
+                    itemStyle: {
+                        color: colors[i],
+                        borderRadius: [0, 4, 4, 0]
+                    }
+                };
+            }),
+            barWidth: 28,
+            backgroundStyle: {
+                color: '#edf1f5',
+                borderRadius: [0, 4, 4, 0]
+            },
+            showBackground: true,
+            label: {
+                show: true,
+                position: 'right',
+                fontSize: 13,
+                color: '#333',
+                formatter: function(p) {
+                    var idx = p.dataIndex;
+                    return values[idx] + '% / ' + counts[idx] + '户';
+                }
+            }
+        }],
+        graphic: [{
+            type: 'text',
+            right: 20,
+            bottom: 10,
+            style: {
+                text: '质差用户总数：' + totalUsers.toLocaleString() + '户',
+                fill: '#8a94a6',
+                fontSize: 12
+            }
+        }]
+    });
+
+    window.addEventListener('resize', function() { chart.resize(); });
+};
+
+// 根据地市生成差异化的业务CEI定界数据
+Pages._bizBdCityProfile = function(city) {
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    var idx = city ? Math.max(0, cityList.indexOf(city)) : -1;
+    // 各地市的基础参数（模拟真实差异）
+    // 顺序：长春、吉林、四平、辽源、通化、白山、松原、白城、延边、长白山
+    var cityProfiles = [
+        { total: 986,  homePct: 80.2, netPct: 11.3, contentPct: 5.8, otherPct: 2.7 }, // 长春 - 省会，用户多
+        { total: 658,  homePct: 83.5, netPct: 8.9,  contentPct: 4.9, otherPct: 2.7 }, // 吉林
+        { total: 425,  homePct: 84.1, netPct: 9.2,  contentPct: 4.3, otherPct: 2.4 }, // 四平
+        { total: 218,  homePct: 79.8, netPct: 12.1, contentPct: 5.4, otherPct: 2.7 }, // 辽源 - 老设备多，网络侧占比高
+        { total: 312,  homePct: 85.3, netPct: 7.8,  contentPct: 4.6, otherPct: 2.3 }, // 通化
+        { total: 195,  homePct: 86.2, netPct: 7.1,  contentPct: 4.2, otherPct: 2.5 }, // 白山 - 山区家庭侧占比高
+        { total: 348,  homePct: 81.6, netPct: 10.5, contentPct: 5.2, otherPct: 2.7 }, // 松原
+        { total: 265,  homePct: 83.9, netPct: 8.6,  contentPct: 4.8, otherPct: 2.7 }, // 白城
+        { total: 302,  homePct: 82.4, netPct: 9.5,  contentPct: 5.6, otherPct: 2.5 }, // 延边
+        { total: 103,  homePct: 87.4, netPct: 6.8,  contentPct: 3.4, otherPct: 2.4 }  // 长白山 - 偏远，用户少
+    ];
+    // 全省汇总
+    if (idx < 0 || idx >= cityProfiles.length) {
+        var allTotal = 0;
+        cityProfiles.forEach(function(p) { allTotal += p.total; });
+        // 加权平均
+        var wHome = 0, wNet = 0, wContent = 0, wOther = 0;
+        cityProfiles.forEach(function(p) {
+            wHome += p.homePct * p.total;
+            wNet += p.netPct * p.total;
+            wContent += p.contentPct * p.total;
+            wOther += p.otherPct * p.total;
+        });
+        return {
+            total: allTotal,
+            homePct: Math.round(wHome / allTotal * 10) / 10,
+            netPct: Math.round(wNet / allTotal * 10) / 10,
+            contentPct: Math.round(wContent / allTotal * 10) / 10,
+            otherPct: Math.round(wOther / allTotal * 10) / 10
+        };
+    }
+    return cityProfiles[idx];
+};
+
+Pages.renderBizCeiBoundary = function(container) {
+    var selectedCity = this._bizBdCity || '';
+    var profile = this._bizBdCityProfile(selectedCity);
+    var totalUsers = profile.total;
+
+    var sides = [
+        { name: '家庭侧', value: profile.homePct, color: '#5ad8a6', count: Math.round(totalUsers * profile.homePct / 100), reasons: ['用户终端问题', '移动网关问题', '移动路由器问题', '皮线光缆问题'] },
+        { name: '网络侧', value: profile.netPct, color: '#5b8ff9', count: Math.round(totalUsers * profile.netPct / 100), reasons: ['分支段问题', '主干光缆问题', 'OLT设备及以上问题'] },
+        { name: '内容侧', value: profile.contentPct, color: '#f6bd16', count: Math.round(totalUsers * profile.contentPct / 100), reasons: ['BRAS', '服务器'] },
+        { name: '其他', value: profile.otherPct, color: '#bdc3c7', count: Math.round(totalUsers * profile.otherPct / 100), reasons: ['其他'] }
+    ];
+
+    var rows = '';
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    for (var i = 0; i < 15; i++) {
+        var city = selectedCity || cityList[i % cityList.length] || '长春';
+        // 按比例分配定界结果
+        var rnd = (i * 7 + 3) % 100;
+        var side;
+        if (rnd < profile.homePct) side = sides[0];
+        else if (rnd < profile.homePct + profile.netPct) side = sides[1];
+        else if (rnd < profile.homePct + profile.netPct + profile.contentPct) side = sides[2];
+        else side = sides[3];
+        var ceiBase = selectedCity ? (cityList.indexOf(selectedCity) * 3 + 50) : 55;
+        var cei = (ceiBase + (i * 7 + 13) % 30).toFixed(1);
+        var cls = cei < 60 ? 'status-error' : (cei < 75 ? 'status-warning' : 'status-normal');
+        var account = Pages._businessBoundaryAccount(i);
+        var dateDay = 1 + (i % 2);
+        var dateHour = (8 + i * 2) % 24;
+        var dateStr = '2025-12-0' + dateDay + ' ' + String(dateHour).padStart(2, '0') + ':' + String((i * 17) % 60).padStart(2, '0');
+        rows += '<tr><td>' + account + '</td><td>' + city + '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color + ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td><td><span class="' + cls + '">' + cei + '</span></td><td>' + dateStr + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages._showBizBoundaryDetail(\'' + city + '\')">详情</a> <a style="color:#27ae60;cursor:pointer;margin-left:6px;" onclick="Pages.showCreateOrderFromQl(\'' + account + '\',\'' + side.name + '\')">派单</a></td></tr>';
+    }
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div class="remote-panel"><div class="remote-panel-title">' + ICO.chart + ' 业务CEI定界分析</div>' +
+        '<div class="remote-form">' + this.cityFilterHtml('bizBdCity', 'Pages._bizBdCity=this.value;Pages.renderBizCeiBoundary(document.getElementById("page-biz-cei-boundary"))', selectedCity) +
+        '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="bizBdAccount" placeholder="输入用户账号或IP"></div>' +
+        '<div class="form-group"><label class="form-label">时间范围</label><div style="display:flex;gap:6px;"><input class="form-input" type="date" value="2025-12-02"><select class="form-select" style="width:86px;"><option>00时</option><option>01时</option><option>02时</option><option>03时</option><option>04时</option><option>05时</option><option>06时</option><option>07时</option><option>08时</option><option>09时</option><option>10时</option><option>11时</option><option>12时</option><option>13时</option><option>14时</option><option>15时</option><option>16时</option><option>17时</option><option selected>18时</option><option>19时</option><option>20时</option><option>21时</option><option>22时</option><option>23时</option></select></div></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiBoundary(document.getElementById(\'page-biz-cei-boundary\'))">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + totalUsers.toLocaleString() + '</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">' + profile.homePct + '%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + profile.netPct + '%</div><div class="wo-stat-label">网络侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">' + profile.contentPct + '%</div><div class="wo-stat-label">内容侧占比</div></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">' +
+            '<div class="chart-card" style="min-height:360px;"><div class="chart-card-header"><span class="chart-title">定界结果分布' + (selectedCity ? '（' + selectedCity + '）' : '（全省）') + '</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
+        '</div>' +
+        '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定界明细' + (selectedCity ? '（' + selectedCity + '）' : '') + '</div>' +
+        '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>CEI评分</th><th>时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    this._renderBizBoundaryDistribution('bizBdChart1', sides, totalUsers);
+};
+
+Pages._renderBizLocateDonut = function(chartId, title, total, data) {
+    var el = document.getElementById(chartId);
+    if (!el) return;
+    el.setAttribute('data-total', String(total));
+    el.setAttribute('data-series', data.map(function(d) { return d.name + ':' + d.value; }).join('|'));
+    var chart = echarts.init(el);
+    App.chartInstances[chartId] = chart;
+    chart.setOption({
+        title: { text: title, left: 'center', top: 8, textStyle: { fontSize: 12, fontWeight: 500, color: '#333' } },
+        tooltip: { trigger: 'item', formatter: '{b}: {c}户 ({d}%)' },
+        legend: { right: 18, top: 'middle', orient: 'vertical', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10 } },
+        graphic: [
+            { type: 'text', left: '35%', top: '44%', style: { text: '质差用户数', fill: '#777', fontSize: 12, textAlign: 'center' } },
+            { type: 'text', left: '39%', top: '51%', style: { text: String(total), fill: '#333', fontSize: 22, fontWeight: 600, textAlign: 'center' } }
+        ],
+        series: [{
+            type: 'pie',
+            radius: ['40%', '66%'],
+            center: ['42%', '52%'],
+            avoidLabelOverlap: true,
+            data: data,
+            label: { fontSize: 10, formatter: '{b}: {d}%' },
+            labelLine: { length: 10, length2: 8 },
+            itemStyle: { borderColor: '#fff', borderWidth: 2 }
+        }]
+    });
+    window.addEventListener('resize', function() { chart.resize(); });
+};
+
+Pages._renderBizLocateBar = function(chartId, title, data) {
+    var el = document.getElementById(chartId);
+    if (!el) return;
+    el.setAttribute('data-series', data.map(function(d) { return d.name + ':' + d.value; }).join('|'));
+    var chart = echarts.init(el);
+    App.chartInstances[chartId] = chart;
+    chart.setOption({
+        title: { text: title, left: 'center', top: 8, textStyle: { fontSize: 12, fontWeight: 500, color: '#333' } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { top: 52, right: 30, bottom: 24, left: 86 },
+        xAxis: { type: 'value', axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f5' } } },
+        yAxis: { type: 'category', data: data.map(function(d) { return d.name; }).reverse(), axisLabel: { fontSize: 10 } },
+        series: [{
+            type: 'bar',
+            data: data.map(function(d) { return d.value; }).reverse(),
+            barWidth: 18,
+            itemStyle: { color: '#6f9df6' },
+            label: { show: false }
+        }]
+    });
+    window.addEventListener('resize', function() { chart.resize(); });
+};
+
+Pages._bizLocateCityProfile = function(city) {
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    var idx = city ? Math.max(0, cityList.indexOf(city)) + 1 : 0;
+    var homeTotal = 200 + idx * 17;
+    var networkTotal = 200 + idx * 11;
+    var contentBase = 92 + idx * 5;
+    function split(total) {
+        return [
+            Math.round(total * 0.40),
+            Math.round(total * 0.21),
+            Math.round(total * 0.17),
+            Math.round(total * 0.13),
+            total - Math.round(total * 0.40) - Math.round(total * 0.21) - Math.round(total * 0.17) - Math.round(total * 0.13)
+        ];
+    }
+    return {
+        homeTotal: homeTotal,
+        networkTotal: networkTotal,
+        homeValues: split(homeTotal),
+        networkValues: split(networkTotal),
+        contentValues: [contentBase, contentBase - 11, contentBase - 26, contentBase - 35, contentBase - 41]
+    };
+};
+
+Pages.renderBizCeiLocate = function(container) {
+    var city = this._bizLocCity || '';
+    var profile = this._bizLocateCityProfile(city);
+    var homeData = [
+        { name: '用户终端问题', value: profile.homeValues[0], itemStyle: { color: '#36a3ff' } },
+        { name: '家庭网关问题', value: profile.homeValues[1], itemStyle: { color: '#35cfc6' } },
+        { name: '家庭路由器问题', value: profile.homeValues[2], itemStyle: { color: '#49c96d' } },
+        { name: '皮线光缆问题', value: profile.homeValues[3], itemStyle: { color: '#ffd43b' } },
+        { name: '室内布线问题', value: profile.homeValues[4], itemStyle: { color: '#ff5c8a' } }
+    ];
+    var networkData = [
+        { name: '分支段问题', value: profile.networkValues[0], itemStyle: { color: '#36a3ff' } },
+        { name: '主干光缆问题', value: profile.networkValues[1], itemStyle: { color: '#35cfc6' } },
+        { name: 'OLT设备及以上问题', value: profile.networkValues[2], itemStyle: { color: '#49c96d' } },
+        { name: 'BRAS侧问题', value: profile.networkValues[3], itemStyle: { color: '#ffd43b' } },
+        { name: '城域网出口问题', value: profile.networkValues[4], itemStyle: { color: '#ff5c8a' } }
+    ];
+    var contentData = [
+        { name: '云盘慢', value: profile.contentValues[0] },
+        { name: 'TCP连接时延', value: profile.contentValues[1] },
+        { name: '下载速率', value: profile.contentValues[2] },
+        { name: '抖动', value: profile.contentValues[3] },
+        { name: 'HTTP响应成功率', value: profile.contentValues[4] }
+    ];
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div class="remote-panel"><div class="remote-panel-title">' + ICO.search + ' 业务CEI定位分析</div>' +
+        '<div class="remote-form">' + this.cityFilterHtml('bizLocCity', 'Pages._bizLocCity=this.value;Pages.renderBizCeiLocate(document.getElementById("page-biz-cei-locate"))', city) +
+        '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="bizLocAccount" placeholder="输入用户账号或IP"></div>' +
+        '<div class="form-group"><label class="form-label">时间范围</label><div style="display:flex;gap:6px;"><input class="form-input" type="date" value="2025-12-02"><select class="form-select" style="width:86px;"><option>00时</option><option>01时</option><option>02时</option><option>03时</option><option>04时</option><option>05时</option><option>06时</option><option>07时</option><option>08时</option><option>09时</option><option>10时</option><option>11时</option><option>12时</option><option>13时</option><option>14时</option><option>15时</option><option>16时</option><option>17时</option><option selected>18时</option><option>19时</option><option>20时</option><option>21时</option><option>22时</option><option>23时</option></select></div></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiLocate(document.getElementById(\'page-biz-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:8px;margin-bottom:8px;overflow-x:auto;">' +
+            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart3"></div></div>' +
+        '</div></div>';
+    this._renderBizLocateDonut('bizLocChart1', '家庭侧定位TOP5原因分布', profile.homeTotal, homeData);
+    this._renderBizLocateDonut('bizLocChart2', '网络侧定位TOP5原因分布', profile.networkTotal, networkData);
+    this._renderBizLocateBar('bizLocChart3', '内容侧定位用户质量指标分布', contentData);
+};
+
+Pages._showBizBoundaryDetail = function(city) {
+    Modal.show('定界详情 - ' + city,
+        '<div style="font-size:13px;line-height:2;">' +
+        '<div><strong>地市：</strong>' + city + '</div>' +
+        '<div><strong>质差用户数：</strong>' + SeededRandom.int(180, 420) + ' 户</div>' +
+        '<div><strong>家庭侧占比：</strong>' + SeededRandom.float(80.5, 86.8, 1) + '%</div>' +
+        '<div><strong>网络侧占比：</strong>' + SeededRandom.float(7.5, 11.5, 1) + '%</div>' +
+        '<div><strong>内容侧占比：</strong>' + SeededRandom.float(3.8, 6.5, 1) + '%</div>' +
+        '</div>',
+        '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>', '450px'
+    );
 };
 
 // Legacy fallback cleanup for remote-operation pages. enhance-pages.js will replace

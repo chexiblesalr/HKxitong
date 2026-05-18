@@ -1054,12 +1054,7 @@ EnhancePages._xdrQueryParams = function (page) {
     return {
         page: page || this._xdrPage || 1,
         pageSize: 12,
-        city_name: this._xdrCity || '',
-        protocol: this._xdrProto || '',
-        app_name: this._xdrApp || '',
-        account: this._xdrAccount || '',
-        quality_only: this._xdrIssueOnly ? '1' : '',
-        tag: this._xdrTag || ''
+        account: this._xdrAccount || ''
     };
 };
 
@@ -1067,6 +1062,70 @@ EnhancePages._tagList = function (value) {
     if (!value) return [];
     if (Array.isArray(value)) return value;
     return String(value).split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+};
+
+EnhancePages._normalizeXdrAccount = function(value, idx) {
+    var digits = String(value || '').replace(/\D/g, '');
+    var base = digits ? parseInt(digits.slice(-8), 10) : (20260000 + (idx || 0) + 1);
+    if (!Number.isFinite(base)) base = 20260000 + (idx || 0) + 1;
+    return '211' + String(base % 100000000).padStart(8, '0');
+};
+
+EnhancePages._xdrL4Protocol = function(protocol) {
+    protocol = String(protocol || '').toUpperCase();
+    return (protocol === 'DNS' || protocol === 'QUIC' || protocol === 'IPTV') ? 'UDP' : 'TCP';
+};
+
+EnhancePages._xdrAppCategory = function(r) {
+    var p = String(r.protocol || '').toUpperCase();
+    if (r.app_category) return r.app_category;
+    if (p === 'IPTV' || p === 'VIDEO') return '视频';
+    if (p === 'GAMING') return '游戏';
+    if (p === 'DNS' || p === 'HTTP' || p === 'HTTPS' || p === 'QUIC') return '网站/下载';
+    return '其他';
+};
+
+EnhancePages._mb = function(bytes) {
+    return (Number(bytes || 0) / 1024 / 1024).toFixed(2) + ' MB';
+};
+
+EnhancePages._xdrRowHtml = function(r, idx) {
+    var recordId = r.record_id || r.id || ('XDR-' + String(idx + 1).padStart(6, '0'));
+    return '<tr>' +
+        '<td style="font-size:11px;">' + (r.capture_time || r.time || '-') + '</td>' +
+        '<td>' + this._normalizeXdrAccount(r.user_account || r.userAccount, idx) + '</td>' +
+        '<td>' + (r.city_name || r.city || '-') + '</td>' +
+        '<td>' + this._xdrAppCategory(r) + '</td>' +
+        '<td>' + (r.app_name || r.app || '-') + '</td>' +
+        '<td style="font-size:11px;">' + (r.user_ip || r.src_ip || '-') + '</td>' +
+        '<td>' + (r.src_port || '-') + '</td>' +
+        '<td>' + this._xdrL4Protocol(r.protocol) + '</td>' +
+        '<td style="font-size:11px;">' + (r.dst_ip || '-') + '</td>' +
+        '<td>' + (r.dst_port || '-') + '</td>' +
+        '<td>' + this._mb(r.up_bytes || r.upTraffic) + '</td>' +
+        '<td>' + this._mb(r.down_bytes || r.downTraffic) + '</td>' +
+        '<td><a style="color:#2b7de9;cursor:pointer;" onclick="EnhancePages.showXdrDetail(\'' + recordId + '\')">查看XDR</a></td>' +
+        '</tr>';
+};
+
+EnhancePages._renderSimpleXdrPage = function(container, rowsData, pager) {
+    this._xdrApiRows = rowsData || [];
+    var rows = (rowsData || []).map(function(r, idx) { return EnhancePages._xdrRowHtml(r, idx); }).join('') ||
+        '<tr><td colspan="13" style="text-align:center;color:#999;padding:20px;">暂无XDR记录</td></tr>';
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div class="remote-panel"><div class="remote-panel-title">DPI-XDR明细查询</div>' +
+        '<div class="remote-form">' +
+        '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="xdrAccountInput" value="' + (this._xdrAccount || '') + '" placeholder="请输入用户账号/IP"></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="EnhancePages._xdrAccount=document.getElementById(\'xdrAccountInput\').value.trim();EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">查询</button>' +
+        '<button class="btn" onclick="EnhancePages.resetXdrFilter()">重置</button>' +
+        '</div></div></div>' +
+        '<div class="data-table-wrapper">' +
+        '<table class="data-table"><thead><tr>' +
+        '<th>时间</th><th>用户账号</th><th>地市</th><th>应用大类</th><th>应用小类</th><th>终端用户IP地址</th><th>用户端口号</th><th>L4协议类型</th><th>访问服务器的IP地址</th><th>访问的服务器的端口</th><th>上行流量</th><th>下行流量</th><th>操作</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        (pager ? this._renderXdrPagination(pager) : '') + '</div></div>';
 };
 
 EnhancePages._renderXdrPagination = function (p) {
@@ -1085,103 +1144,27 @@ EnhancePages.renderDpiXdrDetail = async function (container, page) {
     container.innerHTML = '<div class="page-content"><div class="empty-state" style="height:260px;"><div class="empty-text">正在读取DPI-XDR数据库...</div></div></div>';
 
     if (!window.API || !API.dpiXdr) {
-        return this._renderDpiXdrLocal(container, page);
+        var localRows = (window.DpiXdrData && DpiXdrData.generate) ? DpiXdrData.generate() : [];
+        if (this._xdrAccount) {
+            var kwLocal = this._xdrAccount.toLowerCase();
+            localRows = localRows.filter(function(r) {
+                return String(r.user_account || '').toLowerCase().indexOf(kwLocal) >= 0 ||
+                    String(r.user_ip || r.src_ip || '').toLowerCase().indexOf(kwLocal) >= 0;
+            });
+        }
+        return this._renderSimpleXdrPage(container, Pages.paginate(localRows, this._xdrPage, 12).data, Pages.paginate(localRows, this._xdrPage, 12));
     }
 
     var resp = await API.dpiXdr(this._xdrQueryParams(this._xdrPage));
     var stats = await API.dpiXdrStats();
     if (!resp || !stats) {
-        return this._renderDpiXdrLocal(container, page);
+        var fallbackRows = (window.DpiXdrData && DpiXdrData.generate) ? DpiXdrData.generate() : [];
+        return this._renderSimpleXdrPage(container, Pages.paginate(fallbackRows, this._xdrPage, 12).data, Pages.paginate(fallbackRows, this._xdrPage, 12));
     }
 
     var rowsData = resp.data || [];
-    this._xdrApiRows = rowsData;
     var pager = resp.pagination || { page: this._xdrPage, total: rowsData.length, totalPages: 1 };
-
-    var protoOpts = '<option value="">全部协议</option>';
-    (stats.protocol || []).forEach(function (item) {
-        protoOpts += '<option value="' + item.name + '"' + (item.name === EnhancePages._xdrProto ? ' selected' : '') + '>' + item.name + ' (' + item.value + ')</option>';
-    });
-    if ((stats.protocol || []).length === 0) {
-        ['HTTP', 'HTTPS', 'DNS', 'IPTV', 'GAMING'].forEach(function (name) {
-            protoOpts += '<option value="' + name + '"' + (name === EnhancePages._xdrProto ? ' selected' : '') + '>' + name + '</option>';
-        });
-    }
-
-    var appOpts = '<option value="">全部应用</option>';
-    (stats.app || []).forEach(function (item) {
-        appOpts += '<option value="' + item.name + '"' + (item.name === EnhancePages._xdrApp ? ' selected' : '') + '>' + item.name + '</option>';
-    });
-
-    var tagOpts = '<option value="">全部标签</option>';
-    var tagSet = {};
-    (stats.tag || []).forEach(function (item) {
-        EnhancePages._tagList(item.name).forEach(function (t) { tagSet[t] = (tagSet[t] || 0) + item.value; });
-    });
-    Object.keys(tagSet).forEach(function (t) {
-        tagOpts += '<option value="' + t + '"' + (t === EnhancePages._xdrTag ? ' selected' : '') + '>' + t + ' (' + tagSet[t] + ')</option>';
-    });
-
-    var rows = rowsData.map(function (r) {
-        var tagsHtml = EnhancePages._tagList(r.quality_tags).map(function (t) {
-            return '<span style="display:inline-block;padding:1px 6px;background:#fef0f0;color:#c0392b;border-radius:8px;font-size:10px;margin-right:3px;">' + t + '</span>';
-        }).join('');
-        var statusCls = r.is_quality_issue ? 'status-error' : 'status-normal';
-        var statusText = r.is_quality_issue ? '质差' : '正常';
-        return '<tr>' +
-            '<td>' + r.record_id + '</td>' +
-            '<td style="font-size:11px;">' + (r.capture_time || '-') + '</td>' +
-            '<td>' + (r.user_account || '-') + '</td>' +
-            '<td>' + (r.city_name || '-') + '</td>' +
-            '<td><span style="padding:1px 6px;background:#f0f5ff;color:#2b7de9;border-radius:8px;font-size:10px;">' + r.protocol + '</span></td>' +
-            '<td>' + (r.app_name || '-') + '</td>' +
-            '<td style="font-size:11px;">' + (r.src_ip || '-') + ':' + (r.src_port || '-') + '</td>' +
-            '<td style="font-size:11px;">' + (r.dst_ip || '-') + ':' + (r.dst_port || '-') + '</td>' +
-            '<td>' + ((Number(r.down_bytes || 0) / 1024 / 1024).toFixed(2)) + ' MB</td>' +
-            '<td>' + (r.tcp_rtt || '-') + ' ms</td>' +
-            '<td><span class="' + statusCls + '">' + statusText + '</span></td>' +
-            '<td>' + (tagsHtml || '<span style="color:#ccc;">-</span>') + '</td>' +
-            '<td><a style="color:#2b7de9;cursor:pointer;" onclick="EnhancePages.showXdrDetail(\'' + r.record_id + '\')">查看xDR</a></td>' +
-            '</tr>';
-    }).join('') || '<tr><td colspan="13" style="text-align:center;color:#999;padding:20px;">暂无数据库数据，可点击“生成样例”或运行Excel导入脚本</td></tr>';
-
-    var total = Number(stats.total || 0);
-    var quality = Number(stats.quality || 0);
-    var qualityRate = total ? (quality / total * 100).toFixed(1) : '0.0';
-
-    container.innerHTML =
-        '<div class="page-content">' +
-        '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:8px;">' +
-        '<div class="wo-stat-card"><div class="wo-stat-value">' + total + '</div><div class="wo-stat-label">xDR总数</div></div>' +
-        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + (stats.protocol || []).length + '</div><div class="wo-stat-label">协议数</div></div>' +
-        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + (stats.app || []).length + '</div><div class="wo-stat-label">应用数</div></div>' +
-        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + quality + '</div><div class="wo-stat-label">质差会话</div></div>' +
-        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + qualityRate + '%</div><div class="wo-stat-label">质差占比</div></div>' +
-        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">' + Object.keys(tagSet).length + '</div><div class="wo-stat-label">质差标签数</div></div>' +
-        '</div>' +
-        '<div class="remote-panel"><div class="remote-panel-title">DPI-XDR明细查询（数据库/API模式）</div>' +
-        '<div class="remote-form">' +
-        Pages.cityFilterHtml('xdrCityFilter', 'EnhancePages._xdrCity=this.value;EnhancePages.renderDpiXdrDetail(document.getElementById("page-dpi-capture"),1)', this._xdrCity) +
-        '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="xdrAccountInput" value="' + (this._xdrAccount || '') + '" placeholder="账号/IP"></div>' +
-        '<div class="form-group"><label class="form-label">协议</label><select class="form-select" onchange="EnhancePages._xdrProto=this.value;EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">' + protoOpts + '</select></div>' +
-        '<div class="form-group"><label class="form-label">应用</label><select class="form-select" onchange="EnhancePages._xdrApp=this.value;EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">' + appOpts + '</select></div>' +
-        '<div class="form-group"><label class="form-label">质差标签</label><select class="form-select" onchange="EnhancePages._xdrTag=this.value;EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">' + tagOpts + '</select></div>' +
-        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">' +
-        '<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" ' + (this._xdrIssueOnly ? 'checked' : '') + ' onchange="EnhancePages._xdrIssueOnly=this.checked;EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">仅显示质差</label>' +
-        '<button class="btn btn-primary" onclick="EnhancePages._xdrAccount=document.getElementById(\'xdrAccountInput\').value.trim();EnhancePages.renderDpiXdrDetail(document.getElementById(\'page-dpi-capture\'),1)">查询</button>' +
-        '<button class="btn" onclick="EnhancePages.resetXdrFilter()">重置</button>' +
-        '<button class="btn" onclick="EnhancePages.seedXdrSample()">生成样例</button>' +
-        '<button class="btn" onclick="EnhancePages.generateXdrTags()">生成标签</button>' +
-        '<button class="btn" onclick="EnhancePages.exportXdr()">导出当前页</button>' +
-        '</div></div></div>' +
-        '<div style="margin-bottom:8px;padding:8px 12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;color:#1a5bb8;">' +
-        '<strong>数据口径：</strong>优先读取后端SQLite中的dpi_xdr_common；Excel可通过 server/db/import_xdr_excel.py 导入。后端不可用时自动降级到本地模拟数据。' +
-        '</div>' +
-        '<div class="data-table-wrapper">' +
-        '<table class="data-table"><thead><tr>' +
-        '<th>记录ID</th><th>时间</th><th>用户</th><th>地市</th><th>协议</th><th>应用</th><th>源IP:端口</th><th>目的IP:端口</th><th>下行</th><th>RTT</th><th>状态</th><th>质差标签</th><th>操作</th>' +
-        '</tr></thead><tbody>' + rows + '</tbody></table>' +
-        this._renderXdrPagination(pager) + '</div></div>';
+    return this._renderSimpleXdrPage(container, rowsData, pager);
 };
 
 EnhancePages.seedXdrSample = async function () {
@@ -1211,15 +1194,18 @@ EnhancePages.showXdrDetail = async function (recordId) {
         '<div style="font-size:13px;line-height:2;">' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
         '<div><strong>记录ID：</strong>' + r.record_id + '</div>' +
-        '<div><strong>协议：</strong>' + r.protocol + '</div>' +
+        '<div><strong>L4协议：</strong>' + this._xdrL4Protocol(r.protocol) + '</div>' +
         '<div><strong>时间：</strong>' + r.capture_time + '</div>' +
-        '<div><strong>用户：</strong>' + (r.user_account || '-') + '</div>' +
+        '<div><strong>用户账号：</strong>' + this._normalizeXdrAccount(r.user_account, 0) + '</div>' +
         '<div><strong>地市：</strong>' + (r.city_name || '-') + '</div>' +
-        '<div><strong>应用：</strong>' + (r.app_name || '-') + '</div>' +
-        '<div><strong>源IP：</strong>' + (r.src_ip || '-') + ':' + (r.src_port || '-') + '</div>' +
-        '<div><strong>目的IP：</strong>' + (r.dst_ip || '-') + ':' + (r.dst_port || '-') + '</div>' +
+        '<div><strong>应用大类：</strong>' + this._xdrAppCategory(r) + '</div>' +
+        '<div><strong>应用小类：</strong>' + (r.app_name || '-') + '</div>' +
+        '<div><strong>终端用户IP地址：</strong>' + (r.user_ip || r.src_ip || '-') + '</div>' +
+        '<div><strong>用户端口号：</strong>' + (r.src_port || '-') + '</div>' +
+        '<div><strong>访问服务器IP：</strong>' + (r.dst_ip || '-') + '</div>' +
+        '<div><strong>访问服务器端口：</strong>' + (r.dst_port || '-') + '</div>' +
+        '<div><strong>上行流量：</strong>' + this._mb(r.up_bytes) + '</div>' +
         '<div><strong>下行流量：</strong>' + ((Number(r.down_bytes || 0) / 1024 / 1024).toFixed(2)) + ' MB</div>' +
-        '<div><strong>质差标签：</strong>' + (r.quality_tags || '-') + '</div>' +
         '</div>' +
         '<div style="font-weight:600;margin:12px 0 6px;color:#2b7de9;">原始/协议字段</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:360px;overflow:auto;border:1px solid #e0e4e8;padding:8px;border-radius:4px;">' + (fields || '无原始字段') + '</div>' +
@@ -1237,15 +1223,18 @@ EnhancePages._showXdrDetailLocal = function (recordId) {
     Modal.show('DPI-XDR明细 - ' + r.record_id,
         '<div style="font-size:13px;line-height:2;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
         '<div><strong>记录ID：</strong>' + r.record_id + '</div>' +
-        '<div><strong>协议：</strong>' + r.protocol + '</div>' +
+        '<div><strong>L4协议：</strong>' + this._xdrL4Protocol(r.protocol) + '</div>' +
         '<div><strong>时间：</strong>' + r.capture_time + '</div>' +
-        '<div><strong>用户：</strong>' + r.user_account + '</div>' +
+        '<div><strong>用户账号：</strong>' + this._normalizeXdrAccount(r.user_account, 0) + '</div>' +
         '<div><strong>地市：</strong>' + r.city + '</div>' +
-        '<div><strong>应用：</strong>' + r.app_name + '</div>' +
-        '<div><strong>源IP：</strong>' + r.src_ip + ':' + r.src_port + '</div>' +
-        '<div><strong>目的IP：</strong>' + r.dst_ip + ':' + r.dst_port + '</div>' +
-        '<div><strong>RTT：</strong>' + r.tcp_rtt + ' ms</div>' +
-        '<div><strong>质差标签：</strong>' + (r.quality_tags || []).join(',') + '</div>' +
+        '<div><strong>应用大类：</strong>' + this._xdrAppCategory(r) + '</div>' +
+        '<div><strong>应用小类：</strong>' + r.app_name + '</div>' +
+        '<div><strong>终端用户IP地址：</strong>' + (r.user_ip || r.src_ip || '-') + '</div>' +
+        '<div><strong>用户端口号：</strong>' + r.src_port + '</div>' +
+        '<div><strong>访问服务器IP：</strong>' + r.dst_ip + '</div>' +
+        '<div><strong>访问服务器端口：</strong>' + r.dst_port + '</div>' +
+        '<div><strong>上行流量：</strong>' + this._mb(r.up_bytes) + '</div>' +
+        '<div><strong>下行流量：</strong>' + this._mb(r.down_bytes) + '</div>' +
         '</div>',
         '<button class="btn" onclick="Modal.close()">关闭</button>', '620px');
 };
@@ -2550,6 +2539,53 @@ EnhancePages.exportXdr = function () {
         return '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:' + color + '22;color:' + color + ';font-size:11px;font-weight:600;">' + esc(text) + '</span>';
     }
 
+    function normalizeAccount(value, idx) {
+        var digits = String(value || '').replace(/\D/g, '');
+        var base = digits ? parseInt(digits.slice(-8), 10) : (20260000 + (idx || 0) + 1);
+        if (!Number.isFinite(base)) base = 20260000 + (idx || 0) + 1;
+        return '211' + String(base % 100000000).padStart(8, '0');
+    }
+
+    function bizBoundarySide(idx) {
+        return ['家庭侧', '网络侧', '内容侧'][idx % 3];
+    }
+
+    function disconnectBoundarySide(idx) {
+        return ['家庭侧', '光路侧', '接入侧'][idx % 3];
+    }
+
+    function bizRootCause(side, idx) {
+        var map = {
+            '家庭侧': ['网关CPU利用率高', 'WiFi信道干扰高', '终端到网关时延高'],
+            '网络侧': ['TCP重传率高', '骨干链路丢包率高', 'BRAS侧平均时延高'],
+            '内容侧': ['HTTP平均响应时延高', 'DNS解析时延高', 'CDN节点首包时延高']
+        };
+        return map[side][idx % map[side].length];
+    }
+
+    function disconnectRootCause(side, idx) {
+        var map = {
+            '家庭侧': ['网关掉电', '网关死机', '用户拔线'],
+            '光路侧': ['光衰过大', '光纤断裂', '接头松动'],
+            '接入侧': ['OLT端口故障', 'PON板卡异常', 'MAC认证失败']
+        };
+        return map[side][idx % map[side].length];
+    }
+
+    function mockBoundaryRows(type, size) {
+        var rows = [];
+        for (var i = 0; i < size; i++) {
+            rows.push({
+                boundary_id: (type === 'disconnect' ? 'CB' : 'BB') + '-' + String(20260000 + i + 1),
+                user_account: normalizeAccount('', i),
+                city_name: (window.JilinData && JilinData.cities ? JilinData.cities[i % JilinData.cities.length] : '长春'),
+                cei_score: (type === 'disconnect' ? 55 + (i % 9) * 2.3 : 58 + (i % 8) * 2.1).toFixed(1),
+                analysis_time: '2025-12-02 ' + String(8 + (i % 10)).padStart(2, '0') + ':15:00'
+            });
+        }
+        return rows;
+    }
+
     Pages._renderQualityLocationBackend = Pages.renderQualityLocation;
     Pages.renderQualityLocation = async function (container, page) {
         page = page || 1;
@@ -2557,31 +2593,33 @@ EnhancePages.exportXdr = function () {
         var type = this._qlTab || 'business';
         var account = this._qlAccount || '';
         var list = await API.boundaryResults({ boundary_type: type, account: account, page: page, pageSize: 12 });
-        if (!list) return this._renderQualityLocationBackend(container);
-        var rows = (list.data || []).map(function (r) {
+        if (!list) list = { data: [], pagination: { page: page, total: 0, totalPages: 1 } };
+        var sourceRows = list.data || [];
+        if (!sourceRows.length) sourceRows = mockBoundaryRows(type, 12);
+        var rows = sourceRows.map(function (r, idx) {
+            var side = type === 'disconnect' ? disconnectBoundarySide(idx) : bizBoundarySide(idx);
+            var rootCause = type === 'disconnect' ? disconnectRootCause(side, idx) : bizRootCause(side, idx);
             return '<tr>' +
                 '<td>' + esc(r.boundary_id) + '</td>' +
-                '<td>' + esc(r.user_account) + '</td>' +
+                '<td>' + esc(normalizeAccount(r.user_account, idx)) + '</td>' +
                 '<td>' + esc(r.city_name) + '</td>' +
-                '<td>' + badge(r.boundary_side) + '</td>' +
-                '<td>' + esc(r.root_cause) + '</td>' +
+                '<td>' + badge(side) + '</td>' +
+                '<td>' + esc(rootCause) + '</td>' +
                 '<td>' + esc(r.cei_score) + '</td>' +
-                '<td>' + esc(r.confidence) + '%</td>' +
-                '<td>' + esc(r.severity) + '</td>' +
                 '<td>' + esc(r.analysis_time || '') + '</td>' +
                 '<td><button class="btn" onclick="Pages.showBoundaryFeedback(\'' + esc(r.boundary_id) + '\',\'' + esc(r.boundary_side) + '\')">纠偏</button></td>' +
                 '</tr>';
-        }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:18px;">暂无定界记录，可先点击生成模拟定界结果</td></tr>';
+        }).join('') || '<tr><td colspan="8" style="text-align:center;color:#999;padding:18px;">暂无定界记录</td></tr>';
         var p = list.pagination || {};
+        if (!p.total) { p.total = sourceRows.length; p.page = page; p.totalPages = 1; }
         container.innerHTML = '<div class="page-content">' +
             '<div class="remote-panel"><div class="remote-panel-title">CEI定界定位查询</div>' +
             '<div class="remote-form">' +
             '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="qlAccount" value="' + esc(account) + '" placeholder="请输入用户账号或IP"></div>' +
             '<div class="form-group"><label class="form-label">定界类型</label><select class="form-select" id="qlType"><option value="business"' + (type === 'business' ? ' selected' : '') + '>业务CEI定界定位</option><option value="disconnect"' + (type === 'disconnect' ? ' selected' : '') + '>通断CEI定界定位</option></select></div>' +
-            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.executeQlQuery()">查询</button><button class="btn" onclick="Pages.generateBoundarySample()">生成模拟定界</button><button class="btn" onclick="Pages._qlAccount=\'\';Pages.renderQualityLocation(document.getElementById(\'page-ce-location\'),1)">重置</button></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.executeQlQuery()">查询</button><button class="btn" onclick="Pages._qlAccount=\'\';Pages.renderQualityLocation(document.getElementById(\'page-ce-location\'),1)">重置</button></div>' +
             '</div></div>' +
-            '<div style="margin-bottom:8px;padding:10px 12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;color:#1a5bb8;">定界结果来自后端模拟表，可承接DPI、AAA、RMS、OMCI和网管证据；纠偏会写入模型反馈记录，并联动“定界准确率闭环”。</div>' +
-            '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>定界ID</th><th>用户账号</th><th>地市</th><th>定界侧</th><th>根因</th><th>CEI</th><th>置信度</th><th>严重度</th><th>分析时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>定界ID</th><th>用户账号</th><th>地市</th><th>定界侧</th><th>根因</th><th>CEI</th><th>分析时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             '<div style="padding:10px;text-align:right;font-size:12px;">共 ' + (p.total || 0) + ' 条，第 ' + (p.page || page) + '/' + (p.totalPages || 1) + ' 页</div></div></div>';
     };
 
