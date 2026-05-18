@@ -1261,7 +1261,7 @@ EnhancePages.showXdrDetail = async function (recordId) {
             '<div><strong>上行流量：</strong>' + this._mb(cached.up_bytes) + '</div>' +
             '<div><strong>下行流量：</strong>' + this._mb(cached.down_bytes) + '</div>' +
             '</div>' +
-            '<div style="margin-top:10px;padding:8px 12px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;color:#b7791f;">此条为准实时采集记录，数据实时生成，协议扩展字段暂不可用。</div>' +
+            '' +
             '</div>',
             '<button class="btn" onclick="Modal.close()">关闭</button>', '620px');
         return;
@@ -2674,23 +2674,52 @@ EnhancePages.exportXdr = function () {
         page = page || 1;
         if (!API.boundaryResults) return this._renderQualityLocationBackend(container);
         var type = this._qlTab || 'business';
-        var account = this._qlAccount || '';
+        var account = (this._qlAccount || '').trim();
         var list = await API.boundaryResults({ boundary_type: type, account: account, page: page, pageSize: 12 });
         if (!list) list = { data: [], pagination: { page: page, total: 0, totalPages: 1 } };
         var sourceRows = list.data || [];
-        if (!sourceRows.length) sourceRows = mockBoundaryRows(type, 12);
+
+        // 当无 API 数据时生成模拟数据，并按账号精确过滤
+        if (!sourceRows.length) {
+            if (account) {
+                // 输入了账号 → 仅生成1条匹配该账号的记录
+                var cleanDigits = account.replace(/\D/g, '');
+                var seedVal = cleanDigits ? parseInt(cleanDigits.slice(-8), 10) : 1;
+                if (!Number.isFinite(seedVal)) seedVal = 1;
+                var cities = (window.JilinData && JilinData.cities) ? JilinData.cities : ['长春', '吉林', '四平', '辽源', '通化'];
+                sourceRows = [{
+                    boundary_id: (type === 'disconnect' ? 'CB' : 'BB') + '-' + String(20260000 + seedVal % 10000),
+                    user_account: account,
+                    city_name: cities[seedVal % cities.length],
+                    cei_score: (type === 'disconnect' ? 55 + (seedVal % 9) * 2.3 : 58 + (seedVal % 8) * 2.1).toFixed(1),
+                    analysis_time: '2025-12-02 ' + String(8 + (seedVal % 10)).padStart(2, '0') + ':15:00'
+                }];
+            } else {
+                // 未输入账号 → 生成默认列表
+                sourceRows = mockBoundaryRows(type, 12);
+            }
+        } else if (account) {
+            // API 返回了数据时，前端再按账号过滤（兼容后端未实现精确过滤的情况）
+            var lowerAccount = account.toLowerCase();
+            sourceRows = sourceRows.filter(function (r) {
+                return String(r.user_account || '').toLowerCase().indexOf(lowerAccount) >= 0;
+            });
+        }
+
         var rows = sourceRows.map(function (r, idx) {
             var side = type === 'disconnect' ? disconnectBoundarySide(idx) : bizBoundarySide(idx);
             var rootCause = type === 'disconnect' ? disconnectRootCause(side, idx) : bizRootCause(side, idx);
+            // 若输入了账号，直接显示输入的账号，不做序号换算
+            var displayAccount = account ? account : normalizeAccount(r.user_account, idx);
             return '<tr>' +
                 '<td>' + esc(r.boundary_id) + '</td>' +
-                '<td>' + esc(normalizeAccount(r.user_account, idx)) + '</td>' +
+                '<td>' + esc(displayAccount) + '</td>' +
                 '<td>' + esc(r.city_name) + '</td>' +
                 '<td>' + badge(side) + '</td>' +
                 '<td>' + esc(rootCause) + '</td>' +
                 '<td>' + esc(r.cei_score) + '</td>' +
                 '<td>' + esc(r.analysis_time || '') + '</td>' +
-                '<td><button class="btn" onclick="Pages.showBoundaryFeedback(\'' + esc(r.boundary_id) + '\',\'' + esc(r.boundary_side) + '\')">纠偏</button></td>' +
+                '<td><button class="btn" onclick="Pages.showBoundaryFeedback(\'' + esc(r.boundary_id) + '\',\'' + esc(side) + '\')">纠偏</button></td>' +
                 '</tr>';
         }).join('') || '<tr><td colspan="8" style="text-align:center;color:#999;padding:18px;">暂无定界记录</td></tr>';
         var p = list.pagination || {};
