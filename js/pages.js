@@ -2834,20 +2834,44 @@ var Pages = {
         var rows = [];
         var networks = ['长春朝阳网格', '吉林昌邑网格', '四平铁西网格', '延边延吉网格', '松原宁江网格'];
         var maintainers = ['张建国', '赵玉海', '郑志勇', '金成日', '梁建军'];
+        // 各维度数据量级不同：省/地市 >> 网格 >> 装维
+        var baseOrders, orderStep, baseQuality, qualityStep, baseImprove, baseClose, baseAvgDur, baseOverdue;
+        if (dimension === 'link') {
+            // 装维维度：个人级别，工单数最少
+            baseOrders = 18; orderStep = 4;
+            baseQuality = 6; qualityStep = 1;
+            baseImprove = 65; baseClose = 82;
+            baseAvgDur = 4.2; baseOverdue = 8.5;
+        } else if (dimension === 'network') {
+            // 网格维度：网格级别，工单数中等
+            baseOrders = 45; orderStep = 8;
+            baseQuality = 14; qualityStep = 2;
+            baseImprove = 69; baseClose = 85;
+            baseAvgDur = 3.8; baseOverdue = 6.2;
+        } else {
+            // 省/地市维度：汇聚最高层，工单数最多
+            baseOrders = 128; orderStep = 18;
+            baseQuality = 38; qualityStep = 5;
+            baseImprove = 74; baseClose = 90;
+            baseAvgDur = 3.1; baseOverdue = 4.2;
+        }
         for (var i = 0; i < 8; i++) {
             var city = JilinData.cities[i % JilinData.cities.length];
+            var total = baseOrders + i * orderStep;
+            var quality = baseQuality + i * qualityStep;
+            var biz = Math.round(quality * 0.6);
             rows.push({
                 time: '2026-05-17 ' + String(18 - (i % 2)).padStart(2, '0') + ':00',
                 city: city,
                 network: networks[i % networks.length],
                 maintainer: maintainers[i % maintainers.length],
-                totalOrders: 80 + i * 7,
-                qualityOrders: 26 + i * 3,
-                bizQualityOrders: 12 + i * 2,
-                improveRatio: (72 + i * 2.3).toFixed(1) + '%',
-                closeRate: (88 + i * 1.1).toFixed(1) + '%',
-                avgDuration: (3.2 + i * 0.4).toFixed(1) + 'h',
-                overdueRatio: (4.8 + i * 0.6).toFixed(1) + '%',
+                totalOrders: total,
+                qualityOrders: quality,
+                bizQualityOrders: biz,
+                improveRatio: (baseImprove + i * 1.8).toFixed(1) + '%',
+                closeRate: (baseClose + i * 0.9).toFixed(1) + '%',
+                avgDuration: (baseAvgDur + i * 0.35).toFixed(1) + 'h',
+                overdueRatio: (baseOverdue + i * 0.5).toFixed(1) + '%',
                 tag: tags[i % tags.length]
             });
         }
