@@ -2819,6 +2819,73 @@ var Pages = {
     },
 
     // ========== 工单后评估 (增强多维度分析) ==========
+    _woEvalDimension: 'city',
+    _getStandardQualityTags: function() {
+        if (window.QualityTagSystem && QualityTagSystem.tagDefinitions) {
+            return QualityTagSystem.tagDefinitions.map(function(t) { return t.name; });
+        }
+        return ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿', '游戏高时延', 'DNS解析慢', 'HTTP响应慢', 'TCP重传高', '高时延', '高丢包', 'WiFi干扰', '网关CPU高', '网关频繁重启', '带宽不足'];
+    },
+    _buildWoEvalDrillRows: function(dimension) {
+        var tags = this._getStandardQualityTags();
+        var rows = [];
+        var networks = ['长春朝阳网格', '吉林昌邑网格', '四平铁西网格', '延边延吉网格', '松原宁江网格'];
+        var maintainers = ['张建国', '赵玉海', '郑志勇', '金成日', '梁建军'];
+        for (var i = 0; i < 8; i++) {
+            var city = JilinData.cities[i % JilinData.cities.length];
+            rows.push({
+                time: '2026-05-17 ' + String(18 - (i % 2)).padStart(2, '0') + ':00',
+                city: city,
+                network: networks[i % networks.length],
+                maintainer: maintainers[i % maintainers.length],
+                totalOrders: 80 + i * 7,
+                qualityOrders: 26 + i * 3,
+                bizQualityOrders: 12 + i * 2,
+                improveRatio: (72 + i * 2.3).toFixed(1) + '%',
+                closeRate: (88 + i * 1.1).toFixed(1) + '%',
+                avgDuration: (3.2 + i * 0.4).toFixed(1) + 'h',
+                overdueRatio: (4.8 + i * 0.6).toFixed(1) + '%',
+                tag: tags[i % tags.length]
+            });
+        }
+        return rows;
+    },
+    showWoEvalTrend: function(seedName) {
+        var tags = this._getStandardQualityTags().slice(0, 5);
+        var labels = ['05-17 12:00', '05-17 13:00', '05-17 14:00', '05-17 15:00', '05-17 16:00', '05-17 17:00', '05-17 18:00'];
+        Modal.show('趋势评估 - ' + seedName,
+            '<div style="display:grid;grid-template-columns:1fr;gap:8px;">' +
+            '<div class="chart-card" style="min-height:260px;"><div class="chart-card-header"><span class="chart-title">质差标签工单数趋势</span></div><div class="chart-container" id="woEvalTagTrend1"></div></div>' +
+            '<div class="chart-card" style="min-height:260px;"><div class="chart-card-header"><span class="chart-title">质差标签关联用户CEI均值</span></div><div class="chart-container" id="woEvalTagTrend2"></div></div>' +
+            '</div>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>',
+            '820px'
+        );
+        setTimeout(function() {
+            ['woEvalTagTrend1', 'woEvalTagTrend2'].forEach(function(id, chartIdx) {
+                var dom = document.getElementById(id);
+                if (!dom) return;
+                var chart = echarts.init(dom);
+                App.chartInstances[id] = chart;
+                chart.setOption({
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: tags, top: 0, textStyle: { fontSize: 10 } },
+                    grid: { top: 35, right: 24, bottom: 30, left: 45 },
+                    xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+                    yAxis: { type: 'value', name: chartIdx === 0 ? '工单数' : 'CEI', min: chartIdx === 0 ? null : 60, max: chartIdx === 0 ? null : 100, splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                    series: tags.map(function(tag, idx) {
+                        return {
+                            name: tag,
+                            type: 'line',
+                            smooth: true,
+                            data: labels.map(function(_, j) { return chartIdx === 0 ? (18 + idx * 5 + ((j + idx) % 4) * 3) : (70 + idx * 2 + ((j * 3 + idx) % 8)); })
+                        };
+                    })
+                });
+                window.addEventListener('resize', function() { chart.resize(); });
+            });
+        }, 50);
+    },
     renderWorkOrderEval: function(container) {
         var s = JilinData.workOrderStats;
         // Calculate city stats
@@ -2860,6 +2927,16 @@ var Pages = {
                 '</tr>';
         }).join('');
         SeededRandom.reset(20251202);
+        var dim = this._woEvalDimension || 'city';
+        var drillRows = this._buildWoEvalDrillRows(dim).map(function(r) {
+            var dimCols = dim === 'network' ? ('<td>' + r.network + '</td>') : (dim === 'link' ? ('<td>' + r.network + '</td><td>' + r.maintainer + '</td>') : '');
+            return '<tr><td>' + r.time + '</td><td>' + r.city + '</td>' + dimCols + '<td>' + r.totalOrders + '</td><td>' + r.bizQualityOrders + '</td><td>' + r.improveRatio + '</td><td>' + r.closeRate + '</td><td>' + r.avgDuration + '</td><td>' + r.overdueRatio + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showWoEvalTrend(\'' + r.tag + '\')">' + r.tag + '</a></td></tr>';
+        }).join('');
+        var drillHead = dim === 'city'
+            ? '<th>时间</th><th>地市</th><th>质差工单总数</th><th>业务质量提升工单数</th><th>提升占比</th><th>工单闭环率</th><th>工单平均处理时长</th><th>超时工单占比</th><th>质差标签</th>'
+            : (dim === 'network'
+                ? '<th>时间</th><th>地市</th><th>网格</th><th>质差工单总数</th><th>业务质量提升工单数</th><th>提升占比</th><th>工单闭环率</th><th>工单平均处理时长</th><th>超时工单占比</th><th>质差标签</th>'
+                : '<th>时间</th><th>地市</th><th>网格</th><th>装维人员名称</th><th>质差工单总数</th><th>业务质量提升工单数</th><th>提升占比</th><th>工单闭环率</th><th>工单平均处理时长</th><th>超时工单占比</th><th>质差标签</th>');
 
         container.innerHTML =
             '<div class="page-content">' +
@@ -2885,6 +2962,13 @@ var Pages = {
                 '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">工单量与解决率趋势</span></div><div class="chart-container" id="woEvalChart"></div></div>' +
                 '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">满意度评分分布</span></div><div class="chart-container" id="woSatChart"></div></div>' +
             '</div>' +
+            '<div class="remote-panel" style="margin-top:8px;"><div class="remote-form">' +
+                '<div class="form-group"><label class="form-label">维度</label><div style="display:flex;gap:12px;height:30px;align-items:center;"><label><input type="radio" name="woEvalDim" value="city" ' + (dim === 'city' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 地市</label><label><input type="radio" name="woEvalDim" value="network" ' + (dim === 'network' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 网格</label><label><input type="radio" name="woEvalDim" value="link" ' + (dim === 'link' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 装维</label></div></div>' +
+                '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" style="width:120px;" value=""></div>' +
+                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn">重置</button></div>' +
+            '</div></div>' +
+            '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">趋势评估下钻</div>' +
+            '<table class="data-table"><thead><tr>' + drillHead + '</tr></thead><tbody>' + drillRows + '</tbody></table></div>' +
             // Engineer Performance
             '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;display:flex;justify-content:space-between;align-items:center;">工程师绩效排名<span style="font-size:11px;color:#999;font-weight:400;">基于解决工单数、处理时长及满意度综合评分</span></div>' +
             '<table class="data-table"><thead><tr><th style="width:50px;">排名</th><th>姓名</th><th>地市</th><th>团队</th><th>已解决</th><th>平均时长</th><th>满意度</th><th>评分</th></tr></thead><tbody>' + perfRows + '</tbody></table></div>' +

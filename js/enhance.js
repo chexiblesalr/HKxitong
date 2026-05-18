@@ -717,6 +717,13 @@ var PermissionSystem = {
 // 6. 工单闭环链路增强 - 质差驱动工单 + CEI改善对比
 // ============================================================
 var WorkOrderLoop = {
+    normalizeUserAccount: function(value, idx) {
+        var digits = String(value || '').replace(/\D/g, '');
+        var base = digits ? parseInt(digits.slice(-8), 10) : (20260000 + (idx || 0) + 1);
+        if (!Number.isFinite(base)) base = 20260000 + (idx || 0) + 1;
+        return '211' + String(base % 100000000).padStart(8, '0');
+    },
+
     // 质差标签自动生成工单规则
     autoDispatchRules: [
         { tagId: 'WEAK_LIGHT', priority: '高', type: '系统告警', deadline: 8, skill: '光路', description: '用户接收光功率低于阈值，疑似弱光故障' },
@@ -804,7 +811,7 @@ var WorkOrderLoop = {
 
             comparisons.push({
                 orderId: wo.id,
-                userAccount: wo.userAccount,
+                userAccount: this.normalizeUserAccount(wo.userAccount, i),
                 city: wo.city,
                 orderType: wo.type,
                 priority: wo.priority,
@@ -815,7 +822,7 @@ var WorkOrderLoop = {
                 resolveTime: wo.resolveTime,
                 assignee: wo.assignee,
                 isImproved: ceiAfter > ceiBefore,
-                qualityTag: SeededRandom.pick(['弱光', '高时延', '频繁掉线', '视频卡顿', 'WiFi干扰', '网关CPU高']),
+                qualityTag: SeededRandom.pick((window.QualityTagSystem && QualityTagSystem.tagDefinitions) ? QualityTagSystem.tagDefinitions.map(function(t) { return t.name; }) : ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿', '游戏高时延', 'DNS解析慢', 'HTTP响应慢', 'TCP重传高', '高时延', '高丢包', 'WiFi干扰', '网关CPU高']),
                 repairAction: SeededRandom.pick(['更换尾纤', '清洁接头', '重启网关', '升级固件', '调整WiFi信道', '更换光模块', '优化路由'])
             });
         }
