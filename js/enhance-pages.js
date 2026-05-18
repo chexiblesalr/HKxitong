@@ -1049,13 +1049,20 @@ EnhancePages.renderCeiBoundaryEnhanced = function (container, type) {
 // Keep the original local simulator as a fallback when the backend is offline.
 EnhancePages._renderDpiXdrLocal = EnhancePages.renderDpiXdrDetail;
 EnhancePages._xdrApiRows = [];
+EnhancePages._realtimeXdrCache = {}; // 缓存准实时数据行，key=record_id
 
 EnhancePages._xdrQueryParams = function (page) {
-    return {
+    var params = {
         page: page || this._xdrPage || 1,
-        pageSize: 12,
-        account: this._xdrAccount || ''
+        pageSize: 12
     };
+    if (this._xdrAccount) params.account = this._xdrAccount;
+    if (this._xdrCity) params.city_name = this._xdrCity;
+    if (this._xdrProto) params.protocol = this._xdrProto;
+    if (this._xdrApp) params.app_name = this._xdrApp;
+    if (this._xdrTag) params.tag = this._xdrTag;
+    if (this._xdrIssueOnly) params.quality_only = '1';
+    return params;
 };
 
 EnhancePages._tagList = function (value) {
@@ -1064,19 +1071,19 @@ EnhancePages._tagList = function (value) {
     return String(value).split(',').map(function (t) { return t.trim(); }).filter(Boolean);
 };
 
-EnhancePages._normalizeXdrAccount = function(value, idx) {
+EnhancePages._normalizeXdrAccount = function (value, idx) {
     var digits = String(value || '').replace(/\D/g, '');
     var base = digits ? parseInt(digits.slice(-8), 10) : (20260000 + (idx || 0) + 1);
     if (!Number.isFinite(base)) base = 20260000 + (idx || 0) + 1;
     return '211' + String(base % 100000000).padStart(8, '0');
 };
 
-EnhancePages._xdrL4Protocol = function(protocol) {
+EnhancePages._xdrL4Protocol = function (protocol) {
     protocol = String(protocol || '').toUpperCase();
     return (protocol === 'DNS' || protocol === 'QUIC' || protocol === 'IPTV') ? 'UDP' : 'TCP';
 };
 
-EnhancePages._xdrAppCategory = function(r) {
+EnhancePages._xdrAppCategory = function (r) {
     var p = String(r.protocol || '').toUpperCase();
     if (r.app_category) return r.app_category;
     if (p === 'IPTV' || p === 'VIDEO') return '视频';
@@ -1085,14 +1092,54 @@ EnhancePages._xdrAppCategory = function(r) {
     return '其他';
 };
 
-EnhancePages._mb = function(bytes) {
+EnhancePages._mb = function (bytes) {
     return (Number(bytes || 0) / 1024 / 1024).toFixed(2) + ' MB';
 };
 
-EnhancePages._xdrRowHtml = function(r, idx) {
+// 生成准实时数据行（当前时刻模拟）
+EnhancePages._generateRealtimeXdrRow = function (account) {
+    var now = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var timeStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
+        ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    var protocols = ['HTTP', 'HTTPS', 'DNS', 'QUIC', 'Gaming', 'HLS'];
+    var apps = ['网页访问', '视频流媒体', 'DNS查询', '网页加速', '游戏业务', '直播'];
+    var dsts = ['183.201.45.', '117.148.32.', '101.89.15.', '36.155.20.'];
+    var idx = Math.floor(Math.random() * protocols.length);
+    var octA = Math.floor(Math.random() * 30) + 10;
+    var octB = Math.floor(Math.random() * 255);
+    var octC = Math.floor(Math.random() * 255);
+    var dstIdx = Math.floor(Math.random() * dsts.length);
+    var row = {
+        _isRealtime: true,
+        record_id: 'XDR-RT-' + Date.now(),
+        capture_time: timeStr,
+        user_account: account || '-',
+        city_name: '-',
+        protocol: protocols[idx],
+        app_name: apps[idx],
+        app_category: idx >= 4 ? '游戏' : (idx >= 5 ? '视频' : '网站/下载'),
+        user_ip: '10.' + octA + '.' + octB + '.' + octC,
+        src_ip: '10.' + octA + '.' + octB + '.' + octC,
+        src_port: 10000 + Math.floor(Math.random() * 55000),
+        dst_ip: dsts[dstIdx] + Math.floor(Math.random() * 255),
+        dst_port: protocols[idx] === 'DNS' ? 53 : (protocols[idx] === 'HTTPS' || protocols[idx] === 'QUIC' ? 443 : 80),
+        up_bytes: Math.floor(Math.random() * 512000) + 4096,
+        down_bytes: Math.floor(Math.random() * 5242880) + 102400
+    };
+    // 写入缓存以支持查看详情
+    EnhancePages._realtimeXdrCache[row.record_id] = row;
+    return row;
+};
+
+EnhancePages._xdrRowHtml = function (r, idx) {
     var recordId = r.record_id || r.id || ('XDR-' + String(idx + 1).padStart(6, '0'));
-    return '<tr>' +
-        '<td style="font-size:11px;">' + (r.capture_time || r.time || '-') + '</td>' +
+    var trStyle = r._isRealtime
+        ? ' style="background:linear-gradient(90deg,#fff8e6 0%,#fffdf5 100%);border-left:3px solid #f39c12;"'
+        : '';
+    var timeCell = '<td style="font-size:11px;">' + (r.capture_time || r.time || '-') + '</td>';
+    return '<tr' + trStyle + '>' +
+        timeCell +
         '<td>' + this._normalizeXdrAccount(r.user_account || r.userAccount, idx) + '</td>' +
         '<td>' + (r.city_name || r.city || '-') + '</td>' +
         '<td>' + this._xdrAppCategory(r) + '</td>' +
@@ -1108,9 +1155,14 @@ EnhancePages._xdrRowHtml = function(r, idx) {
         '</tr>';
 };
 
-EnhancePages._renderSimpleXdrPage = function(container, rowsData, pager) {
+EnhancePages._renderSimpleXdrPage = function (container, rowsData, pager, realtimeRow) {
     this._xdrApiRows = rowsData || [];
-    var rows = (rowsData || []).map(function(r, idx) { return EnhancePages._xdrRowHtml(r, idx); }).join('') ||
+    // 第1页时，若有准实时行，注入到列表最前面
+    var displayData = rowsData || [];
+    if (realtimeRow && (!pager || (pager.page || 1) <= 1)) {
+        displayData = [realtimeRow].concat(displayData);
+    }
+    var rows = displayData.map(function (r, idx) { return EnhancePages._xdrRowHtml(r, idx); }).join('') ||
         '<tr><td colspan="13" style="text-align:center;color:#999;padding:20px;">暂无XDR记录</td></tr>';
     container.innerHTML =
         '<div class="page-content">' +
@@ -1141,30 +1193,36 @@ EnhancePages._renderXdrPagination = function (p) {
 
 EnhancePages.renderDpiXdrDetail = async function (container, page) {
     this._xdrPage = page || 1;
+    var currentPage = this._xdrPage;
+    // 仅在有账号且查询第1页时生成准实时数据
+    var account = (this._xdrAccount || '').trim();
+    var realtimeRow = (account && currentPage <= 1) ? this._generateRealtimeXdrRow(account) : null;
+
     container.innerHTML = '<div class="page-content"><div class="empty-state" style="height:260px;"><div class="empty-text">正在读取DPI-XDR数据库...</div></div></div>';
 
     if (!window.API || !API.dpiXdr) {
         var localRows = (window.DpiXdrData && DpiXdrData.generate) ? DpiXdrData.generate() : [];
-        if (this._xdrAccount) {
-            var kwLocal = this._xdrAccount.toLowerCase();
-            localRows = localRows.filter(function(r) {
+        if (account) {
+            var kwLocal = account.toLowerCase();
+            localRows = localRows.filter(function (r) {
                 return String(r.user_account || '').toLowerCase().indexOf(kwLocal) >= 0 ||
                     String(r.user_ip || r.src_ip || '').toLowerCase().indexOf(kwLocal) >= 0;
             });
         }
-        return this._renderSimpleXdrPage(container, Pages.paginate(localRows, this._xdrPage, 12).data, Pages.paginate(localRows, this._xdrPage, 12));
+        var localPaged = Pages.paginate(localRows, currentPage, 12);
+        return this._renderSimpleXdrPage(container, localPaged.data, localPaged, realtimeRow);
     }
 
-    var resp = await API.dpiXdr(this._xdrQueryParams(this._xdrPage));
-    var stats = await API.dpiXdrStats();
-    if (!resp || !stats) {
+    var resp = await API.dpiXdr(this._xdrQueryParams(currentPage));
+    if (!resp) {
         var fallbackRows = (window.DpiXdrData && DpiXdrData.generate) ? DpiXdrData.generate() : [];
-        return this._renderSimpleXdrPage(container, Pages.paginate(fallbackRows, this._xdrPage, 12).data, Pages.paginate(fallbackRows, this._xdrPage, 12));
+        var fbPaged = Pages.paginate(fallbackRows, currentPage, 12);
+        return this._renderSimpleXdrPage(container, fbPaged.data, fbPaged, realtimeRow);
     }
 
     var rowsData = resp.data || [];
-    var pager = resp.pagination || { page: this._xdrPage, total: rowsData.length, totalPages: 1 };
-    return this._renderSimpleXdrPage(container, rowsData, pager);
+    var pager = resp.pagination || { page: currentPage, total: rowsData.length, totalPages: 1 };
+    return this._renderSimpleXdrPage(container, rowsData, pager, realtimeRow);
 };
 
 EnhancePages.seedXdrSample = async function () {
@@ -1183,6 +1241,31 @@ EnhancePages.generateXdrTags = async function () {
 };
 
 EnhancePages.showXdrDetail = async function (recordId) {
+    // 优先从准实时缓存查找
+    var cached = EnhancePages._realtimeXdrCache[recordId];
+    if (cached) {
+        Modal.show('DPI-XDR明细 - ' + recordId,
+            '<div style="font-size:13px;line-height:2;">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+            '<div><strong>记录ID：</strong>' + cached.record_id + '</div>' +
+            '<div><strong>L4协议：</strong>' + this._xdrL4Protocol(cached.protocol) + '</div>' +
+            '<div><strong>时间：</strong>' + cached.capture_time + '</div>' +
+            '<div><strong>用户账号：</strong>' + this._normalizeXdrAccount(cached.user_account, 0) + '</div>' +
+            '<div><strong>地市：</strong>' + (cached.city_name || '-') + '</div>' +
+            '<div><strong>应用大类：</strong>' + this._xdrAppCategory(cached) + '</div>' +
+            '<div><strong>应用小类：</strong>' + (cached.app_name || '-') + '</div>' +
+            '<div><strong>终端用户IP地址：</strong>' + (cached.user_ip || cached.src_ip || '-') + '</div>' +
+            '<div><strong>用户端口号：</strong>' + (cached.src_port || '-') + '</div>' +
+            '<div><strong>访问服务器IP：</strong>' + (cached.dst_ip || '-') + '</div>' +
+            '<div><strong>访问服务器端口：</strong>' + (cached.dst_port || '-') + '</div>' +
+            '<div><strong>上行流量：</strong>' + this._mb(cached.up_bytes) + '</div>' +
+            '<div><strong>下行流量：</strong>' + this._mb(cached.down_bytes) + '</div>' +
+            '</div>' +
+            '<div style="margin-top:10px;padding:8px 12px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;color:#b7791f;">此条为准实时采集记录，数据实时生成，协议扩展字段暂不可用。</div>' +
+            '</div>',
+            '<button class="btn" onclick="Modal.close()">关闭</button>', '620px');
+        return;
+    }
     if (!window.API || !API.dpiXdrDetail) return this._showXdrDetailLocal(recordId);
     var r = await API.dpiXdrDetail(recordId);
     if (!r) return this._showXdrDetailLocal(recordId);

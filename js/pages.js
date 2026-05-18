@@ -27,7 +27,7 @@ var ICO = {
 
 var Pages = {
     // ========== 通用分页渲染 ==========
-    paginate: function(data, page, size) {
+    paginate: function (data, page, size) {
         size = size || 15;
         var total = data.length;
         var totalPages = Math.ceil(total / size);
@@ -35,7 +35,7 @@ var Pages = {
         return { data: data.slice((page - 1) * size, page * size), page: page, totalPages: totalPages, total: total };
     },
 
-    paginationHtml: function(p, callback) {
+    paginationHtml: function (p, callback) {
         if (p.totalPages <= 1) return '';
         var escaped = callback.replace(/"/g, '&quot;');
         var h = '<div class="pagination"><span class="page-info">共 ' + p.total + ' 条，第 ' + p.page + '/' + p.totalPages + ' 页</span>';
@@ -49,17 +49,17 @@ var Pages = {
         return h;
     },
 
-    statusHtml: function(s) {
+    statusHtml: function (s) {
         var cls = s === '正常' || s === '已恢复' || s === '已解决' || s === '已关闭' || s === '重启成功' || s === '上线' ? 'status-normal' :
-                  (s === '告警' || s === '待处理' || s === '处理中' || s === '一般' || s === '待派单' || s === '已派单' || s === '待确认' ? 'status-warning' : 'status-error');
+            (s === '告警' || s === '待处理' || s === '处理中' || s === '一般' || s === '待派单' || s === '已派单' || s === '待确认' ? 'status-warning' : 'status-error');
         return '<span class="' + cls + '">' + s + '</span>';
     },
 
-    cityFilterHtml: function(id, onChange, currentValue) {
+    cityFilterHtml: function (id, onChange, currentValue) {
         var escaped = onChange.replace(/"/g, '&quot;');
         var h = '<div class="form-group"><label class="form-label">地市</label><select class="form-select" style="width:120px;" id="' + id + '" onchange="' + escaped + '">';
         h += '<option value="">全部地市</option>';
-        JilinData.cities.forEach(function(c) { h += '<option value="' + c + '"' + (c === currentValue ? ' selected' : '') + '>' + c + '</option>'; });
+        JilinData.cities.forEach(function (c) { h += '<option value="' + c + '"' + (c === currentValue ? ' selected' : '') + '>' + c + '</option>'; });
         h += '</select></div>';
         return h;
     },
@@ -71,28 +71,28 @@ var Pages = {
     _leafletMarkers: [],
     _drillDistrictData: {},
 
-    renderGisView: function(container) {
+    renderGisView: function (container) {
         this._gisLevel = 'province';
         this._gisCityName = '';
         container.innerHTML =
             '<div class="gis-container">' +
-                '<div id="leafletMapContainer" style="width:100%;height:100%;"></div>' +
-                '<div class="gis-overlay gis-overlay-light" style="max-height:calc(100% - 32px);overflow-y:auto;">' +
-                    '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1a1a2e;">吉林省家宽运营GIS视图</div>' +
-                    '<div id="gisBreadcrumb" style="font-size:11px;color:#666;margin-bottom:10px;cursor:pointer;"><span style="color:#2b7de9;" onclick="Pages.gisDrillTo(\'province\')">吉林省</span></div>' +
-                    '<div id="gisLegend" style="font-size:11px;line-height:2;color:#333;"></div>' +
-                    '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e0e4e8;">' +
-                        '<div style="font-size:11px;color:#666;margin-bottom:6px;">图例说明</div>' +
-                        '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;margin-bottom:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#27ae60;"></span> CEI ≥ 93 优秀</div>' +
-                        '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;margin-bottom:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f39c12;"></span> 91 ≤ CEI < 93 良好</div>' +
-                        '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;"></span> CEI < 91 需关注</div>' +
-                    '</div>' +
-                '</div>' +
+            '<div id="leafletMapContainer" style="width:100%;height:100%;"></div>' +
+            '<div class="gis-overlay gis-overlay-light" style="max-height:calc(100% - 32px);overflow-y:auto;">' +
+            '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1a1a2e;">吉林省家宽运营GIS视图</div>' +
+            '<div id="gisBreadcrumb" style="font-size:11px;color:#666;margin-bottom:10px;cursor:pointer;"><span style="color:#2b7de9;" onclick="Pages.gisDrillTo(\'province\')">吉林省</span></div>' +
+            '<div id="gisLegend" style="font-size:11px;line-height:2;color:#333;"></div>' +
+            '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e0e4e8;">' +
+            '<div style="font-size:11px;color:#666;margin-bottom:6px;">图例说明</div>' +
+            '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;margin-bottom:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#27ae60;"></span> CEI ≥ 93 优秀</div>' +
+            '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;margin-bottom:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f39c12;"></span> 91 ≤ CEI < 93 良好</div>' +
+            '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#333;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;"></span> CEI < 91 需关注</div>' +
+            '</div>' +
+            '</div>' +
             '</div>';
         this._initLeafletMap();
     },
 
-    _initLeafletMap: function() {
+    _initLeafletMap: function () {
         var self = this;
         if (this._leafletMap) { this._leafletMap.remove(); this._leafletMap = null; }
 
@@ -119,7 +119,7 @@ var Pages = {
         this._loadProvinceView(map);
     },
 
-    _createCeiIcon: function(score, label, size) {
+    _createCeiIcon: function (score, label, size) {
         size = size || 36;
         var color = score >= 93 ? '#27ae60' : (score >= 91 ? '#f39c12' : '#e74c3c');
         var html = '<div style="position:relative;cursor:pointer;">' +
@@ -134,7 +134,7 @@ var Pages = {
         });
     },
 
-    _loadProvinceView: function(map) {
+    _loadProvinceView: function (map) {
         var self = this;
         this._gisLevel = 'province';
         this._clearMarkers();
@@ -145,19 +145,19 @@ var Pages = {
 
         var cities = JilinData.gisCoordinates;
         var legendHtml = '';
-        function _hs(v){var h=0;v=String(v||'');for(var i=0;i<v.length;i++)h=((h<<5)-h+v.charCodeAt(i))|0;return Math.abs(h);}
+        function _hs(v) { var h = 0; v = String(v || ''); for (var i = 0; i < v.length; i++)h = ((h << 5) - h + v.charCodeAt(i)) | 0; return Math.abs(h); }
         for (var city in cities) {
-            (function(cityName) {
+            (function (cityName) {
                 var c = cities[cityName];
                 var color = c.ceiScore >= 93 ? '#27ae60' : (c.ceiScore >= 91 ? '#f39c12' : '#e74c3c');
                 var users = JilinData.cityGatewayDistribution[cityName] ? JilinData.cityGatewayDistribution[cityName].users : 0;
                 var connCei = Number((JilinData.ceiDistribution[cityName] || {}).network || c.ceiScore);
-                var bizCei  = Number((JilinData.ceiDistribution[cityName] || {}).business || c.ceiScore);
-                var qualUsers = (JilinData.userQualityRecords||[]).filter(function(r){return r.city===cityName;}).length;
-                var qualApps  = (JilinData.bizQualityRecords||[]).filter(function(r){return r.city===cityName;}).length || (3 + _hs(cityName) % 12);
-                var wOrders   = (JilinData.workOrderCityDistribution||{})[cityName] || (20 + _hs(cityName+'o') % 60);
+                var bizCei = Number((JilinData.ceiDistribution[cityName] || {}).business || c.ceiScore);
+                var qualUsers = (JilinData.userQualityRecords || []).filter(function (r) { return r.city === cityName; }).length;
+                var qualApps = (JilinData.bizQualityRecords || []).filter(function (r) { return r.city === cityName; }).length || (3 + _hs(cityName) % 12);
+                var wOrders = (JilinData.workOrderCityDistribution || {})[cityName] || (20 + _hs(cityName + 'o') % 60);
                 var closeRate = Number((88 + (c.ceiScore - 88) * 2).toFixed(1));
-                var activeUsers = Number((users * (0.93 + (_hs(cityName+'a') % 5) / 100)).toFixed(1));
+                var activeUsers = Number((users * (0.93 + (_hs(cityName + 'a') % 5) / 100)).toFixed(1));
 
                 var marker = L.marker([c.lat, c.lng], {
                     icon: self._createCeiIcon(c.ceiScore, cityName, 36)
@@ -175,7 +175,7 @@ var Pages = {
                     '<div>质差用户数: <strong style="color:#e74c3c;">' + qualUsers + '</strong></div>' +
                     '<div>质差应用数: <strong style="color:#e74c3c;">' + qualApps + '</strong></div>' +
                     '<div>质差工单量: <strong style="color:#f39c12;">' + wOrders + '</strong></div>' +
-                    '<div>工单闭环率: <strong style="color:' + (closeRate>=95?'#27ae60':'#f39c12') + ';">' + closeRate + '%</strong></div>' +
+                    '<div>工单闭环率: <strong style="color:' + (closeRate >= 95 ? '#27ae60' : '#f39c12') + ';">' + closeRate + '%</strong></div>' +
                     '</div>' +
                     '<div style="margin-top:8px;"><a style="color:#2b7de9;font-size:12px;cursor:pointer;" onclick="Pages.gisDrillTo(\'' + cityName + '\')">下钻查看 →</a></div>' +
                     '</div>';
@@ -188,8 +188,8 @@ var Pages = {
                     business: Number((JilinData.ceiDistribution[cityName] || {}).business || c.ceiScore),
                     network: Number((JilinData.ceiDistribution[cityName] || {}).network || c.ceiScore),
                     users: Number(users || 0),
-                    qualityUsers: Number((JilinData.userQualityRecords || []).filter(function(r) { return r.city === cityName; }).length),
-                    qualityApps: Number((JilinData.bizQualityRecords || []).filter(function(r) { return r.city === cityName; }).length),
+                    qualityUsers: Number((JilinData.userQualityRecords || []).filter(function (r) { return r.city === cityName; }).length),
+                    qualityApps: Number((JilinData.bizQualityRecords || []).filter(function (r) { return r.city === cityName; }).length),
                     orders: Number((JilinData.workOrderCityDistribution || {})[cityName] || 0),
                     closeRate: Number((88 + (c.ceiScore - 88) * 2).toFixed(1))
                 });
@@ -205,7 +205,7 @@ var Pages = {
     },
 
     // 预定义各地市下辖区县坐标
-    _getDistrictData: function(cityName) {
+    _getDistrictData: function (cityName) {
         var districts = {
             '长春': [
                 { name: '南关区', lat: 43.864, lng: 125.350 }, { name: '宽城区', lat: 43.920, lng: 125.326 },
@@ -265,7 +265,7 @@ var Pages = {
         return districts[cityName] || [];
     },
 
-    gisDrillTo: function(target) {
+    gisDrillTo: function (target) {
         if (target === 'province') {
             if (this._leafletMap) {
                 this._loadProvinceView(this._leafletMap);
@@ -294,7 +294,7 @@ var Pages = {
         var districtRows = [];
         var legendHtml = '';
 
-        districts.forEach(function(dist) {
+        districts.forEach(function (dist) {
             var score = SeededRandom.float(88, 96, 1);
             var color = score >= 93 ? '#27ae60' : (score >= 91 ? '#f39c12' : '#e74c3c');
             var userCount = SeededRandom.int(2, 25);
@@ -321,7 +321,7 @@ var Pages = {
                 '<div>质差用户数: <strong style="color:#e74c3c;">' + qualityCount + '</strong></div>' +
                 '<div>质差应用数: <strong style="color:#e74c3c;">' + qualityApps + '</strong></div>' +
                 '<div>质差工单量: <strong style="color:#f39c12;">' + workOrders + '</strong></div>' +
-                '<div>工单闭环率: <strong style="color:' + (closeRate>=95?'#27ae60':'#f39c12') + ';">' + closeRate + '%</strong></div>' +
+                '<div>工单闭环率: <strong style="color:' + (closeRate >= 95 ? '#27ae60' : '#f39c12') + ';">' + closeRate + '%</strong></div>' +
                 '</div></div>';
             marker.bindPopup(popupContent, { maxWidth: 240 });
 
@@ -349,50 +349,50 @@ var Pages = {
         if (this.refreshGisDashboardFromMap) this.refreshGisDashboardFromMap();
     },
 
-    _clearMarkers: function() {
+    _clearMarkers: function () {
         var self = this;
-        this._leafletMarkers.forEach(function(m) {
+        this._leafletMarkers.forEach(function (m) {
             if (self._leafletMap) self._leafletMap.removeLayer(m);
         });
         this._leafletMarkers = [];
     },
 
     // ========== KPI 视图 (增强：质差用户清单+质差服务器IP) ==========
-    renderKpiView: function(container) {
+    renderKpiView: function (container) {
         var m = JilinData.kpiMetrics;
         container.innerHTML =
             '<div class="page-content">' +
-                '<div class="kpi-grid">' +
-                    App.kpiCardHtml('宽带用户总数', m.totalBroadbandUsers, '万户', 0.3) +
-                    App.kpiCardHtml('活跃用户数', m.activeUsers, '万户', -0.2) +
-                    App.kpiCardHtml('总体CEI评分', m.totalCeiScore, '分', 0.5) +
-                    App.kpiCardHtml('业务CEI评分', m.businessCeiScore, '分', 0.3) +
-                    App.kpiCardHtml('网络CEI评分', m.networkCeiScore, '分', 0.2) +
-                    App.kpiCardHtml('家庭网络优良率', m.homeNetworkQuality, '%', 1.2) +
-                    App.kpiCardHtml('TOP10视频下载速率', m.top10VideoAvgSpeed, 'Mbps', 2.3) +
-                    App.kpiCardHtml('TOP10游戏时延', m.gamingLatency, 'ms', -0.8) +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
-                    '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">用户中断平均时长趋势（小时粒度）</span></div><div class="chart-container" id="kpiChart1"></div></div>' +
-                    '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">各地市CEI评分对比</span></div><div class="chart-container" id="kpiChart2"></div></div>' +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
-                    '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">质差用户清单 TOP20</div>' +
-                    '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>CEI评分</th><th>质差类型</th><th>影响业务</th></tr></thead><tbody id="kpiQualityUsers"></tbody></table></div>' +
-                    '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">质差服务器IP清单</div>' +
-                    '<table class="data-table"><thead><tr><th>服务器IP</th><th>应用</th><th>平均时延</th><th>丢包率</th><th>影响用户数</th></tr></thead><tbody id="kpiQualityServers"></tbody></table></div>' +
-                '</div>' +
+            '<div class="kpi-grid">' +
+            App.kpiCardHtml('宽带用户总数', m.totalBroadbandUsers, '万户', 0.3) +
+            App.kpiCardHtml('活跃用户数', m.activeUsers, '万户', -0.2) +
+            App.kpiCardHtml('总体CEI评分', m.totalCeiScore, '分', 0.5) +
+            App.kpiCardHtml('业务CEI评分', m.businessCeiScore, '分', 0.3) +
+            App.kpiCardHtml('网络CEI评分', m.networkCeiScore, '分', 0.2) +
+            App.kpiCardHtml('家庭网络优良率', m.homeNetworkQuality, '%', 1.2) +
+            App.kpiCardHtml('TOP10视频下载速率', m.top10VideoAvgSpeed, 'Mbps', 2.3) +
+            App.kpiCardHtml('TOP10游戏时延', m.gamingLatency, 'ms', -0.8) +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+            '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">用户中断平均时长趋势（小时粒度）</span></div><div class="chart-container" id="kpiChart1"></div></div>' +
+            '<div class="chart-card"><div class="chart-card-header"><span class="chart-title">各地市CEI评分对比</span></div><div class="chart-container" id="kpiChart2"></div></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">质差用户清单 TOP20</div>' +
+            '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>CEI评分</th><th>质差类型</th><th>影响业务</th></tr></thead><tbody id="kpiQualityUsers"></tbody></table></div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">质差服务器IP清单</div>' +
+            '<table class="data-table"><thead><tr><th>服务器IP</th><th>应用</th><th>平均时延</th><th>丢包率</th><th>影响用户数</th></tr></thead><tbody id="kpiQualityServers"></tbody></table></div>' +
+            '</div>' +
             '</div>';
         this.initKpiCharts();
         this._renderKpiLists();
     },
 
-    _renderKpiLists: function() {
+    _renderKpiLists: function () {
         // 质差用户TOP20
         var userBody = document.getElementById('kpiQualityUsers');
         if (userBody) {
             var qualityUsers = JilinData.userQualityRecords.slice(0, 20);
-            userBody.innerHTML = qualityUsers.map(function(r) {
+            userBody.innerHTML = qualityUsers.map(function (r) {
                 return '<tr><td>' + r.userAccount + '</td><td>' + r.city + '</td><td><span class="status-error">' + r.ceiScore + '</span></td><td>' + r.qualityType + '</td><td>' + r.affectedBiz + '</td></tr>';
             }).join('');
         }
@@ -410,13 +410,13 @@ var Pages = {
                     users: SeededRandom.int(50, 3000)
                 });
             }
-            serverBody.innerHTML = servers.map(function(s) {
+            serverBody.innerHTML = servers.map(function (s) {
                 return '<tr><td>' + s.ip + '</td><td>' + s.app + '</td><td><span class="status-warning">' + s.latency + 'ms</span></td><td><span class="status-error">' + s.loss + '%</span></td><td>' + s.users + '</td></tr>';
             }).join('');
         }
     },
 
-    initKpiCharts: function() {
+    initKpiCharts: function () {
         var d1 = document.getElementById('kpiChart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances['kpiChart1'] = c1;
@@ -431,7 +431,7 @@ var Pages = {
                 yAxis: { type: 'value', name: '分钟', axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: '#f0f2f5' } } },
                 series: [{ type: 'line', data: interruptData, smooth: true, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(91,143,249,0.3)' }, { offset: 1, color: 'rgba(91,143,249,0)' }] } }, lineStyle: { color: '#5b8ff9', width: 2 }, itemStyle: { color: '#5b8ff9' } }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById('kpiChart2');
         if (d2) {
@@ -442,9 +442,9 @@ var Pages = {
                 grid: { top: 20, right: 20, bottom: 40, left: 40 }, tooltip: { trigger: 'axis' },
                 xAxis: { type: 'category', data: ct, axisLabel: { fontSize: 10, rotate: 30 } },
                 yAxis: { type: 'value', min: 88, max: 96, splitLine: { lineStyle: { color: '#f0f2f5' } } },
-                series: [{ type: 'bar', data: sc.map(function(v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '50%' }]
+                series: [{ type: 'bar', data: sc.map(function (v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '50%' }]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
@@ -455,34 +455,34 @@ var Pages = {
     _ponStatus: '',
     _ponType: '',
     _ponKeyword: '',
-    _getPonAnomalies: function() {
+    _getPonAnomalies: function () {
         var stored = DataStore.load('ponAnomalies', null);
         if (!stored || !stored.length) { DataStore.save('ponAnomalies', JilinData.ponAnomalies); return JilinData.ponAnomalies; }
         return stored;
     },
-    _savePonAnomalies: function(data) { DataStore.save('ponAnomalies', data); },
-    renderPonPower: function(container, page) {
+    _savePonAnomalies: function (data) { DataStore.save('ponAnomalies', data); },
+    renderPonPower: function (container, page) {
         this._ponPage = page || 1;
         var allData = this._getPonAnomalies();
         var data = allData;
-        if (this._ponCity) data = data.filter(function(d) { return d.city === Pages._ponCity; });
-        if (this._ponSeverity) data = data.filter(function(d) { return d.severity === Pages._ponSeverity; });
-        if (this._ponStatus) data = data.filter(function(d) { return d.status === Pages._ponStatus; });
-        if (this._ponType) data = data.filter(function(d) { return d.anomalyType === Pages._ponType; });
+        if (this._ponCity) data = data.filter(function (d) { return d.city === Pages._ponCity; });
+        if (this._ponSeverity) data = data.filter(function (d) { return d.severity === Pages._ponSeverity; });
+        if (this._ponStatus) data = data.filter(function (d) { return d.status === Pages._ponStatus; });
+        if (this._ponType) data = data.filter(function (d) { return d.anomalyType === Pages._ponType; });
         if (this._ponKeyword) {
             var kw = this._ponKeyword.toLowerCase();
-            data = data.filter(function(d) { return d.id.toLowerCase().indexOf(kw) >= 0 || d.oltId.toLowerCase().indexOf(kw) >= 0 || d.ponPort.toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return d.id.toLowerCase().indexOf(kw) >= 0 || d.oltId.toLowerCase().indexOf(kw) >= 0 || d.ponPort.toLowerCase().indexOf(kw) >= 0; });
         }
         // 统计
         var stats = { total: allData.length, pending: 0, processing: 0, resolved: 0, severe: 0 };
-        allData.forEach(function(d) {
+        allData.forEach(function (d) {
             if (d.status === '待处理') stats.pending++;
             else if (d.status === '处理中') stats.processing++;
             else if (d.status === '已恢复') stats.resolved++;
             if (d.severity === '严重' || d.severity === '紧急') stats.severe++;
         });
         var p = this.paginate(data, this._ponPage, 10);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr>' +
                 '<td><input type="checkbox" class="pon-row-chk" data-id="' + r.id + '"></td>' +
                 '<td>' + r.id + '</td><td>' + r.oltId + '</td><td>' + r.ponPort + '</td><td>' + r.city + '</td>' +
@@ -490,58 +490,58 @@ var Pages = {
                 '<td>' + Pages.statusHtml(r.severity) + '</td><td>' + r.affectedUsers + '</td>' +
                 '<td>' + Pages.statusHtml(r.status) + '</td><td>' + r.discoveryTime + '</td>' +
                 '<td>' +
-                    '<a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.showPonDetail(\'' + r.id + '\')">详情</a>' +
-                    (r.status !== '已恢复' ? '<a style="color:#27ae60;cursor:pointer;margin-right:6px;" onclick="Pages.handlePonAnomaly(\'' + r.id + '\')">处理</a>' : '') +
-                    '<a style="color:#e74c3c;cursor:pointer;" onclick="Pages.deletePonAnomaly(\'' + r.id + '\')">删除</a>' +
+                '<a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.showPonDetail(\'' + r.id + '\')">详情</a>' +
+                (r.status !== '已恢复' ? '<a style="color:#27ae60;cursor:pointer;margin-right:6px;" onclick="Pages.handlePonAnomaly(\'' + r.id + '\')">处理</a>' : '') +
+                '<a style="color:#e74c3c;cursor:pointer;" onclick="Pages.deletePonAnomaly(\'' + r.id + '\')">删除</a>' +
                 '</td></tr>';
         }).join('') || '<tr><td colspan="13" style="text-align:center;color:#999;padding:20px;">暂无数据</td></tr>';
 
         var sevOpts = '<option value="">全部严重程度</option>';
-        ['紧急','严重','一般'].forEach(function(s) { sevOpts += '<option value="' + s + '"' + (s === Pages._ponSeverity ? ' selected' : '') + '>' + s + '</option>'; });
+        ['紧急', '严重', '一般'].forEach(function (s) { sevOpts += '<option value="' + s + '"' + (s === Pages._ponSeverity ? ' selected' : '') + '>' + s + '</option>'; });
         var statusOpts = '<option value="">全部状态</option>';
-        ['待处理','处理中','已恢复'].forEach(function(s) { statusOpts += '<option value="' + s + '"' + (s === Pages._ponStatus ? ' selected' : '') + '>' + s + '</option>'; });
+        ['待处理', '处理中', '已恢复'].forEach(function (s) { statusOpts += '<option value="' + s + '"' + (s === Pages._ponStatus ? ' selected' : '') + '>' + s + '</option>'; });
         var typeOpts = '<option value="">全部类型</option>';
-        ['光功率偏低','光功率偏高','ONU离线','光衰增大','PON口异常'].forEach(function(t) { typeOpts += '<option value="' + t + '"' + (t === Pages._ponType ? ' selected' : '') + '>' + t + '</option>'; });
+        ['光功率偏低', '光功率偏高', 'ONU离线', '光衰增大', 'PON口异常'].forEach(function (t) { typeOpts += '<option value="' + t + '"' + (t === Pages._ponType ? ' selected' : '') + '>' + t + '</option>'; });
 
         container.innerHTML =
             '<div class="page-content">' +
-                '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' +
-                    '<div class="wo-stat-card"><div class="wo-stat-value">' + stats.total + '</div><div class="wo-stat-label">异常总数</div></div>' +
-                    '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + stats.pending + '</div><div class="wo-stat-label">待处理</div></div>' +
-                    '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + stats.processing + '</div><div class="wo-stat-label">处理中</div></div>' +
-                    '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + stats.resolved + '</div><div class="wo-stat-label">已恢复</div></div>' +
-                    '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#c0392b;">' + stats.severe + '</div><div class="wo-stat-label">严重/紧急</div></div>' +
-                '</div>' +
-                '<div class="remote-panel"><div class="remote-panel-title">PON光功率异常管理</div>' +
-                '<div class="remote-form">' +
-                this.cityFilterHtml('ponCityFilter', 'Pages._ponCity=this.value;Pages.renderPonPower(document.getElementById("page-pon-power"),1)', this._ponCity) +
-                '<div class="form-group"><label class="form-label">异常类型</label><select class="form-select" onchange="Pages._ponType=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + typeOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">严重程度</label><select class="form-select" onchange="Pages._ponSeverity=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + sevOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">处理状态</label><select class="form-select" onchange="Pages._ponStatus=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + statusOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="ponKwInput" value="' + (this._ponKeyword || '') + '" placeholder="异常ID/OLT/端口"></div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
-                    '<button class="btn btn-primary" onclick="Pages._ponKeyword=document.getElementById(\'ponKwInput\').value.trim();Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">查询</button>' +
-                    '<button class="btn" onclick="Pages.resetPonFilter()">重置</button>' +
-                    '<button class="btn" onclick="Pages.batchHandlePon()">批量处理</button>' +
-                    '<button class="btn" onclick="Pages.exportPonAnomalies()">导出</button>' +
-                '</div></div></div>' +
-                '<div class="data-table-wrapper"><table class="data-table"><thead><tr>' +
-                    '<th style="width:30px;"><input type="checkbox" id="ponSelAll" onclick="Pages.togglePonSelectAll(this)"></th>' +
-                    '<th>异常ID</th><th>OLT</th><th>PON端口</th><th>地市</th><th>发送功率</th><th>接收功率</th><th>异常类型</th><th>严重程度</th><th>影响用户</th><th>状态</th><th>发现时间</th><th>操作</th>' +
-                '</tr></thead><tbody>' + rows + '</tbody></table>' +
-                this.paginationHtml(p, 'Pages.renderPonPower.bind(Pages,document.getElementById("page-pon-power"))') + '</div></div>';
+            '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + stats.total + '</div><div class="wo-stat-label">异常总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + stats.pending + '</div><div class="wo-stat-label">待处理</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + stats.processing + '</div><div class="wo-stat-label">处理中</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + stats.resolved + '</div><div class="wo-stat-label">已恢复</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#c0392b;">' + stats.severe + '</div><div class="wo-stat-label">严重/紧急</div></div>' +
+            '</div>' +
+            '<div class="remote-panel"><div class="remote-panel-title">PON光功率异常管理</div>' +
+            '<div class="remote-form">' +
+            this.cityFilterHtml('ponCityFilter', 'Pages._ponCity=this.value;Pages.renderPonPower(document.getElementById("page-pon-power"),1)', this._ponCity) +
+            '<div class="form-group"><label class="form-label">异常类型</label><select class="form-select" onchange="Pages._ponType=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + typeOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">严重程度</label><select class="form-select" onchange="Pages._ponSeverity=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + sevOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">处理状态</label><select class="form-select" onchange="Pages._ponStatus=this.value;Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">' + statusOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="ponKwInput" value="' + (this._ponKeyword || '') + '" placeholder="异常ID/OLT/端口"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+            '<button class="btn btn-primary" onclick="Pages._ponKeyword=document.getElementById(\'ponKwInput\').value.trim();Pages.renderPonPower(document.getElementById(\'page-pon-power\'),1)">查询</button>' +
+            '<button class="btn" onclick="Pages.resetPonFilter()">重置</button>' +
+            '<button class="btn" onclick="Pages.batchHandlePon()">批量处理</button>' +
+            '<button class="btn" onclick="Pages.exportPonAnomalies()">导出</button>' +
+            '</div></div></div>' +
+            '<div class="data-table-wrapper"><table class="data-table"><thead><tr>' +
+            '<th style="width:30px;"><input type="checkbox" id="ponSelAll" onclick="Pages.togglePonSelectAll(this)"></th>' +
+            '<th>异常ID</th><th>OLT</th><th>PON端口</th><th>地市</th><th>发送功率</th><th>接收功率</th><th>异常类型</th><th>严重程度</th><th>影响用户</th><th>状态</th><th>发现时间</th><th>操作</th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table>' +
+            this.paginationHtml(p, 'Pages.renderPonPower.bind(Pages,document.getElementById("page-pon-power"))') + '</div></div>';
     },
 
-    resetPonFilter: function() {
+    resetPonFilter: function () {
         this._ponCity = ''; this._ponSeverity = ''; this._ponStatus = ''; this._ponType = ''; this._ponKeyword = '';
         this.renderPonPower(document.getElementById('page-pon-power'), 1);
     },
 
-    togglePonSelectAll: function(el) {
-        document.querySelectorAll('.pon-row-chk').forEach(function(c) { c.checked = el.checked; });
+    togglePonSelectAll: function (el) {
+        document.querySelectorAll('.pon-row-chk').forEach(function (c) { c.checked = el.checked; });
     },
 
-    showPonDetail: function(id) {
+    showPonDetail: function (id) {
         var data = this._getPonAnomalies();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -564,11 +564,11 @@ var Pages = {
             '</div>' +
             (r.handleNote ? '<div style="margin-top:12px;padding:10px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;"><strong>处理记录：</strong>' + r.handleNote + '</div>' : '') +
             '<div style="margin-top:12px;padding:10px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;">' +
-                '<strong>处理建议：</strong>' +
-                (r.anomalyType === '光功率偏低' ? '检查光纤接头是否清洁、光分路器是否老化，必要时更换尾纤' :
-                 r.anomalyType === '光功率偏高' ? '检查光模块输出功率是否过大，调整发射功率或更换光模块' :
-                 r.anomalyType === 'ONU离线' ? '检查ONU供电、光路连接，必要时上门处理' :
-                 r.anomalyType === '光衰增大' ? '排查光路损耗增大点，重新熔接或更换光纤' : '检查PON端口配置及板卡状态，必要时倒换主备') +
+            '<strong>处理建议：</strong>' +
+            (r.anomalyType === '光功率偏低' ? '检查光纤接头是否清洁、光分路器是否老化，必要时更换尾纤' :
+                r.anomalyType === '光功率偏高' ? '检查光模块输出功率是否过大，调整发射功率或更换光模块' :
+                    r.anomalyType === 'ONU离线' ? '检查ONU供电、光路连接，必要时上门处理' :
+                        r.anomalyType === '光衰增大' ? '排查光路损耗增大点，重新熔接或更换光纤' : '检查PON端口配置及板卡状态，必要时倒换主备') +
             '</div>',
             '<button class="btn" onclick="Modal.close()">关闭</button>' +
             (r.status !== '已恢复' ? '<button class="btn btn-primary" onclick="Modal.close();Pages.handlePonAnomaly(\'' + r.id + '\')">立即处理</button>' : ''),
@@ -576,7 +576,7 @@ var Pages = {
         );
     },
 
-    handlePonAnomaly: function(id) {
+    handlePonAnomaly: function (id) {
         // 查找该异常的地市
         var data = this._getPonAnomalies();
         var r = null;
@@ -585,12 +585,12 @@ var Pages = {
         var engineers = JilinData.findEngineers(city, '光路');
         if (engineers.length === 0) engineers = JilinData.findEngineers(city, null);
         var engineerOpts = '';
-        engineers.forEach(function(e, i) {
+        engineers.forEach(function (e, i) {
             var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + statusIcon + ' ' + e.name + ' (' + e.team + ')</option>';
         });
         if (engineers.length === 0) {
-            JilinData.engineers.slice(0, 8).forEach(function(e) { engineerOpts += '<option value="' + e.name + '">' + e.name + ' (' + e.city + ')</option>'; });
+            JilinData.engineers.slice(0, 8).forEach(function (e) { engineerOpts += '<option value="' + e.name + '">' + e.name + ' (' + e.city + ')</option>'; });
         }
         Modal.show('处理PON异常 - ' + id,
             '<div class="form-group"><label class="form-label">处理动作 *</label><select class="form-select" id="ponHandleAction"><option>派单上门</option><option>远程调测</option><option>切换主备</option><option>更换设备</option><option>误报关闭</option></select></div>' +
@@ -602,7 +602,7 @@ var Pages = {
         );
     },
 
-    doHandlePon: function(id) {
+    doHandlePon: function (id) {
         var action = document.getElementById('ponHandleAction').value;
         var handler = document.getElementById('ponHandler').value;
         var result = document.getElementById('ponHandleResult').value;
@@ -623,7 +623,7 @@ var Pages = {
         this.renderPonPower(document.getElementById('page-pon-power'), this._ponPage);
     },
 
-    deletePonAnomaly: function(id) {
+    deletePonAnomaly: function (id) {
         var self = this;
         Modal.show('确认删除',
             '<div style="padding:10px 0;font-size:13px;">确定要删除异常记录 <strong>' + id + '</strong> 吗？此操作不可恢复。</div>',
@@ -632,8 +632,8 @@ var Pages = {
         );
     },
 
-    doDeletePon: function(id) {
-        var data = this._getPonAnomalies().filter(function(d) { return d.id !== id; });
+    doDeletePon: function (id) {
+        var data = this._getPonAnomalies().filter(function (d) { return d.id !== id; });
         this._savePonAnomalies(data);
         DataStore.addLog('删除', 'PON管理', '删除PON异常记录 ' + id);
         Modal.close();
@@ -641,12 +641,12 @@ var Pages = {
         this.renderPonPower(document.getElementById('page-pon-power'), this._ponPage);
     },
 
-    batchHandlePon: function() {
+    batchHandlePon: function () {
         var ids = [];
-        document.querySelectorAll('.pon-row-chk:checked').forEach(function(c) { ids.push(c.getAttribute('data-id')); });
+        document.querySelectorAll('.pon-row-chk:checked').forEach(function (c) { ids.push(c.getAttribute('data-id')); });
         if (ids.length === 0) { Modal.toast('请先勾选要处理的记录', 'warning'); return; }
         var engineerOpts = '';
-        JilinData.engineers.filter(function(e) { return e.online; }).slice(0, 10).forEach(function(e) {
+        JilinData.engineers.filter(function (e) { return e.online; }).slice(0, 10).forEach(function (e) {
             engineerOpts += '<option value="' + e.name + '">' + e.name + ' (' + e.city + ' · ' + e.team + ')</option>';
         });
         Modal.show('批量处理 (' + ids.length + ' 条)',
@@ -657,14 +657,14 @@ var Pages = {
         );
     },
 
-    doBatchHandlePon: function(ids) {
+    doBatchHandlePon: function (ids) {
         var action = document.getElementById('batchPonAction').value;
         var handler = document.getElementById('batchPonHandler').value;
         var data = this._getPonAnomalies();
         if (action === 'delete') {
-            data = data.filter(function(d) { return ids.indexOf(d.id) < 0; });
+            data = data.filter(function (d) { return ids.indexOf(d.id) < 0; });
         } else {
-            data.forEach(function(d) { if (ids.indexOf(d.id) >= 0) { d.status = action; d.handler = handler; } });
+            data.forEach(function (d) { if (ids.indexOf(d.id) >= 0) { d.status = action; d.handler = handler; } });
         }
         this._savePonAnomalies(data);
         DataStore.addLog('批量处理', 'PON管理', '批量' + (action === 'delete' ? '删除' : '处理为' + action) + ' ' + ids.length + ' 条PON异常');
@@ -673,13 +673,13 @@ var Pages = {
         this.renderPonPower(document.getElementById('page-pon-power'), 1);
     },
 
-    exportPonAnomalies: function() {
+    exportPonAnomalies: function () {
         var data = this._getPonAnomalies();
-        if (this._ponCity) data = data.filter(function(d) { return d.city === Pages._ponCity; });
-        if (this._ponSeverity) data = data.filter(function(d) { return d.severity === Pages._ponSeverity; });
-        if (this._ponStatus) data = data.filter(function(d) { return d.status === Pages._ponStatus; });
+        if (this._ponCity) data = data.filter(function (d) { return d.city === Pages._ponCity; });
+        if (this._ponSeverity) data = data.filter(function (d) { return d.severity === Pages._ponSeverity; });
+        if (this._ponStatus) data = data.filter(function (d) { return d.status === Pages._ponStatus; });
         var csv = '异常ID,OLT,PON端口,地市,发送功率(dBm),接收功率(dBm),异常类型,严重程度,影响用户,状态,发现时间\n';
-        data.forEach(function(r) {
+        data.forEach(function (r) {
             csv += [r.id, r.oltId, r.ponPort, r.city, r.txPower, r.rxPower, r.anomalyType, r.severity, r.affectedUsers, r.status, r.discoveryTime].join(',') + '\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -693,62 +693,62 @@ var Pages = {
 
     // ========== 光路测试上下线 (增强：统计/筛选/详情/手动测试) ==========
     _otPage: 1, _otCity: '', _otEvent: '', _otReason: '', _otKw: '',
-    _getOpticalTests: function() {
+    _getOpticalTests: function () {
         var stored = DataStore.load('opticalTests', null);
         if (!stored || !stored.length) { DataStore.save('opticalTests', JilinData.opticalTestRecords); return JilinData.opticalTestRecords; }
         return stored;
     },
-    _saveOpticalTests: function(d) { DataStore.save('opticalTests', d); },
-    renderOpticalTest: function(container, page) {
+    _saveOpticalTests: function (d) { DataStore.save('opticalTests', d); },
+    renderOpticalTest: function (container, page) {
         this._otPage = page || 1;
         var allData = this._getOpticalTests();
         var data = allData;
-        if (this._otCity) data = data.filter(function(d) { return d.city === Pages._otCity; });
-        if (this._otEvent) data = data.filter(function(d) { return d.eventType === Pages._otEvent; });
-        if (this._otReason) data = data.filter(function(d) { return d.reason === Pages._otReason; });
+        if (this._otCity) data = data.filter(function (d) { return d.city === Pages._otCity; });
+        if (this._otEvent) data = data.filter(function (d) { return d.eventType === Pages._otEvent; });
+        if (this._otReason) data = data.filter(function (d) { return d.reason === Pages._otReason; });
         if (this._otKw) {
             var kw = this._otKw.toLowerCase();
-            data = data.filter(function(d) { return d.id.toLowerCase().indexOf(kw) >= 0 || d.oltId.toLowerCase().indexOf(kw) >= 0 || d.ontId.toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return d.id.toLowerCase().indexOf(kw) >= 0 || d.oltId.toLowerCase().indexOf(kw) >= 0 || d.ontId.toLowerCase().indexOf(kw) >= 0; });
         }
         // 统计
         var stats = { total: allData.length, online: 0, offline: 0 };
-        allData.forEach(function(d) { if (d.eventType === '上线') stats.online++; else stats.offline++; });
+        allData.forEach(function (d) { if (d.eventType === '上线') stats.online++; else stats.offline++; });
         var p = this.paginate(data, this._otPage, 10);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             var rxCls = r.rxPower < -25 ? 'status-error' : (r.rxPower < -22 ? 'status-warning' : 'status-normal');
             return '<tr><td>' + r.id + '</td><td>' + r.oltId + '</td><td>' + r.ontId + '</td><td>' + r.ponPort + '</td><td>' + r.city + '</td><td>' + Pages.statusHtml(r.eventType) + '</td><td>' + r.reason + '</td><td>' + r.txPower + ' dBm</td><td><span class="' + rxCls + '">' + r.rxPower + ' dBm</span></td><td>' + r.duration + '</td><td>' + r.eventTime + '</td>' +
                 '<td><a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.showOtDetail(\'' + r.id + '\')">详情</a><a style="color:#27ae60;cursor:pointer;" onclick="Pages.testOnt(\'' + r.ontId + '\')">测试</a></td></tr>';
         }).join('') || '<tr><td colspan="12" style="text-align:center;color:#999;padding:20px;">暂无数据</td></tr>';
 
         var evtOpts = '<option value="">全部事件</option>';
-        ['上线','下线'].forEach(function(s) { evtOpts += '<option value="' + s + '"' + (s === Pages._otEvent ? ' selected' : '') + '>' + s + '</option>'; });
+        ['上线', '下线'].forEach(function (s) { evtOpts += '<option value="' + s + '"' + (s === Pages._otEvent ? ' selected' : '') + '>' + s + '</option>'; });
         var reasonOpts = '<option value="">全部原因</option>';
-        ['正常注册','光功率低','设备故障','用户关机','dying-gasp','掉电'].forEach(function(s) { reasonOpts += '<option value="' + s + '"' + (s === Pages._otReason ? ' selected' : '') + '>' + s + '</option>'; });
+        ['正常注册', '光功率低', '设备故障', '用户关机', 'dying-gasp', '掉电'].forEach(function (s) { reasonOpts += '<option value="' + s + '"' + (s === Pages._otReason ? ' selected' : '') + '>' + s + '</option>'; });
 
         container.innerHTML =
             '<div class="page-content">' +
             '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + stats.total + '</div><div class="wo-stat-label">测试记录总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + stats.online + '</div><div class="wo-stat-label">上线事件</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + stats.offline + '</div><div class="wo-stat-label">下线事件</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + stats.total + '</div><div class="wo-stat-label">测试记录总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + stats.online + '</div><div class="wo-stat-label">上线事件</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + stats.offline + '</div><div class="wo-stat-label">下线事件</div></div>' +
             '</div>' +
             '<div class="remote-panel"><div class="remote-panel-title">光路测试上下线</div>' +
             '<div class="remote-form">' +
-                this.cityFilterHtml('otCityFilter', 'Pages._otCity=this.value;Pages.renderOpticalTest(document.getElementById("page-optical-test"),1)', this._otCity) +
-                '<div class="form-group"><label class="form-label">事件类型</label><select class="form-select" onchange="Pages._otEvent=this.value;Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">' + evtOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">原因</label><select class="form-select" onchange="Pages._otReason=this.value;Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">' + reasonOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="otKwInput" value="' + (this._otKw || '') + '" placeholder="测试ID/OLT/ONT"></div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
-                    '<button class="btn btn-primary" onclick="Pages._otKw=document.getElementById(\'otKwInput\').value.trim();Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">查询</button>' +
-                    '<button class="btn" onclick="Pages._otCity=\'\';Pages._otEvent=\'\';Pages._otReason=\'\';Pages._otKw=\'\';Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">重置</button>' +
-                    '<button class="btn" onclick="Pages.startOpticalTest()">手动触发测试</button>' +
-                    '<button class="btn" onclick="Pages.exportOpticalTests()">导出</button>' +
-                '</div></div></div>' +
+            this.cityFilterHtml('otCityFilter', 'Pages._otCity=this.value;Pages.renderOpticalTest(document.getElementById("page-optical-test"),1)', this._otCity) +
+            '<div class="form-group"><label class="form-label">事件类型</label><select class="form-select" onchange="Pages._otEvent=this.value;Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">' + evtOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">原因</label><select class="form-select" onchange="Pages._otReason=this.value;Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">' + reasonOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="otKwInput" value="' + (this._otKw || '') + '" placeholder="测试ID/OLT/ONT"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+            '<button class="btn btn-primary" onclick="Pages._otKw=document.getElementById(\'otKwInput\').value.trim();Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">查询</button>' +
+            '<button class="btn" onclick="Pages._otCity=\'\';Pages._otEvent=\'\';Pages._otReason=\'\';Pages._otKw=\'\';Pages.renderOpticalTest(document.getElementById(\'page-optical-test\'),1)">重置</button>' +
+            '<button class="btn" onclick="Pages.startOpticalTest()">手动触发测试</button>' +
+            '<button class="btn" onclick="Pages.exportOpticalTests()">导出</button>' +
+            '</div></div></div>' +
             '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>测试ID</th><th>OLT</th><th>ONT</th><th>PON口</th><th>地市</th><th>事件</th><th>原因</th><th>发送功率</th><th>接收功率</th><th>持续时长</th><th>时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderOpticalTest.bind(Pages,document.getElementById("page-optical-test"))') + '</div></div>';
     },
 
-    showOtDetail: function(id) {
+    showOtDetail: function (id) {
         var data = this._getOpticalTests();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -773,18 +773,18 @@ var Pages = {
         );
     },
 
-    startOpticalTest: function() {
+    startOpticalTest: function () {
         Modal.show('手动触发光路测试',
             '<div class="form-group"><label class="form-label">ONT设备ID *</label><input class="form-input" id="otNewOnt" placeholder="如 ONT-CC-00123"></div>' +
             '<div class="form-group"><label class="form-label">所属OLT</label><input class="form-input" id="otNewOlt" placeholder="如 OLT-CC-0005"></div>' +
             '<div class="form-group"><label class="form-label">PON端口</label><input class="form-input" id="otNewPort" placeholder="如 GPON 0/1/3" value="GPON 0/1/3"></div>' +
-            '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="otNewCity">' + JilinData.cities.map(function(c) { return '<option>' + c + '</option>'; }).join('') + '</select></div>',
+            '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="otNewCity">' + JilinData.cities.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doStartOpticalTest()">开始测试</button>',
             '460px'
         );
     },
 
-    doStartOpticalTest: function() {
+    doStartOpticalTest: function () {
         var ont = document.getElementById('otNewOnt').value.trim();
         if (!ont) { Modal.toast('请输入ONT设备ID', 'warning'); return; }
         var olt = document.getElementById('otNewOlt').value.trim() || 'OLT-AUTO';
@@ -812,9 +812,9 @@ var Pages = {
         this.renderOpticalTest(document.getElementById('page-optical-test'), 1);
     },
 
-    testOnt: function(ontId) {
+    testOnt: function (ontId) {
         Modal.show('测试中...', '<div style="text-align:center;padding:20px;"><div class="loading-spinner" style="margin:0 auto 12px;"></div><div style="color:#666;">正在测试 ' + ontId + ' 光路状态...</div></div>', '');
-        setTimeout(function() {
+        setTimeout(function () {
             var rx = parseFloat((-15 - Math.random() * 11).toFixed(2));
             var tx = parseFloat((1.5 + Math.random() * 1.7).toFixed(2));
             Modal.show('测试结果 - ' + ontId,
@@ -828,11 +828,11 @@ var Pages = {
         }, 1200);
     },
 
-    exportOpticalTests: function() {
+    exportOpticalTests: function () {
         var data = this._getOpticalTests();
-        if (this._otCity) data = data.filter(function(d) { return d.city === Pages._otCity; });
+        if (this._otCity) data = data.filter(function (d) { return d.city === Pages._otCity; });
         var csv = '测试ID,OLT,ONT,PON口,地市,事件,原因,发送功率,接收功率,持续时长,时间\n';
-        data.forEach(function(r) { csv += [r.id, r.oltId, r.ontId, r.ponPort, r.city, r.eventType, r.reason, r.txPower, r.rxPower, r.duration, r.eventTime].join(',') + '\n'; });
+        data.forEach(function (r) { csv += [r.id, r.oltId, r.ontId, r.ponPort, r.city, r.eventType, r.reason, r.txPower, r.rxPower, r.duration, r.eventTime].join(',') + '\n'; });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -844,20 +844,20 @@ var Pages = {
 
     // ========== CON网络分析 ==========
     _conPage: 1, _conCity: '',
-    renderConAnalysis: function(container, page) {
+    renderConAnalysis: function (container, page) {
         this._conPage = page || 1;
         var data = JilinData.conAnalysisRecords;
-        if (this._conCity) data = data.filter(function(d) { return d.city === Pages._conCity; });
+        if (this._conCity) data = data.filter(function (d) { return d.city === Pages._conCity; });
         var p = this.paginate(data, this._conPage, 12);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + r.id + '</td><td>' + r.city + '</td><td>' + r.nodeType + '</td><td>' + r.nodeId + '</td><td>' + r.bandwidth + '</td><td>' + r.utilization + '%</td><td>' + r.peakUtil + '%</td><td>' + r.latency + 'ms</td><td>' + r.packetLoss + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
         }).join('');
         container.innerHTML =
             '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">CON网络分析</div>' +
             '<div class="remote-form">' + this.cityFilterHtml('conCityFilter', 'Pages._conCity=this.value;Pages.renderConAnalysis(document.getElementById("page-con-analysis"),1)', this._conCity) + '</div></div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">带宽利用率分布</span></div><div class="chart-container" id="conChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">节点类型分布</span></div><div class="chart-container" id="conChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">带宽利用率分布</span></div><div class="chart-container" id="conChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">节点类型分布</span></div><div class="chart-container" id="conChart2"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>ID</th><th>地市</th><th>节点类型</th><th>节点ID</th><th>带宽</th><th>利用率</th><th>峰值利用率</th><th>时延</th><th>丢包率</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderConAnalysis.bind(Pages,document.getElementById("page-con-analysis"))') + '</div></div>';
@@ -865,35 +865,35 @@ var Pages = {
         var cd1 = document.getElementById('conChart1');
         if (cd1) {
             var cc1 = echarts.init(cd1); App.chartInstances['conChart1'] = cc1;
-            var ranges = [0,0,0,0,0];
-            JilinData.conAnalysisRecords.forEach(function(r) { var u = r.utilization; if(u<20)ranges[0]++;else if(u<40)ranges[1]++;else if(u<60)ranges[2]++;else if(u<80)ranges[3]++;else ranges[4]++; });
-            cc1.setOption({ tooltip:{}, xAxis:{type:'category',data:['0-20%','20-40%','40-60%','60-80%','80-100%']}, yAxis:{type:'value'}, series:[{type:'bar',data:ranges,itemStyle:{color:function(p){return ['#27ae60','#5b8ff9','#f6bd16','#f39c12','#e74c3c'][p.dataIndex];}}}] });
-            window.addEventListener('resize',function(){cc1.resize();});
+            var ranges = [0, 0, 0, 0, 0];
+            JilinData.conAnalysisRecords.forEach(function (r) { var u = r.utilization; if (u < 20) ranges[0]++; else if (u < 40) ranges[1]++; else if (u < 60) ranges[2]++; else if (u < 80) ranges[3]++; else ranges[4]++; });
+            cc1.setOption({ tooltip: {}, xAxis: { type: 'category', data: ['0-20%', '20-40%', '40-60%', '60-80%', '80-100%'] }, yAxis: { type: 'value' }, series: [{ type: 'bar', data: ranges, itemStyle: { color: function (p) { return ['#27ae60', '#5b8ff9', '#f6bd16', '#f39c12', '#e74c3c'][p.dataIndex]; } } }] });
+            window.addEventListener('resize', function () { cc1.resize(); });
         }
         var cd2 = document.getElementById('conChart2');
         if (cd2) {
             var cc2 = echarts.init(cd2); App.chartInstances['conChart2'] = cc2;
             var typeMap = {};
-            JilinData.conAnalysisRecords.forEach(function(r) { typeMap[r.nodeType] = (typeMap[r.nodeType]||0)+1; });
+            JilinData.conAnalysisRecords.forEach(function (r) { typeMap[r.nodeType] = (typeMap[r.nodeType] || 0) + 1; });
             var pieData = [];
-            for(var k in typeMap) pieData.push({name:k,value:typeMap[k]});
-            cc2.setOption({ tooltip:{trigger:'item'}, series:[{type:'pie',radius:['30%','60%'],data:pieData,label:{fontSize:10}}] });
-            window.addEventListener('resize',function(){cc2.resize();});
+            for (var k in typeMap) pieData.push({ name: k, value: typeMap[k] });
+            cc2.setOption({ tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['30%', '60%'], data: pieData, label: { fontSize: 10 } }] });
+            window.addEventListener('resize', function () { cc2.resize(); });
         }
     },
 
     // ========== CEI查询 (增强：支持用户详情下钻) ==========
     _ceiPage: 1, _ceiCity: '', _ceiAccount: '',
-    renderCeiQuery: function(container, page) {
+    renderCeiQuery: function (container, page) {
         this._ceiPage = page || 1;
         var data = JilinData.ceiUserRecords;
-        if (this._ceiCity) data = data.filter(function(d) { return d.city === Pages._ceiCity; });
+        if (this._ceiCity) data = data.filter(function (d) { return d.city === Pages._ceiCity; });
         if (this._ceiAccount) {
             var kw = this._ceiAccount.toLowerCase();
-            data = data.filter(function(d) { return d.account.toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return d.account.toLowerCase().indexOf(kw) >= 0; });
         }
         var p = this.paginate(data, this._ceiPage, 15);
-        var rows = p.data.map(function(r, idx) {
+        var rows = p.data.map(function (r, idx) {
             var globalIdx = (Pages._ceiPage - 1) * 15 + idx;
             var ceiCls = r.overallCei < 70 ? 'status-error' : (r.overallCei < 80 ? 'status-warning' : 'status-normal');
             return '<tr><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showCeiDetail(' + globalIdx + ')">' + r.account + '</a></td><td>' + r.city + '</td><td>' + r.area + '</td><td><span class="' + ceiCls + '">' + r.overallCei + '</span></td><td>' + r.businessCei + '</td><td>' + r.networkCei + '</td><td>' + r.downloadSpeed + ' Mbps</td><td>' + r.latency + 'ms</td><td>' + r.packetLoss + '%</td><td>' + r.bizType + '</td><td>' + r.bandwidth + 'M</td></tr>';
@@ -909,51 +909,51 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderCeiQuery.bind(Pages,document.getElementById("page-cei-query"))') + '</div></div>';
     },
 
-    showCeiDetail: function(idx) {
+    showCeiDetail: function (idx) {
         var data = JilinData.ceiUserRecords;
-        if (this._ceiCity) data = data.filter(function(d) { return d.city === Pages._ceiCity; });
-        if (this._ceiAccount) { var kw = this._ceiAccount.toLowerCase(); data = data.filter(function(d) { return d.account.toLowerCase().indexOf(kw) >= 0; }); }
+        if (this._ceiCity) data = data.filter(function (d) { return d.city === Pages._ceiCity; });
+        if (this._ceiAccount) { var kw = this._ceiAccount.toLowerCase(); data = data.filter(function (d) { return d.account.toLowerCase().indexOf(kw) >= 0; }); }
         var r = data[idx];
         if (!r) return;
         var ceiColor = r.overallCei >= 90 ? '#27ae60' : (r.overallCei >= 80 ? '#f39c12' : '#e74c3c');
         Modal.show('CEI详情 - ' + r.account,
             '<div style="display:grid;grid-template-columns:auto 1fr;gap:16px;">' +
             '<div style="text-align:center;padding:16px;">' +
-                '<div style="width:90px;height:90px;border-radius:50%;border:4px solid ' + ceiColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><span style="font-size:28px;font-weight:700;color:' + ceiColor + ';">' + r.overallCei + '</span></div>' +
-                '<div style="font-size:11px;color:#999;">综合CEI评分</div>' +
+            '<div style="width:90px;height:90px;border-radius:50%;border:4px solid ' + ceiColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><span style="font-size:28px;font-weight:700;color:' + ceiColor + ';">' + r.overallCei + '</span></div>' +
+            '<div style="font-size:11px;color:#999;">综合CEI评分</div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">' +
-                '<div><strong>用户账号：</strong>' + r.account + '</div>' +
-                '<div><strong>地市/区域：</strong>' + r.city + ' ' + r.area + '</div>' +
-                '<div><strong>业务CEI：</strong>' + r.businessCei + ' 分</div>' +
-                '<div><strong>网络CEI：</strong>' + r.networkCei + ' 分</div>' +
-                '<div><strong>下载速率：</strong>' + r.downloadSpeed + ' Mbps</div>' +
-                '<div><strong>上传速率：</strong>' + r.uploadSpeed + ' Mbps</div>' +
-                '<div><strong>时延：</strong>' + r.latency + ' ms</div>' +
-                '<div><strong>丢包率：</strong>' + r.packetLoss + '%</div>' +
-                '<div><strong>业务类型：</strong>' + r.bizType + '</div>' +
-                '<div><strong>带宽：</strong>' + r.bandwidth + 'M</div>' +
+            '<div><strong>用户账号：</strong>' + r.account + '</div>' +
+            '<div><strong>地市/区域：</strong>' + r.city + ' ' + r.area + '</div>' +
+            '<div><strong>业务CEI：</strong>' + r.businessCei + ' 分</div>' +
+            '<div><strong>网络CEI：</strong>' + r.networkCei + ' 分</div>' +
+            '<div><strong>下载速率：</strong>' + r.downloadSpeed + ' Mbps</div>' +
+            '<div><strong>上传速率：</strong>' + r.uploadSpeed + ' Mbps</div>' +
+            '<div><strong>时延：</strong>' + r.latency + ' ms</div>' +
+            '<div><strong>丢包率：</strong>' + r.packetLoss + '%</div>' +
+            '<div><strong>业务类型：</strong>' + r.bizType + '</div>' +
+            '<div><strong>带宽：</strong>' + r.bandwidth + 'M</div>' +
             '</div></div>' +
             '<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e0e4e8;">' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:8px;">业务KQI下钻分析</div>' +
-                '<table class="data-table" style="font-size:12px;"><thead><tr><th>KQI指标</th><th>当前值</th><th>阈值</th><th>状态</th></tr></thead><tbody>' +
-                '<tr><td>HTTP首包时延</td><td>' + SeededRandom.float(50, 300, 0) + 'ms</td><td>≤200ms</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '告警') + '</td></tr>' +
-                '<tr><td>视频初始缓冲时间</td><td>' + SeededRandom.float(0.5, 5, 1) + 's</td><td>≤2s</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.4 ? '正常' : '告警') + '</td></tr>' +
-                '<tr><td>视频卡顿率</td><td>' + SeededRandom.float(0, 8, 2) + '%</td><td>≤2%</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '异常') + '</td></tr>' +
-                '<tr><td>DNS解析时延</td><td>' + SeededRandom.float(5, 80, 0) + 'ms</td><td>≤50ms</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.6 ? '正常' : '告警') + '</td></tr>' +
-                '<tr><td>TCP建连成功率</td><td>' + SeededRandom.float(92, 100, 1) + '%</td><td>≥98%</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '告警') + '</td></tr>' +
-                '</tbody></table></div>',
+            '<div style="font-weight:600;font-size:13px;margin-bottom:8px;">业务KQI下钻分析</div>' +
+            '<table class="data-table" style="font-size:12px;"><thead><tr><th>KQI指标</th><th>当前值</th><th>阈值</th><th>状态</th></tr></thead><tbody>' +
+            '<tr><td>HTTP首包时延</td><td>' + SeededRandom.float(50, 300, 0) + 'ms</td><td>≤200ms</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '告警') + '</td></tr>' +
+            '<tr><td>视频初始缓冲时间</td><td>' + SeededRandom.float(0.5, 5, 1) + 's</td><td>≤2s</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.4 ? '正常' : '告警') + '</td></tr>' +
+            '<tr><td>视频卡顿率</td><td>' + SeededRandom.float(0, 8, 2) + '%</td><td>≤2%</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '异常') + '</td></tr>' +
+            '<tr><td>DNS解析时延</td><td>' + SeededRandom.float(5, 80, 0) + 'ms</td><td>≤50ms</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.6 ? '正常' : '告警') + '</td></tr>' +
+            '<tr><td>TCP建连成功率</td><td>' + SeededRandom.float(92, 100, 1) + '%</td><td>≥98%</td><td>' + Pages.statusHtml(SeededRandom.next() > 0.5 ? '正常' : '告警') + '</td></tr>' +
+            '</tbody></table></div>',
             '<button class="btn" onclick="Modal.close()">关闭</button>', '680px'
         );
         DataStore.addLog('CEI查询', '质量画像', '查询用户 ' + r.account + ' 的CEI评分详情');
     },
 
-    exportCeiData: function() {
+    exportCeiData: function () {
         var data = JilinData.ceiUserRecords;
-        if (this._ceiCity) data = data.filter(function(d) { return d.city === Pages._ceiCity; });
-        if (this._ceiAccount) { var kw = this._ceiAccount.toLowerCase(); data = data.filter(function(d) { return d.account.toLowerCase().indexOf(kw) >= 0; }); }
+        if (this._ceiCity) data = data.filter(function (d) { return d.city === Pages._ceiCity; });
+        if (this._ceiAccount) { var kw = this._ceiAccount.toLowerCase(); data = data.filter(function (d) { return d.account.toLowerCase().indexOf(kw) >= 0; }); }
         var csv = '用户账号,地市,区域,综合CEI,业务CEI,网络CEI,下载速率(Mbps),时延(ms),丢包率(%),业务类型,带宽(M)\n';
-        data.forEach(function(r) {
+        data.forEach(function (r) {
             csv += [r.account, r.city, r.area, r.overallCei, r.businessCei, r.networkCei, r.downloadSpeed, r.latency, r.packetLoss, r.bizType, r.bandwidth].join(',') + '\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -967,7 +967,7 @@ var Pages = {
 
     // ========== CEI聚类分析 (增强：区域/BRAS/OLT维度) ==========
     _clusterDim: 'area', // area / bras / olt
-    renderCeiCluster: function(container) {
+    renderCeiCluster: function (container) {
         container.innerHTML =
             '<div class="page-content">' +
             '<div class="remote-panel"><div class="remote-panel-title">CEI聚类分析</div>' +
@@ -978,8 +978,8 @@ var Pages = {
             '<div class="form-group"><label class="form-label">时间粒度</label><select class="form-select"><option>天级</option><option>小时级</option></select></div>' +
             '<div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="Pages.renderCeiCluster(document.getElementById(\'page-cei-cluster\'))">分析</button></div></div></div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:350px;"><div class="chart-card-header"><span class="chart-title">' + this._getClusterChartTitle() + '</span></div><div class="chart-container" id="clusterChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:350px;"><div class="chart-card-header"><span class="chart-title">CEI评分趋势对比</span></div><div class="chart-container" id="clusterChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:350px;"><div class="chart-card-header"><span class="chart-title">' + this._getClusterChartTitle() + '</span></div><div class="chart-container" id="clusterChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:350px;"><div class="chart-card-header"><span class="chart-title">CEI评分趋势对比</span></div><div class="chart-container" id="clusterChart2"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">' + this._getClusterTableTitle() + '</div>' +
             '<table class="data-table"><thead><tr>' + this._getClusterTableHeader() + '</tr></thead><tbody id="clusterTableBody"></tbody></table></div></div>';
@@ -987,40 +987,40 @@ var Pages = {
         this._renderClusterTable();
     },
 
-    _getClusterChartTitle: function() {
+    _getClusterChartTitle: function () {
         if (this._clusterDim === 'bras') return 'BRAS维度CEI评分统计';
         if (this._clusterDim === 'olt') return 'OLT维度CEI评分统计';
         return 'CEI评分区域分布';
     },
-    _getClusterTableTitle: function() {
+    _getClusterTableTitle: function () {
         if (this._clusterDim === 'bras') return 'BRAS设备CEI评分明细';
         if (this._clusterDim === 'olt') return 'OLT设备CEI评分明细';
         return '各地市CEI评分明细';
     },
-    _getClusterTableHeader: function() {
+    _getClusterTableHeader: function () {
         if (this._clusterDim === 'bras') return '<th>BRAS名称</th><th>地市</th><th>综合CEI</th><th>业务CEI</th><th>通断CEI</th><th>用户数</th><th>状态</th>';
         if (this._clusterDim === 'olt') return '<th>OLT设备</th><th>地市</th><th>综合CEI</th><th>业务CEI</th><th>通断CEI</th><th>在线ONT</th><th>状态</th>';
         return '<th>地市</th><th>综合CEI</th><th>业务CEI</th><th>网络CEI</th><th>用户数(万)</th><th>质差用户</th><th>趋势</th>';
     },
 
-    _renderClusterCharts: function() {
+    _renderClusterCharts: function () {
         var d1 = document.getElementById('clusterChart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances['clusterChart1'] = c1;
             if (this._clusterDim === 'area') {
                 var bins = [0, 0, 0, 0, 0];
-                JilinData.ceiUserRecords.forEach(function(r) { var s = r.overallCei; if (s < 60) bins[0]++; else if (s < 70) bins[1]++; else if (s < 80) bins[2]++; else if (s < 90) bins[3]++; else bins[4]++; });
-                c1.setOption({ tooltip: {}, xAxis: { data: ['<60(极差)', '60-70(差)', '70-80(中)', '80-90(良)', '90-100(优)'], axisLabel: { fontSize: 10 } }, yAxis: { name: '用户数' }, series: [{ type: 'bar', data: bins, itemStyle: { color: function(p) { return ['#e74c3c', '#f39c12', '#f1c40f', '#5b8ff9', '#27ae60'][p.dataIndex]; } }, label: { show: true, position: 'top', fontSize: 9 } }] });
+                JilinData.ceiUserRecords.forEach(function (r) { var s = r.overallCei; if (s < 60) bins[0]++; else if (s < 70) bins[1]++; else if (s < 80) bins[2]++; else if (s < 90) bins[3]++; else bins[4]++; });
+                c1.setOption({ tooltip: {}, xAxis: { data: ['<60(极差)', '60-70(差)', '70-80(中)', '80-90(良)', '90-100(优)'], axisLabel: { fontSize: 10 } }, yAxis: { name: '用户数' }, series: [{ type: 'bar', data: bins, itemStyle: { color: function (p) { return ['#e74c3c', '#f39c12', '#f1c40f', '#5b8ff9', '#27ae60'][p.dataIndex]; } }, label: { show: true, position: 'top', fontSize: 9 } }] });
             } else if (this._clusterDim === 'bras') {
                 var names = [], scores = [];
-                JilinData.brasDevices.slice(0, 12).forEach(function(b) { names.push(b.name); scores.push(b.ceiScore); });
-                c1.setOption({ grid: { top: 15, right: 20, bottom: 50, left: 50 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: names, axisLabel: { fontSize: 9, rotate: 45 } }, yAxis: { type: 'value', min: 88, max: 96 }, series: [{ type: 'bar', data: scores.map(function(v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '60%' }] });
+                JilinData.brasDevices.slice(0, 12).forEach(function (b) { names.push(b.name); scores.push(b.ceiScore); });
+                c1.setOption({ grid: { top: 15, right: 20, bottom: 50, left: 50 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: names, axisLabel: { fontSize: 9, rotate: 45 } }, yAxis: { type: 'value', min: 88, max: 96 }, series: [{ type: 'bar', data: scores.map(function (v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '60%' }] });
             } else {
                 var names = [], scores = [];
-                JilinData.oltDevices.slice(0, 15).forEach(function(o) { names.push(o.id); scores.push(o.ceiScore); });
-                c1.setOption({ grid: { top: 15, right: 20, bottom: 60, left: 50 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: names, axisLabel: { fontSize: 8, rotate: 60 } }, yAxis: { type: 'value', min: 86, max: 97 }, series: [{ type: 'bar', data: scores.map(function(v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '60%' }] });
+                JilinData.oltDevices.slice(0, 15).forEach(function (o) { names.push(o.id); scores.push(o.ceiScore); });
+                c1.setOption({ grid: { top: 15, right: 20, bottom: 60, left: 50 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: names, axisLabel: { fontSize: 8, rotate: 60 } }, yAxis: { type: 'value', min: 86, max: 97 }, series: [{ type: 'bar', data: scores.map(function (v) { return { value: v, itemStyle: { color: v >= 93 ? '#27ae60' : (v >= 91 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '60%' }] });
             }
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById('clusterChart2');
         if (d2) {
@@ -1037,11 +1037,11 @@ var Pages = {
                     { name: '通断CEI', type: 'line', data: t.network, smooth: true, lineStyle: { width: 2 }, itemStyle: { color: '#f6bd16' } }
                 ]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
-    _renderClusterTable: function() {
+    _renderClusterTable: function () {
         var tbody = document.getElementById('clusterTableBody');
         if (!tbody) return;
         var rows = '';
@@ -1054,13 +1054,13 @@ var Pages = {
                 rows += '<tr><td>' + city + '</td><td><span class="' + (d.overall >= 93 ? 'status-normal' : (d.overall >= 91 ? 'status-warning' : 'status-error')) + '">' + d.overall + '</span></td><td>' + d.business + '</td><td>' + d.network + '</td><td>' + users + '</td><td>' + qualityCount + '</td><td><span class="' + (trend >= 0 ? 'trend-up' : 'trend-down') + '">' + (trend >= 0 ? '↑' : '↓') + Math.abs(trend) + '%</span></td></tr>';
             }
         } else if (this._clusterDim === 'bras') {
-            JilinData.brasDevices.slice(0, 15).forEach(function(b) {
+            JilinData.brasDevices.slice(0, 15).forEach(function (b) {
                 var bizCei = SeededRandom.float(b.ceiScore - 2, b.ceiScore + 1, 1);
                 var disCei = SeededRandom.float(b.ceiScore - 1, b.ceiScore + 2, 1);
                 rows += '<tr><td>' + b.name + '</td><td>' + b.city + '</td><td>' + b.ceiScore + '</td><td>' + bizCei + '</td><td>' + disCei + '</td><td>' + b.users.toLocaleString() + '</td><td>' + Pages.statusHtml(b.status) + '</td></tr>';
             });
         } else {
-            JilinData.oltDevices.slice(0, 15).forEach(function(o) {
+            JilinData.oltDevices.slice(0, 15).forEach(function (o) {
                 var bizCei = SeededRandom.float(o.ceiScore - 2, o.ceiScore + 1, 1);
                 var disCei = SeededRandom.float(o.ceiScore - 1, o.ceiScore + 2, 1);
                 rows += '<tr><td>' + o.id + '</td><td>' + o.city + '</td><td>' + o.ceiScore + '</td><td>' + bizCei + '</td><td>' + disCei + '</td><td>' + o.onlineONT + '</td><td>' + Pages.statusHtml(o.status) + '</td></tr>';
@@ -1072,10 +1072,10 @@ var Pages = {
     // ========== PING测试 ==========
     _pingPage: 1,
     _pingRunning: false,
-    renderPingTest: function(container, page) {
+    renderPingTest: function (container, page) {
         this._pingPage = page || 1;
         var p = this.paginate(JilinData.pingTestHistory, this._pingPage, 12);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + r.time + '</td><td>' + (r.ontId || '-') + '</td><td>' + r.target + '</td><td>' + (r.packetSize || 64) + '</td><td>' + (r.count || 10) + '</td><td>' + (r.interval || 1) + '</td><td>' + r.city + '</td><td>' + r.avgDelay + 'ms</td><td>' + r.maxDelay + 'ms</td><td>' + (r.minDelay || '-') + 'ms</td><td>' + r.packetLoss + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
         }).join('');
         container.innerHTML =
@@ -1093,7 +1093,7 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderPingTest.bind(Pages,document.getElementById("page-ping-test"))') + '</div></div>';
     },
 
-    executePing: function() {
+    executePing: function () {
         if (this._pingRunning) { Modal.toast('PING测试正在执行中，请等待完成', 'warning'); return; }
         var result = document.getElementById('pingResult');
         var target = document.getElementById('pingTarget').value.trim();
@@ -1112,15 +1112,15 @@ var Pages = {
         var step = 0;
         var self = this;
 
-        setTimeout(function() {
+        setTimeout(function () {
             // Step 2: Show dots
             result.innerHTML += '<br><span style="color:#999;">···</span>';
-            setTimeout(function() {
+            setTimeout(function () {
                 result.innerHTML += '<br><span style="color:#999;">···</span>';
-                setTimeout(function() {
+                setTimeout(function () {
                     // Step 3: RMS返回ping结果
                     result.innerHTML += '<br><span style="color:#27ae60;font-weight:600;">RMS返回ping结果</span>';
-                    setTimeout(function() {
+                    setTimeout(function () {
                         // Step 4: 显示ping结果
                         var delays = [];
                         var lines = '';
@@ -1128,10 +1128,10 @@ var Pages = {
                             var delay = Math.random() * 15 + 2 + (Math.random() > 0.9 ? Math.random() * 50 : 0);
                             delays.push(delay);
                         }
-                        var avg = delays.reduce(function(s, d) { return s + d; }, 0) / delays.length;
+                        var avg = delays.reduce(function (s, d) { return s + d; }, 0) / delays.length;
                         var min = Math.min.apply(null, delays);
                         var max = Math.max.apply(null, delays);
-                        var loss = delays.filter(function(d) { return d > 100; }).length;
+                        var loss = delays.filter(function (d) { return d > 100; }).length;
                         var lossRate = parseFloat((loss / count * 100).toFixed(1));
 
                         result.innerHTML += '<br><span style="color:#999;">···</span>';
@@ -1166,16 +1166,16 @@ var Pages = {
 
     // ========== ONT光功率查询 (增强交互) ==========
     _ontPage: 1, _ontCity: '', _ontSearch: '',
-    renderOntPower: function(container, page) {
+    renderOntPower: function (container, page) {
         this._ontPage = page || 1;
         var data = JilinData.ontPowerRecords;
-        if (this._ontCity) data = data.filter(function(d) { return d.city === Pages._ontCity; });
+        if (this._ontCity) data = data.filter(function (d) { return d.city === Pages._ontCity; });
         if (this._ontSearch) {
             var kw = this._ontSearch.toLowerCase();
-            data = data.filter(function(d) { return d.ontId.toLowerCase().indexOf(kw) >= 0 || (d.userAccount || '').toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return d.ontId.toLowerCase().indexOf(kw) >= 0 || (d.userAccount || '').toLowerCase().indexOf(kw) >= 0; });
         }
         var p = this.paginate(data, this._ontPage, 12);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             var rxCls = r.rxPower < -25 ? 'status-error' : (r.rxPower < -22 ? 'status-warning' : 'status-normal');
             return '<tr><td>' + r.ontId + '</td><td>' + (r.userAccount || '-') + '</td><td>' + r.city + '</td><td>' + r.model + '</td><td>' + r.txPower + ' dBm</td><td><span class="' + rxCls + '">' + r.rxPower + ' dBm</span></td><td>' + r.temperature + '°C</td><td>' + r.voltage + 'V</td><td>' + Pages.statusHtml(r.status) + '</td><td>' + r.lastUpdate + '</td>' +
                 '<td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.queryOntDetail(\'' + r.ontId + '\')">详情</a></td></tr>';
@@ -1190,7 +1190,7 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderOntPower.bind(Pages,document.getElementById("page-ont-power"))') + '</div></div>';
     },
 
-    realtimeOntQuery: function() {
+    realtimeOntQuery: function () {
         var ontId = document.getElementById('ontSearchInput').value.trim();
         if (!ontId) { Modal.toast('请输入ONT设备ID或用户账号', 'warning'); return; }
         // 模拟实时读取
@@ -1198,7 +1198,7 @@ var Pages = {
             '<div style="text-align:center;padding:20px;"><div class="loading-spinner" style="margin:0 auto 12px;"></div><div style="color:#666;">正在通过OMCI协议读取ONT光功率...</div></div>',
             '', '420px'
         );
-        setTimeout(function() {
+        setTimeout(function () {
             var tx = SeededRandom.float(1.8, 3.2, 2);
             var rx = SeededRandom.float(-26, -15, 2);
             var temp = SeededRandom.float(28, 58, 1);
@@ -1221,7 +1221,7 @@ var Pages = {
         }, 1500);
     },
 
-    queryOntDetail: function(ontId) {
+    queryOntDetail: function (ontId) {
         var record = null;
         for (var i = 0; i < JilinData.ontPowerRecords.length; i++) {
             if (JilinData.ontPowerRecords[i].ontId === ontId) { record = JilinData.ontPowerRecords[i]; break; }
@@ -1247,12 +1247,12 @@ var Pages = {
 
     // ========== 网关远程重启 (增强交互) ==========
     _gwPage: 1, _gwCity: '',
-    renderGatewayRestart: function(container, page) {
+    renderGatewayRestart: function (container, page) {
         this._gwPage = page || 1;
         var data = JilinData.gatewayRestartRecords;
-        if (this._gwCity) data = data.filter(function(d) { return d.city === Pages._gwCity; });
+        if (this._gwCity) data = data.filter(function (d) { return d.city === Pages._gwCity; });
         var p = this.paginate(data, this._gwPage, 12);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + r.time + '</td><td>' + r.gwId + '</td><td>' + r.sn + '</td><td>' + r.city + '</td><td>' + r.reason + '</td><td>' + r.operator + '</td><td>' + Pages.statusHtml(r.result) + '</td><td>' + r.duration + '</td></tr>';
         }).join('');
         container.innerHTML =
@@ -1268,7 +1268,7 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderGatewayRestart.bind(Pages,document.getElementById("page-gateway-restart"))') + '</div></div>';
     },
 
-    executeGatewayRestart: function() {
+    executeGatewayRestart: function () {
         var gwId = document.getElementById('gwRestartId').value.trim();
         if (!gwId) { Modal.toast('请输入网关设备ID或用户账号', 'warning'); return; }
         var reason = document.getElementById('gwRestartReason').value;
@@ -1286,13 +1286,13 @@ var Pages = {
             '> 检测设备状态...'
         ];
         var i = 0;
-        var interval = setInterval(function() {
+        var interval = setInterval(function () {
             if (i >= steps.length) {
                 var success = Math.random() > 0.12;
                 var duration = Math.floor(Math.random() * 120 + 15);
                 if (success) {
                     resultDiv.textContent += '\n[OK] 重启成功！设备已恢复在线，耗时 ' + duration + 's\n';
-                    resultDiv.textContent += '> 设备IP: 10.' + Math.floor(Math.random()*200+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '\n';
+                    resultDiv.textContent += '> 设备IP: 10.' + Math.floor(Math.random() * 200 + 1) + '.' + Math.floor(Math.random() * 254 + 1) + '.' + Math.floor(Math.random() * 254 + 1) + '\n';
                     resultDiv.textContent += '> 在线时间: ' + new Date().toLocaleString('zh-CN');
                 } else {
                     resultDiv.textContent += '\n[FAIL] 重启失败：设备响应超时，请检查设备连接状态\n';
@@ -1319,7 +1319,7 @@ var Pages = {
         }, 600);
     },
 
-    batchRestart: function() {
+    batchRestart: function () {
         Modal.show('批量重启',
             '<div class="form-group"><label class="form-label">请输入需要重启的设备ID列表（每行一个）</label>' +
             '<textarea id="batchGwIds" style="width:100%;height:120px;border:1px solid #e0e4e8;border-radius:2px;padding:8px;font-size:12px;resize:vertical;" placeholder="GW-CC-00001\nGW-CC-00002\nGW-JL-00015"></textarea></div>' +
@@ -1328,12 +1328,12 @@ var Pages = {
         );
     },
 
-    doBatchRestart: function() {
-        var ids = document.getElementById('batchGwIds').value.trim().split('\n').filter(function(s) { return s.trim(); });
+    doBatchRestart: function () {
+        var ids = document.getElementById('batchGwIds').value.trim().split('\n').filter(function (s) { return s.trim(); });
         if (ids.length === 0) { Modal.toast('请输入设备ID', 'warning'); return; }
         var reason = document.getElementById('batchReason').value;
         var successCount = 0;
-        ids.forEach(function(id) {
+        ids.forEach(function (id) {
             var success = Math.random() > 0.15;
             if (success) successCount++;
             JilinData.gatewayRestartRecords.unshift({
@@ -1355,22 +1355,22 @@ var Pages = {
 
     // ========== 质差模型 (增强：多筛选/CRUD/模型训练) ==========
     _qmPage: 1, _qmCity: '', _qmModel: '', _qmSeverity: '', _qmKw: '',
-    _getQmRecords: function() {
+    _getQmRecords: function () {
         var stored = DataStore.load('qmRecords', null);
         if (!stored || !stored.length) { DataStore.save('qmRecords', JilinData.qualityModelRecords); return JilinData.qualityModelRecords; }
         return stored;
     },
-    _saveQmRecords: function(d) { DataStore.save('qmRecords', d); },
-    renderQualityModel: function(container, page) {
+    _saveQmRecords: function (d) { DataStore.save('qmRecords', d); },
+    renderQualityModel: function (container, page) {
         this._qmPage = page || 1;
         var allData = this._getQmRecords();
         var data = allData;
-        if (this._qmCity) data = data.filter(function(d) { return d.city === Pages._qmCity; });
-        if (this._qmModel) data = data.filter(function(d) { return d.modelName === Pages._qmModel; });
-        if (this._qmSeverity) data = data.filter(function(d) { return d.severity === Pages._qmSeverity; });
+        if (this._qmCity) data = data.filter(function (d) { return d.city === Pages._qmCity; });
+        if (this._qmModel) data = data.filter(function (d) { return d.modelName === Pages._qmModel; });
+        if (this._qmSeverity) data = data.filter(function (d) { return d.severity === Pages._qmSeverity; });
         if (this._qmKw) {
             var kw = this._qmKw.toLowerCase();
-            data = data.filter(function(d) { return (d.userAccount || '').toLowerCase().indexOf(kw) >= 0 || (d.id || '').toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return (d.userAccount || '').toLowerCase().indexOf(kw) >= 0 || (d.id || '').toLowerCase().indexOf(kw) >= 0; });
         }
         // 模型库
         var models = [
@@ -1380,58 +1380,58 @@ var Pages = {
             { name: '传输质差模型', accuracy: 91.2, samples: 6580, lastTrain: '2025-11-18', status: '训练中' },
             { name: 'WiFi干扰模型', accuracy: 87.8, samples: 5420, lastTrain: '2025-11-15', status: '运行中' }
         ];
-        var modelCards = models.map(function(m) {
+        var modelCards = models.map(function (m) {
             var statusClass = m.status === '运行中' ? 'running' : 'training';
             var accColor = m.accuracy >= 92 ? '#27ae60' : (m.accuracy >= 90 ? '#f39c12' : '#e74c3c');
             return '<div class="model-card-enhanced">' +
                 '<div class="model-status-bar ' + statusClass + '"></div>' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-                    '<span style="font-weight:600;font-size:13px;">' + m.name + '</span>' +
-                    '<span style="font-size:10px;color:' + (m.status === '运行中' ? '#27ae60' : '#f39c12') + ';font-weight:600;">● ' + m.status + '</span>' +
+                '<span style="font-weight:600;font-size:13px;">' + m.name + '</span>' +
+                '<span style="font-size:10px;color:' + (m.status === '运行中' ? '#27ae60' : '#f39c12') + ';font-weight:600;">● ' + m.status + '</span>' +
                 '</div>' +
                 '<div class="model-accuracy-ring" style="border:3px solid ' + accColor + ';color:' + accColor + ';">' + m.accuracy + '%</div>' +
                 '<div style="text-align:center;font-size:10px;color:#999;margin-bottom:8px;">准确率</div>' +
                 '<div style="font-size:11px;color:#666;display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">' +
-                    '<div>样本: <strong style="color:#333;">' + m.samples.toLocaleString() + '</strong></div>' +
-                    '<div>特征: <strong style="color:#333;">' + (15 + Math.floor(m.accuracy * 0.3)) + '维</strong></div>' +
-                    '<div style="grid-column:1/-1;">更新: ' + m.lastTrain + '</div>' +
+                '<div>样本: <strong style="color:#333;">' + m.samples.toLocaleString() + '</strong></div>' +
+                '<div>特征: <strong style="color:#333;">' + (15 + Math.floor(m.accuracy * 0.3)) + '维</strong></div>' +
+                '<div style="grid-column:1/-1;">更新: ' + m.lastTrain + '</div>' +
                 '</div>' +
                 '<div style="display:flex;gap:6px;">' +
-                    '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.trainModel(\'' + m.name + '\')">重新训练</button>' +
-                    '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.modelDetail(\'' + m.name + '\')">详情</button>' +
+                '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.trainModel(\'' + m.name + '\')">重新训练</button>' +
+                '<button class="btn" style="font-size:11px;padding:2px 10px;flex:1;" onclick="Pages.modelDetail(\'' + m.name + '\')">详情</button>' +
                 '</div></div>';
         }).join('');
 
         var p = this.paginate(data, this._qmPage, 10);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + r.id + '</td><td>' + r.userAccount + '</td><td>' + r.city + '</td><td>' + r.modelName + '</td><td><span style="color:' + (r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60')) + ';font-weight:600;">' + r.score + '</span></td><td>' + r.primaryFactor + '</td><td>' + Pages.statusHtml(r.severity) + '</td><td>' + r.recommendation + '</td><td>' + r.analysisTime + '</td>' +
                 '<td><a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.qmDetail(\'' + r.id + '\')">详情</a><a style="color:#27ae60;cursor:pointer;" onclick="Pages.qmCreateOrder(\'' + r.id + '\')">派单</a></td></tr>';
         }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:20px;">暂无数据</td></tr>';
 
         var modelOpts = '<option value="">全部模型</option>';
-        models.forEach(function(m) { modelOpts += '<option value="' + m.name + '"' + (m.name === Pages._qmModel ? ' selected' : '') + '>' + m.name + '</option>'; });
+        models.forEach(function (m) { modelOpts += '<option value="' + m.name + '"' + (m.name === Pages._qmModel ? ' selected' : '') + '>' + m.name + '</option>'; });
         var sevOpts = '<option value="">全部严重</option>';
-        ['低','中','高','紧急'].forEach(function(s) { sevOpts += '<option value="' + s + '"' + (s === Pages._qmSeverity ? ' selected' : '') + '>' + s + '</option>'; });
+        ['低', '中', '高', '紧急'].forEach(function (s) { sevOpts += '<option value="' + s + '"' + (s === Pages._qmSeverity ? ' selected' : '') + '>' + s + '</option>'; });
 
         container.innerHTML =
             '<div class="page-content">' +
             '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' + modelCards + '</div>' +
             '<div class="remote-panel"><div class="remote-panel-title">质差模型分析</div>' +
             '<div class="remote-form">' +
-                this.cityFilterHtml('qmCityFilter', 'Pages._qmCity=this.value;Pages.renderQualityModel(document.getElementById("page-quality-model"),1)', this._qmCity) +
-                '<div class="form-group"><label class="form-label">模型类型</label><select class="form-select" onchange="Pages._qmModel=this.value;Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">' + modelOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">严重程度</label><select class="form-select" onchange="Pages._qmSeverity=this.value;Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">' + sevOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="qmKwInput" value="' + (this._qmKw || '') + '" placeholder="ID/账号"></div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
-                    '<button class="btn btn-primary" onclick="Pages._qmKw=document.getElementById(\'qmKwInput\').value.trim();Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">分析</button>' +
-                    '<button class="btn" onclick="Pages._qmCity=\'\';Pages._qmModel=\'\';Pages._qmSeverity=\'\';Pages._qmKw=\'\';Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">重置</button>' +
-                    '<button class="btn" onclick="Pages.exportQmRecords()">导出</button>' +
-                '</div></div></div>' +
+            this.cityFilterHtml('qmCityFilter', 'Pages._qmCity=this.value;Pages.renderQualityModel(document.getElementById("page-quality-model"),1)', this._qmCity) +
+            '<div class="form-group"><label class="form-label">模型类型</label><select class="form-select" onchange="Pages._qmModel=this.value;Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">' + modelOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">严重程度</label><select class="form-select" onchange="Pages._qmSeverity=this.value;Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">' + sevOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">关键字</label><input class="form-input" id="qmKwInput" value="' + (this._qmKw || '') + '" placeholder="ID/账号"></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+            '<button class="btn btn-primary" onclick="Pages._qmKw=document.getElementById(\'qmKwInput\').value.trim();Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">分析</button>' +
+            '<button class="btn" onclick="Pages._qmCity=\'\';Pages._qmModel=\'\';Pages._qmSeverity=\'\';Pages._qmKw=\'\';Pages.renderQualityModel(document.getElementById(\'page-quality-model\'),1)">重置</button>' +
+            '<button class="btn" onclick="Pages.exportQmRecords()">导出</button>' +
+            '</div></div></div>' +
             '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>ID</th><th>用户账号</th><th>地市</th><th>模型</th><th>评分</th><th>主因</th><th>严重程度</th><th>建议</th><th>分析时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderQualityModel.bind(Pages,document.getElementById("page-quality-model"))') + '</div></div>';
     },
 
-    qmDetail: function(id) {
+    qmDetail: function (id) {
         var data = this._getQmRecords();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -1439,25 +1439,25 @@ var Pages = {
         Modal.show('质差分析详情 - ' + r.id,
             '<div style="display:grid;grid-template-columns:auto 1fr;gap:16px;">' +
             '<div style="text-align:center;padding:16px;">' +
-                '<div style="width:80px;height:80px;border-radius:50%;border:4px solid ' + (r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60')) + ';display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;font-weight:700;color:' + (r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60')) + ';">' + r.score + '</div>' +
-                '<div style="font-size:11px;color:#999;">质差评分</div>' +
+            '<div style="width:80px;height:80px;border-radius:50%;border:4px solid ' + (r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60')) + ';display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;font-weight:700;color:' + (r.score < 50 ? '#e74c3c' : (r.score < 70 ? '#f39c12' : '#27ae60')) + ';">' + r.score + '</div>' +
+            '<div style="font-size:11px;color:#999;">质差评分</div>' +
             '</div>' +
             '<div style="font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                '<div><strong>分析ID：</strong>' + r.id + '</div>' +
-                '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
-                '<div><strong>地市：</strong>' + r.city + '</div>' +
-                '<div><strong>模型：</strong>' + r.modelName + '</div>' +
-                '<div><strong>主因：</strong>' + r.primaryFactor + '</div>' +
-                '<div><strong>严重程度：</strong>' + r.severity + '</div>' +
-                '<div style="grid-column:1/-1;"><strong>建议：</strong>' + r.recommendation + '</div>' +
-                '<div style="grid-column:1/-1;"><strong>分析时间：</strong>' + r.analysisTime + '</div>' +
+            '<div><strong>分析ID：</strong>' + r.id + '</div>' +
+            '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
+            '<div><strong>地市：</strong>' + r.city + '</div>' +
+            '<div><strong>模型：</strong>' + r.modelName + '</div>' +
+            '<div><strong>主因：</strong>' + r.primaryFactor + '</div>' +
+            '<div><strong>严重程度：</strong>' + r.severity + '</div>' +
+            '<div style="grid-column:1/-1;"><strong>建议：</strong>' + r.recommendation + '</div>' +
+            '<div style="grid-column:1/-1;"><strong>分析时间：</strong>' + r.analysisTime + '</div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">关闭</button><button class="btn btn-primary" onclick="Modal.close();Pages.qmCreateOrder(\'' + r.id + '\')">生成工单</button>',
             '600px'
         );
     },
 
-    qmCreateOrder: function(id) {
+    qmCreateOrder: function (id) {
         var data = this._getQmRecords();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -1470,7 +1470,7 @@ var Pages = {
         var allEngineers = JilinData.findEngineers ? JilinData.findEngineers(r.city, null) : [];
         var availableEngineers = engineers.length > 0 ? engineers : allEngineers;
         var engineerOpts = '<option value="">暂不指派（待派单）</option>';
-        availableEngineers.forEach(function(e, i) {
+        availableEngineers.forEach(function (e, i) {
             var icon = e.online ? ICO.online : ICO.offline;
             engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + e.name + ' - ' + e.team + ' 工单' + e.workload + '件' + (i === 0 ? ' [推荐]' : '') + '</option>';
         });
@@ -1479,47 +1479,47 @@ var Pages = {
             '<div style="display:grid;grid-template-columns:280px 1fr;gap:20px;">' +
             // Left: Source info
             '<div style="background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e0e4e8;">' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.chart + ' 质差分析来源</div>' +
-                '<div style="text-align:center;margin-bottom:12px;">' +
-                    '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + r.score + '</div>' +
-                    '<div style="font-size:11px;color:#999;">质差评分</div>' +
-                '</div>' +
-                '<div style="font-size:12px;color:#666;line-height:2;">' +
-                    '<div><strong>分析ID：</strong><span style="color:#2b7de9;">' + r.id + '</span></div>' +
-                    '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
-                    '<div><strong>所属地市：</strong>' + r.city + '</div>' +
-                    '<div><strong>分析模型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + r.modelName + '</span></div>' +
-                    '<div><strong>主要原因：</strong><span style="color:#e74c3c;font-weight:600;">' + r.primaryFactor + '</span></div>' +
-                    '<div><strong>严重程度：</strong>' + Pages.statusHtml(r.severity) + '</div>' +
-                    '<div><strong>分析时间：</strong>' + r.analysisTime + '</div>' +
-                '</div>' +
-                '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
-                    '<strong>建议：</strong>' + r.recommendation +
-                '</div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.chart + ' 质差分析来源</div>' +
+            '<div style="text-align:center;margin-bottom:12px;">' +
+            '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + r.score + '</div>' +
+            '<div style="font-size:11px;color:#999;">质差评分</div>' +
+            '</div>' +
+            '<div style="font-size:12px;color:#666;line-height:2;">' +
+            '<div><strong>分析ID：</strong><span style="color:#2b7de9;">' + r.id + '</span></div>' +
+            '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
+            '<div><strong>所属地市：</strong>' + r.city + '</div>' +
+            '<div><strong>分析模型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + r.modelName + '</span></div>' +
+            '<div><strong>主要原因：</strong><span style="color:#e74c3c;font-weight:600;">' + r.primaryFactor + '</span></div>' +
+            '<div><strong>严重程度：</strong>' + Pages.statusHtml(r.severity) + '</div>' +
+            '<div><strong>分析时间：</strong>' + r.analysisTime + '</div>' +
+            '</div>' +
+            '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
+            '<strong>建议：</strong>' + r.recommendation +
+            '</div>' +
             '</div>' +
             // Right: Order form
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
-                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
-                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qmWoTitle" value="' + r.modelName + ' - ' + r.userAccount + '"></div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qmWoType"><option selected>AI预测</option><option>主动发现</option><option>系统告警</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qmWoPriority"><option' + (priority === '低' ? ' selected' : '') + '>低</option><option' + (priority === '中' ? ' selected' : '') + '>中</option><option' + (priority === '高' ? ' selected' : '') + '>高</option><option' + (priority === '紧急' ? ' selected' : '') + '>紧急</option></select></div>' +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qmWoDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">指派工程师（' + r.city + '地区，按工作量排序）</label><select class="form-select" id="qmWoAssignee">' + engineerOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qmWoDesc" rows="3" style="resize:vertical;">用户 ' + r.userAccount + ' 经 ' + r.modelName + ' 分析，质差评分 ' + r.score + '，主因：' + r.primaryFactor + '（严重程度：' + r.severity + '）。建议：' + r.recommendation + '</textarea></div>' +
-                '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qmWoNote" placeholder="如：需携带光功率计、用户白天在家"></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
+            '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qmWoTitle" value="' + r.modelName + ' - ' + r.userAccount + '"></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qmWoType"><option selected>AI预测</option><option>主动发现</option><option>系统告警</option></select></div>' +
+            '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qmWoPriority"><option' + (priority === '低' ? ' selected' : '') + '>低</option><option' + (priority === '中' ? ' selected' : '') + '>中</option><option' + (priority === '高' ? ' selected' : '') + '>高</option><option' + (priority === '紧急' ? ' selected' : '') + '>紧急</option></select></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qmWoDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option></select></div>' +
+            '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">指派工程师（' + r.city + '地区，按工作量排序）</label><select class="form-select" id="qmWoAssignee">' + engineerOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qmWoDesc" rows="3" style="resize:vertical;">用户 ' + r.userAccount + ' 经 ' + r.modelName + ' 分析，质差评分 ' + r.score + '，主因：' + r.primaryFactor + '（严重程度：' + r.severity + '）。建议：' + r.recommendation + '</textarea></div>' +
+            '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qmWoNote" placeholder="如：需携带光功率计、用户白天在家"></div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doQmCreateOrder(\'' + id + '\',\'' + woId + '\')">确认生成工单</button>',
             '820px'
         );
     },
 
-    doQmCreateOrder: function(id, woId) {
+    doQmCreateOrder: function (id, woId) {
         var data = this._getQmRecords();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -1553,15 +1553,15 @@ var Pages = {
         Modal.toast('工单 ' + woId + ' 已创建' + (assignee ? '，已派发至 ' + assignee : '，等待派单'), 'success');
     },
 
-    trainModel: function(name) {
+    trainModel: function (name) {
         Modal.show('训练模型 - ' + name,
             '<div class="train-progress-wrap">' +
-                '<div class="train-progress-header"><span>正在训练 <strong>' + name + '</strong> ...</span><span id="trainPercent">0%</span></div>' +
-                '<div class="train-progress-bar"><div class="train-progress-fill" id="trainFill" style="width:0%"></div></div>' +
-                '<div class="train-log" id="trainLog">' +
-                    '<span class="log-step">[初始化]</span> 加载训练数据集...\n' +
-                '</div>' +
-                '<div id="trainMetrics" style="display:none;margin-top:12px;display:none;"></div>' +
+            '<div class="train-progress-header"><span>正在训练 <strong>' + name + '</strong> ...</span><span id="trainPercent">0%</span></div>' +
+            '<div class="train-progress-bar"><div class="train-progress-fill" id="trainFill" style="width:0%"></div></div>' +
+            '<div class="train-log" id="trainLog">' +
+            '<span class="log-step">[初始化]</span> 加载训练数据集...\n' +
+            '</div>' +
+            '<div id="trainMetrics" style="display:none;margin-top:12px;display:none;"></div>' +
             '</div>',
             '<button class="btn" id="trainCancelBtn" onclick="Modal.close()">取消训练</button>', '560px'
         );
@@ -1581,11 +1581,11 @@ var Pages = {
             { t: 900, msg: '<span class="log-step">[模型构建]</span> 算法: ' + (name.indexOf('WiFi') >= 0 ? 'RandomForest' : (name.indexOf('线路') >= 0 ? 'XGBoost' : 'GradientBoosting')) },
             { t: 1200, msg: '<span class="log-step">[训练开始]</span> learning_rate=0.01, max_depth=8, n_estimators=' + totalEpochs * 50 }
         ];
-        logLines.forEach(function(l) {
-            setTimeout(function() { if (log) log.innerHTML += l.msg + '\n'; log.scrollTop = log.scrollHeight; }, l.t);
+        logLines.forEach(function (l) {
+            setTimeout(function () { if (log) log.innerHTML += l.msg + '\n'; log.scrollTop = log.scrollHeight; }, l.t);
         });
 
-        var trainInterval = setInterval(function() {
+        var trainInterval = setInterval(function () {
             epoch++;
             if (epoch > totalEpochs) {
                 clearInterval(trainInterval);
@@ -1596,7 +1596,7 @@ var Pages = {
                 if (pct) pct.textContent = '100%';
                 if (log) {
                     log.innerHTML += '<span class="log-step">[训练完成]</span> <span class="log-metric">最终准确率: ' + finalAcc + '% | 召回率: ' + finalRecall + '% | F1: ' + finalF1 + '</span>\n';
-                    log.innerHTML += '<span class="log-step">[模型保存]</span> 模型已保存至 /models/' + name.replace(/\s/g, '_') + '_v' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.pkl\n';
+                    log.innerHTML += '<span class="log-step">[模型保存]</span> 模型已保存至 /models/' + name.replace(/\s/g, '_') + '_v' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.pkl\n';
                     log.scrollTop = log.scrollHeight;
                 }
                 if (metrics) {
@@ -1626,7 +1626,7 @@ var Pages = {
         }, 400);
     },
 
-    modelDetail: function(name) {
+    modelDetail: function (name) {
         Modal.show('模型详情 - ' + name,
             '<div style="font-size:13px;line-height:2;">' +
             '<div><strong>模型名称：</strong>' + name + '</div>' +
@@ -1642,11 +1642,11 @@ var Pages = {
         );
     },
 
-    exportQmRecords: function() {
+    exportQmRecords: function () {
         var data = this._getQmRecords();
-        if (this._qmCity) data = data.filter(function(d) { return d.city === Pages._qmCity; });
+        if (this._qmCity) data = data.filter(function (d) { return d.city === Pages._qmCity; });
         var csv = 'ID,用户账号,地市,模型,评分,主因,严重程度,建议,分析时间\n';
-        data.forEach(function(r) { csv += [r.id, r.userAccount, r.city, r.modelName, r.score, r.primaryFactor, r.severity, r.recommendation, r.analysisTime].join(',') + '\n'; });
+        data.forEach(function (r) { csv += [r.id, r.userAccount, r.city, r.modelName, r.score, r.primaryFactor, r.severity, r.recommendation, r.analysisTime].join(',') + '\n'; });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -1657,18 +1657,18 @@ var Pages = {
 
     // ========== 用户质差 (增强：质差标签+画像) ==========
     _uqPage: 1, _uqCity: '', _uqType: '',
-    renderUserQuality: function(container, page) {
+    renderUserQuality: function (container, page) {
         this._uqPage = page || 1;
         var data = JilinData.userQualityRecords;
-        if (this._uqCity) data = data.filter(function(d) { return d.city === Pages._uqCity; });
-        if (this._uqType) data = data.filter(function(d) { return d.qualityType === Pages._uqType; });
+        if (this._uqCity) data = data.filter(function (d) { return d.city === Pages._uqCity; });
+        if (this._uqType) data = data.filter(function (d) { return d.qualityType === Pages._uqType; });
         var p = this.paginate(data, this._uqPage, 12);
-        var rows = p.data.map(function(r, idx) {
+        var rows = p.data.map(function (r, idx) {
             var globalIdx = (Pages._uqPage - 1) * 12 + idx;
             return '<tr><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showUserQualityProfile(' + globalIdx + ')">' + r.userAccount + '</a></td><td>' + r.city + '</td><td><span class="status-error">' + r.ceiScore + '</span></td><td><span class="badge badge-warning" style="font-size:10px;">' + r.qualityType + '</span></td><td>' + r.duration + '</td><td>' + r.affectedBiz + '</td><td>' + Pages.statusHtml(r.status) + '</td><td>' + r.reportTime + '</td><td><a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.showUserQualityProfile(' + globalIdx + ')">画像</a><a style="color:#27ae60;cursor:pointer;" onclick="Pages.createOrderFromQuality(' + globalIdx + ')">派单</a></td></tr>';
         }).join('');
         var typeOpts = '<option value="">全部类型</option>';
-        ['线路质差', '高时延', '网关cpu高', '频繁重启', '视频卡顿', 'wifi干扰'].forEach(function(t) {
+        ['线路质差', '高时延', '网关cpu高', '频繁重启', '视频卡顿', 'wifi干扰'].forEach(function (t) {
             typeOpts += '<option value="' + t + '"' + (t === Pages._uqType ? ' selected' : '') + '>' + t + '</option>';
         });
         container.innerHTML =
@@ -1677,21 +1677,21 @@ var Pages = {
             '<div class="form-group"><label class="form-label">质差类型</label><select class="form-select" id="uqTypeFilter" onchange="Pages._uqType=this.value;Pages.renderUserQuality(document.getElementById(\'page-user-quality\'),1)">' + typeOpts + '</select></div>' +
             '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderUserQuality(document.getElementById(\'page-user-quality\'),1)">查询</button><button class="btn" onclick="Pages.exportUserQuality()">导出</button></div></div></div>' +
             '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + data.length + '</div><div class="wo-stat-label">质差用户总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + data.filter(function(d){return d.status==="质差中";}).length + '</div><div class="wo-stat-label">当前质差中</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + data.filter(function(d){return d.status==="已恢复";}).length + '</div><div class="wo-stat-label">已恢复</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function(d){return d.qualityType==="线路质差";}).length + '</div><div class="wo-stat-label">线路质差</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function(d){return d.qualityType==="高时延";}).length + '</div><div class="wo-stat-label">高时延</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function(d){return d.qualityType==="视频卡顿";}).length + '</div><div class="wo-stat-label">视频卡顿</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + data.length + '</div><div class="wo-stat-label">质差用户总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + data.filter(function (d) { return d.status === "质差中"; }).length + '</div><div class="wo-stat-label">当前质差中</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + data.filter(function (d) { return d.status === "已恢复"; }).length + '</div><div class="wo-stat-label">已恢复</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function (d) { return d.qualityType === "线路质差"; }).length + '</div><div class="wo-stat-label">线路质差</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function (d) { return d.qualityType === "高时延"; }).length + '</div><div class="wo-stat-label">高时延</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + data.filter(function (d) { return d.qualityType === "视频卡顿"; }).length + '</div><div class="wo-stat-label">视频卡顿</div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>CEI评分</th><th>质差标签</th><th>持续时长</th><th>影响业务</th><th>状态</th><th>上报时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderUserQuality.bind(Pages,document.getElementById("page-user-quality"))') + '</div></div>';
     },
 
-    showUserQualityProfile: function(idx) {
+    showUserQualityProfile: function (idx) {
         var data = JilinData.userQualityRecords;
-        if (this._uqCity) data = data.filter(function(d) { return d.city === Pages._uqCity; });
-        if (this._uqType) data = data.filter(function(d) { return d.qualityType === Pages._uqType; });
+        if (this._uqCity) data = data.filter(function (d) { return d.city === Pages._uqCity; });
+        if (this._uqType) data = data.filter(function (d) { return d.qualityType === Pages._uqType; });
         var r = data[idx];
         if (!r) return;
         // 生成多维质差标签
@@ -1705,39 +1705,39 @@ var Pages = {
         Modal.show('用户质差画像 - ' + r.userAccount,
             '<div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">' +
             '<div style="text-align:center;padding:16px;background:#f8fafc;border-radius:8px;">' +
-                '<div style="width:70px;height:70px;border-radius:50%;border:3px solid #e74c3c;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;font-weight:700;color:#e74c3c;">' + r.ceiScore + '</div>' +
-                '<div style="font-size:12px;color:#999;">CEI评分</div>' +
-                '<div style="margin-top:12px;text-align:left;">' +
-                    '<div style="font-size:11px;color:#666;margin-bottom:6px;"><strong>质差标签：</strong></div>' +
-                    tags.map(function(t) { return '<span style="display:inline-block;padding:2px 8px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:10px;font-size:10px;color:#c0392b;margin:2px 4px 2px 0;">' + t + '</span>'; }).join('') +
-                    '<div style="margin-top:10px;font-size:11px;color:#666;"><strong>置信度：</strong>' + confidence + '%</div>' +
-                '</div>' +
+            '<div style="width:70px;height:70px;border-radius:50%;border:3px solid #e74c3c;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;font-weight:700;color:#e74c3c;">' + r.ceiScore + '</div>' +
+            '<div style="font-size:12px;color:#999;">CEI评分</div>' +
+            '<div style="margin-top:12px;text-align:left;">' +
+            '<div style="font-size:11px;color:#666;margin-bottom:6px;"><strong>质差标签：</strong></div>' +
+            tags.map(function (t) { return '<span style="display:inline-block;padding:2px 8px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:10px;font-size:10px;color:#c0392b;margin:2px 4px 2px 0;">' + t + '</span>'; }).join('') +
+            '<div style="margin-top:10px;font-size:11px;color:#666;"><strong>置信度：</strong>' + confidence + '%</div>' +
+            '</div>' +
             '</div>' +
             '<div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:12px;">' +
-                    '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
-                    '<div><strong>地市：</strong>' + r.city + '</div>' +
-                    '<div><strong>质差类型：</strong>' + r.qualityType + '</div>' +
-                    '<div><strong>持续时长：</strong>' + r.duration + '</div>' +
-                    '<div><strong>影响业务：</strong>' + r.affectedBiz + '</div>' +
-                    '<div><strong>状态：</strong>' + r.status + '</div>' +
-                    '<div><strong>上报时间：</strong>' + r.reportTime + '</div>' +
-                    '<div><strong>时间戳：</strong>' + r.reportTime + '</div>' +
-                '</div>' +
-                '<div style="padding:10px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;margin-bottom:12px;">' +
-                    '<strong>判定规则：</strong>' + (r.qualityType === '线路质差' ? '接收光功率 < -25dBm 或 误码率 > 1E-5' : (r.qualityType === '高时延' ? '平均时延 > 50ms 持续超过30分钟' : (r.qualityType === '网关cpu高' ? 'CPU使用率 > 85% 持续超过15分钟' : (r.qualityType === '视频卡顿' ? '视频卡顿率 > 5% 或 初始缓冲 > 3s' : '质差模型综合判定')))) +
-                '</div>' +
-                '<div style="font-size:12px;"><strong>处理建议：</strong>' + (r.qualityType === '线路质差' ? '建议派单检查光路，可能需要更换尾纤或清洁接头' : (r.qualityType === '高时延' ? '建议检查BRAS负载及上行链路拥塞情况' : (r.qualityType === '网关cpu高' ? '建议远程重启网关或升级固件版本' : '建议综合排查网络及终端状态'))) + '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:12px;">' +
+            '<div><strong>用户账号：</strong>' + r.userAccount + '</div>' +
+            '<div><strong>地市：</strong>' + r.city + '</div>' +
+            '<div><strong>质差类型：</strong>' + r.qualityType + '</div>' +
+            '<div><strong>持续时长：</strong>' + r.duration + '</div>' +
+            '<div><strong>影响业务：</strong>' + r.affectedBiz + '</div>' +
+            '<div><strong>状态：</strong>' + r.status + '</div>' +
+            '<div><strong>上报时间：</strong>' + r.reportTime + '</div>' +
+            '<div><strong>时间戳：</strong>' + r.reportTime + '</div>' +
+            '</div>' +
+            '<div style="padding:10px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;margin-bottom:12px;">' +
+            '<strong>判定规则：</strong>' + (r.qualityType === '线路质差' ? '接收光功率 < -25dBm 或 误码率 > 1E-5' : (r.qualityType === '高时延' ? '平均时延 > 50ms 持续超过30分钟' : (r.qualityType === '网关cpu高' ? 'CPU使用率 > 85% 持续超过15分钟' : (r.qualityType === '视频卡顿' ? '视频卡顿率 > 5% 或 初始缓冲 > 3s' : '质差模型综合判定')))) +
+            '</div>' +
+            '<div style="font-size:12px;"><strong>处理建议：</strong>' + (r.qualityType === '线路质差' ? '建议派单检查光路，可能需要更换尾纤或清洁接头' : (r.qualityType === '高时延' ? '建议检查BRAS负载及上行链路拥塞情况' : (r.qualityType === '网关cpu高' ? '建议远程重启网关或升级固件版本' : '建议综合排查网络及终端状态'))) + '</div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">关闭</button><button class="btn btn-primary" onclick="Modal.close();Pages.createOrderFromQuality(' + idx + ')">生成工单</button>',
             '700px'
         );
     },
 
-    createOrderFromQuality: function(idx) {
+    createOrderFromQuality: function (idx) {
         var data = JilinData.userQualityRecords;
-        if (this._uqCity) data = data.filter(function(d) { return d.city === Pages._uqCity; });
-        if (this._uqType) data = data.filter(function(d) { return d.qualityType === Pages._uqType; });
+        if (this._uqCity) data = data.filter(function (d) { return d.city === Pages._uqCity; });
+        if (this._uqType) data = data.filter(function (d) { return d.qualityType === Pages._uqType; });
         var r = data[idx];
         if (!r) return;
         // 根据质差类型和地市推荐工程师
@@ -1747,7 +1747,7 @@ var Pages = {
         var recommendId = engineers.length > 0 ? engineers[0].id : '';
         var engineerOpts = '<option value="">暂不指派（待派单）</option>';
         var engineerListHtml = '';
-        (engineers.length > 0 ? engineers : allEngineers).forEach(function(e) {
+        (engineers.length > 0 ? engineers : allEngineers).forEach(function (e) {
             var isRecommend = e.id === recommendId;
             engineerOpts += '<option value="' + e.name + '"' + (isRecommend ? ' selected' : '') + '>' + e.name + ' (' + e.team + ')' + (isRecommend ? ' [推荐]' : '') + '</option>';
             var statusColor = e.online ? '#27ae60' : '#bbb';
@@ -1765,43 +1765,43 @@ var Pages = {
         Modal.show('从质差画像生成工单',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
-                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
-                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qWoTitle" value="' + r.qualityType + ' - ' + r.userAccount + '"></div>' +
-                '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qWoType"><option selected>主动发现</option><option>系统告警</option><option>AI预测</option><option>用户申诉</option></select></div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qWoPriority"><option' + (r.ceiScore >= 60 ? '' : '') + '>低</option><option>中</option><option' + (r.ceiScore < 60 ? '' : ' selected') + '>高</option><option' + (r.ceiScore < 60 ? ' selected' : '') + '>紧急</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qWoDeadline"><option value="4">4小时</option><option value="8">8小时</option><option value="24" selected>24小时</option><option value="48">48小时</option></select></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qWoDesc" rows="3" style="resize:vertical;">' + '用户 ' + r.userAccount + ' 存在' + r.qualityType + '问题，CEI评分 ' + r.ceiScore + '，持续 ' + r.duration + '，影响业务：' + r.affectedBiz + '</textarea></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
+            '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qWoTitle" value="' + r.qualityType + ' - ' + r.userAccount + '"></div>' +
+            '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qWoType"><option selected>主动发现</option><option>系统告警</option><option>AI预测</option><option>用户申诉</option></select></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qWoPriority"><option' + (r.ceiScore >= 60 ? '' : '') + '>低</option><option>中</option><option' + (r.ceiScore < 60 ? '' : ' selected') + '>高</option><option' + (r.ceiScore < 60 ? ' selected' : '') + '>紧急</option></select></div>' +
+            '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qWoDeadline"><option value="4">4小时</option><option value="8">8小时</option><option value="24" selected>24小时</option><option value="48">48小时</option></select></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qWoDesc" rows="3" style="resize:vertical;">' + '用户 ' + r.userAccount + ' 存在' + r.qualityType + '问题，CEI评分 ' + r.ceiScore + '，持续 ' + r.duration + '，影响业务：' + r.affectedBiz + '</textarea></div>' +
             '</div>' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.user + ' 用户信息 & 指派</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
-                    '<div class="form-group"><label class="form-label">所属地市</label><input class="form-input" value="' + r.city + '" readonly style="background:#f8fafc;"></div>' +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">质差类型</label><input class="form-input" value="' + r.qualityType + '" readonly style="background:#f8fafc;"></div>' +
-                    '<div class="form-group"><label class="form-label">CEI评分</label><input class="form-input" value="' + r.ceiScore + ' 分" readonly style="background:#f8fafc;color:' + (r.ceiScore < 60 ? '#e74c3c' : '#f39c12') + ';font-weight:600;"></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">指派工程师（系统根据技能和工作量推荐）</label><select class="form-select" id="qWoAssignee">' + engineerOpts + '</select></div>' +
-                '<div style="margin-top:8px;padding:8px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;max-height:140px;overflow-y:auto;">' +
-                    '<div style="font-size:11px;color:#999;margin-bottom:6px;">可选工程师（' + r.city + ' · 技能匹配：' + skill + '）</div>' +
-                    engineerListHtml +
-                    (engineers.length === 0 ? '<div style="font-size:11px;color:#999;text-align:center;padding:8px;">该地市暂无匹配技能的工程师</div>' : '') +
-                '</div>' +
-                '<div class="form-group" style="margin-top:8px;"><label class="form-label">派单备注</label><input class="form-input" id="qWoNote" placeholder="可选，如：需携带光功率计"></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.user + ' 用户信息 & 指派</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" value="' + r.userAccount + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">所属地市</label><input class="form-input" value="' + r.city + '" readonly style="background:#f8fafc;"></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">质差类型</label><input class="form-input" value="' + r.qualityType + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">CEI评分</label><input class="form-input" value="' + r.ceiScore + ' 分" readonly style="background:#f8fafc;color:' + (r.ceiScore < 60 ? '#e74c3c' : '#f39c12') + ';font-weight:600;"></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">指派工程师（系统根据技能和工作量推荐）</label><select class="form-select" id="qWoAssignee">' + engineerOpts + '</select></div>' +
+            '<div style="margin-top:8px;padding:8px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;max-height:140px;overflow-y:auto;">' +
+            '<div style="font-size:11px;color:#999;margin-bottom:6px;">可选工程师（' + r.city + ' · 技能匹配：' + skill + '）</div>' +
+            engineerListHtml +
+            (engineers.length === 0 ? '<div style="font-size:11px;color:#999;text-align:center;padding:8px;">该地市暂无匹配技能的工程师</div>' : '') +
+            '</div>' +
+            '<div class="form-group" style="margin-top:8px;"><label class="form-label">派单备注</label><input class="form-input" id="qWoNote" placeholder="可选，如：需携带光功率计"></div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doCreateOrderFromQuality(' + idx + ',\'' + woId + '\')">确认生成工单</button>',
             '820px'
         );
     },
 
-    doCreateOrderFromQuality: function(idx, woId) {
+    doCreateOrderFromQuality: function (idx, woId) {
         var data = JilinData.userQualityRecords;
-        if (this._uqCity) data = data.filter(function(d) { return d.city === Pages._uqCity; });
-        if (this._uqType) data = data.filter(function(d) { return d.qualityType === Pages._uqType; });
+        if (this._uqCity) data = data.filter(function (d) { return d.city === Pages._uqCity; });
+        if (this._uqType) data = data.filter(function (d) { return d.qualityType === Pages._uqType; });
         var r = data[idx];
         if (!r) return;
         var title = document.getElementById('qWoTitle').value.trim();
@@ -1831,12 +1831,12 @@ var Pages = {
         Modal.toast('工单 ' + woId + ' 已创建' + (assignee ? '，已派发至 ' + assignee : '，等待派单'), 'success');
     },
 
-    exportUserQuality: function() {
+    exportUserQuality: function () {
         var data = JilinData.userQualityRecords;
-        if (this._uqCity) data = data.filter(function(d) { return d.city === Pages._uqCity; });
-        if (this._uqType) data = data.filter(function(d) { return d.qualityType === Pages._uqType; });
+        if (this._uqCity) data = data.filter(function (d) { return d.city === Pages._uqCity; });
+        if (this._uqType) data = data.filter(function (d) { return d.qualityType === Pages._uqType; });
         var csv = '用户账号,地市,CEI评分,质差类型,持续时长,影响业务,状态,上报时间\n';
-        data.forEach(function(r) {
+        data.forEach(function (r) {
             csv += [r.userAccount, r.city, r.ceiScore, r.qualityType, r.duration, r.affectedBiz, r.status, r.reportTime].join(',') + '\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1849,15 +1849,15 @@ var Pages = {
     },
 
     // ========== 质差聚类质差 (增强：GIS聚类+多维度) ==========
-    renderQualityCluster: function(container) {
+    renderQualityCluster: function (container) {
         // 统计聚类数据
         var typeMap = {}, cityMap = {}, oltMap = {};
-        JilinData.userQualityRecords.forEach(function(r) {
+        JilinData.userQualityRecords.forEach(function (r) {
             typeMap[r.qualityType] = (typeMap[r.qualityType] || 0) + 1;
             cityMap[r.city] = (cityMap[r.city] || 0) + 1;
         });
         // 模拟OLT维度聚类
-        JilinData.oltDevices.slice(0, 20).forEach(function(olt) {
+        JilinData.oltDevices.slice(0, 20).forEach(function (olt) {
             oltMap[olt.id] = { city: olt.city, count: SeededRandom.int(2, 25), type: SeededRandom.pick(['弱光', '高误码', '频繁掉线']) };
         });
         var clusterRows = '';
@@ -1871,13 +1871,13 @@ var Pages = {
         container.innerHTML =
             '<div class="page-content">' +
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + JilinData.userQualityRecords.length + '</div><div class="wo-stat-label">质差用户总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + Object.keys(typeMap).length + '</div><div class="wo-stat-label">质差类型数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">' + clusterIdx + '</div><div class="wo-stat-label">聚类告警数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + JilinData.userQualityRecords.length + '</div><div class="wo-stat-label">质差用户总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + Object.keys(typeMap).length + '</div><div class="wo-stat-label">质差类型数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">' + clusterIdx + '</div><div class="wo-stat-label">聚类告警数</div></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">质差类型聚类分布</span></div><div class="chart-container" id="qcChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各地市质差用户分布（支持下钻）</span></div><div class="chart-container" id="qcChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">质差类型聚类分布</span></div><div class="chart-container" id="qcChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各地市质差用户分布（支持下钻）</span></div><div class="chart-container" id="qcChart2"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">聚类告警清单（基于OLT/PON/网格维度自动聚类）</div>' +
             '<table class="data-table"><thead><tr><th>聚类ID</th><th>地市</th><th>聚类维度</th><th>设备/区域</th><th>质差类型</th><th>影响用户数</th><th>发现时间</th><th>状态</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>';
@@ -1891,7 +1891,7 @@ var Pages = {
                 legend: { bottom: 5, textStyle: { fontSize: 10 } },
                 series: [{ type: 'pie', radius: ['30%', '58%'], center: ['50%', '45%'], data: pd, label: { fontSize: 10 }, itemStyle: { borderRadius: 4 } }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById('qcChart2');
         if (d2) {
@@ -1902,20 +1902,20 @@ var Pages = {
                 grid: { top: 20, right: 20, bottom: 40, left: 50 }, tooltip: { trigger: 'axis' },
                 xAxis: { type: 'category', data: cs, axisLabel: { fontSize: 10, rotate: 30 } },
                 yAxis: { type: 'value', name: '质差用户数', splitLine: { lineStyle: { color: '#f0f2f5' } } },
-                series: [{ type: 'bar', data: vs.map(function(v) { return { value: v, itemStyle: { color: v > 25 ? '#e74c3c' : (v > 15 ? '#f39c12' : '#5b8ff9') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }]
+                series: [{ type: 'bar', data: vs.map(function (v) { return { value: v, itemStyle: { color: v > 25 ? '#e74c3c' : (v > 15 ? '#f39c12' : '#5b8ff9') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }]
             });
             // 点击下钻
-            c2.on('click', function(params) {
+            c2.on('click', function (params) {
                 Modal.show('地市质差详情 - ' + params.name,
                     '<div style="font-size:13px;padding:8px 0;">' +
                     '<div style="margin-bottom:12px;"><strong>' + params.name + '</strong> 共有 <span style="color:#e74c3c;font-weight:700;">' + params.value + '</span> 个质差用户</div>' +
                     '<table class="data-table"><thead><tr><th>质差类型</th><th>用户数</th><th>占比</th></tr></thead><tbody>' +
-                    JilinData.qualityIssueTypes.slice(0, 5).map(function(t) { var cnt = Math.floor(params.value * t.percentage / 100); return '<tr><td>' + t.type + '</td><td>' + cnt + '</td><td>' + t.percentage + '%</td></tr>'; }).join('') +
+                    JilinData.qualityIssueTypes.slice(0, 5).map(function (t) { var cnt = Math.floor(params.value * t.percentage / 100); return '<tr><td>' + t.type + '</td><td>' + cnt + '</td><td>' + t.percentage + '%</td></tr>'; }).join('') +
                     '</tbody></table></div>',
                     '<button class="btn" onclick="Modal.close()">关闭</button>', '480px'
                 );
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
@@ -1968,11 +1968,11 @@ var Pages = {
             ['下载成功率', '<=90% 高；>90% and <95% 中；>95%，<99% 低']
         ]
     },
-    _normalizeBizQualityRecord: function(r, idx) {
+    _normalizeBizQualityRecord: function (r, idx) {
         var oldTypeMap = { 'IPTV': '视频', '视频通话': '视频', '在线游戏': '游戏', '云办公': '在线办公', '在线教育': '在线办公', '宽带上网': '网站/下载' };
         var bizType = this._bizQualityTypes.indexOf(r.bizType) >= 0 ? r.bizType : (oldTypeMap[r.bizType] || this._bizQualityTypes[idx % this._bizQualityTypes.length]);
         var qualityTypes = this._bizQualityTypeMap[bizType] || ['应用高时延'];
-        var cityOlts = (JilinData.oltDevices || []).filter(function(o) { return o.city === r.city; });
+        var cityOlts = (JilinData.oltDevices || []).filter(function (o) { return o.city === r.city; });
         var olt = cityOlts.length ? cityOlts[idx % cityOlts.length] : null;
         var level = r.severity || r.qualityLevel;
         if (level === '差') level = '高';
@@ -1987,19 +1987,19 @@ var Pages = {
             severity: level || '中'
         };
     },
-    renderBizQuality: function(container, page) {
+    renderBizQuality: function (container, page) {
         this._bqPage = page || 1;
         var data = JilinData.bizQualityRecords;
-        if (this._bqType) data = data.filter(function(d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
+        if (this._bqType) data = data.filter(function (d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
         var p = this.paginate(data, this._bqPage, 12);
         var startIdx = (this._bqPage - 1) * 12;
-        var rows = p.data.map(function(r, i) {
+        var rows = p.data.map(function (r, i) {
             var d = Pages._normalizeBizQualityRecord(r, startIdx + i);
             var lvlCls = d.severity === '高' ? 'status-error' : (d.severity === '中' ? 'status-warning' : 'status-normal');
             return '<tr><td><span class="badge badge-primary" style="font-size:10px;">' + d.bizType + '</span></td><td>' + d.appName + '</td><td><a style="color:#2b7de9;cursor:pointer;font-weight:600;" onclick="Pages.showBizQualityDefinition(\'' + d.bizType + '\',\'' + d.qualityType + '\')">' + d.qualityType + '</a></td><td>' + d.impactScope + '</td><td>' + d.occurrenceTime + '</td><td><span class="' + lvlCls + '">' + d.severity + '</span></td></tr>';
         }).join('');
         var bizOpts = '<option value="">全部业务</option>';
-        this._bizQualityTypes.forEach(function(t) {
+        this._bizQualityTypes.forEach(function (t) {
             bizOpts += '<option value="' + t + '"' + (t === Pages._bqType ? ' selected' : '') + '>' + t + '</option>';
         });
         container.innerHTML =
@@ -2010,9 +2010,9 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderBizQuality.bind(Pages,document.getElementById("page-biz-quality"))') + '</div></div>';
     },
 
-    showBizQualityDefinition: function(bizType, qualityType) {
+    showBizQualityDefinition: function (bizType, qualityType) {
         var defs = this._bizTagDefinitions[qualityType] || [];
-        var rows = defs.map(function(d) {
+        var rows = defs.map(function (d) {
             return '<tr><td>' + bizType + '</td><td>' + qualityType + '</td><td>' + d[0] + '</td><td style="white-space:normal;line-height:1.7;">' + d[1] + '</td></tr>';
         }).join('');
         Modal.show('质差标签定义 - ' + qualityType,
@@ -2022,11 +2022,11 @@ var Pages = {
         );
     },
 
-    exportBizQuality: function() {
+    exportBizQuality: function () {
         var data = JilinData.bizQualityRecords;
-        if (this._bqType) data = data.filter(function(d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
+        if (this._bqType) data = data.filter(function (d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
         var csv = '业务类型,业务名称,质差类型,影响范围,发生时段,严重程度\n';
-        data.forEach(function(r, idx) {
+        data.forEach(function (r, idx) {
             var d = Pages._normalizeBizQualityRecord(r, idx);
             csv += [d.bizType, d.appName, d.qualityType, d.impactScope, d.occurrenceTime, d.severity].join(',') + '\n';
         });
@@ -2040,12 +2040,12 @@ var Pages = {
     },
 
     // ========== 业务聚类质差 (增强：聚类发现+共性问题定位) ==========
-    renderBizCluster: function(container) {
+    renderBizCluster: function (container) {
         // 模拟聚类结果
         var clusterEvents = [];
         for (var i = 0; i < 8; i++) {
             var city = SeededRandom.pick(JilinData.cities);
-            var cityOlts = (JilinData.oltDevices || []).filter(function(o) { return o.city === city; });
+            var cityOlts = (JilinData.oltDevices || []).filter(function (o) { return o.city === city; });
             var relatedOlt = cityOlts.length ? cityOlts[i % cityOlts.length] : null;
             clusterEvents.push({
                 id: 'BC-' + String(i + 1).padStart(3, '0'),
@@ -2057,7 +2057,7 @@ var Pages = {
                 severity: SeededRandom.pick(['高', '中', '低'])
             });
         }
-        var clusterRows = clusterEvents.map(function(e) {
+        var clusterRows = clusterEvents.map(function (e) {
             var sevCls = e.severity === '高' ? 'status-error' : (e.severity === '中' ? 'status-warning' : 'status-normal');
             return '<tr><td>' + e.id + '</td><td>' + e.bizCount + '</td><td>' + e.city + '</td><td>' + e.oltId + '</td><td>' + e.affectedUsers + '</td><td>' + e.timeRange + '</td><td><span class="' + sevCls + '">' + e.severity + '</span></td></tr>';
         }).join('');
@@ -2066,55 +2066,55 @@ var Pages = {
             '<div class="page-content">' +
             '<div style="margin-bottom:8px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;font-size:12px;color:#c0392b;"><strong>聚类说明：</strong>系统自动将发生在同一时间段、同一OLT区域下的多个业务质差事件进行聚类分析，发现共性网络问题。</div>' +
             '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各业务质量等级分布</span></div><div class="chart-container" id="bcChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各业务质量等级分布</span></div><div class="chart-container" id="bcChart1"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务聚类质差事件（共性问题发现）</div>' +
             '<table class="data-table"><thead><tr><th>聚类ID</th><th>业务数量</th><th>地市</th><th>关联OLT</th><th>影响用户</th><th>发生时段</th><th>严重程度</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>';
         var d1 = document.getElementById('bcChart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances['bcChart1'] = c1;
-            var lvl = {}; JilinData.bizQualityRecords.forEach(function(r) { lvl[r.qualityLevel] = (lvl[r.qualityLevel] || 0) + 1; });
+            var lvl = {}; JilinData.bizQualityRecords.forEach(function (r) { lvl[r.qualityLevel] = (lvl[r.qualityLevel] || 0) + 1; });
             var pd = []; for (var k in lvl) pd.push({ name: k, value: lvl[k] });
             c1.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' }, legend: { bottom: 5, textStyle: { fontSize: 10 } }, series: [{ type: 'pie', radius: ['30%', '58%'], center: ['50%', '45%'], data: pd, label: { fontSize: 10 }, itemStyle: { borderRadius: 4 } }] });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
     },
 
     // ========== DPI实时抓包 (增强：实时抓包/筛选/详情) ==========
     _dpiPage: 1, _dpiCity: '', _dpiAccount: '', _dpiProto: '', _dpiApp: '',
-    _getDpiRecords: function() {
+    _getDpiRecords: function () {
         var stored = DataStore.load('dpiRecords', null);
         if (!stored || !stored.length) { DataStore.save('dpiRecords', JilinData.dpiRecords); return JilinData.dpiRecords; }
         return stored;
     },
-    _saveDpiRecords: function(d) { DataStore.save('dpiRecords', d); },
+    _saveDpiRecords: function (d) { DataStore.save('dpiRecords', d); },
     _dpiCapturing: false,
-    renderDpiCapture: function(container, page) {
+    renderDpiCapture: function (container, page) {
         this._dpiPage = page || 1;
         var allData = this._getDpiRecords();
         var data = allData;
-        if (this._dpiCity) data = data.filter(function(d) { return d.city === Pages._dpiCity; });
-        if (this._dpiProto) data = data.filter(function(d) { return d.protocol === Pages._dpiProto; });
-        if (this._dpiApp) data = data.filter(function(d) { return d.app === Pages._dpiApp; });
+        if (this._dpiCity) data = data.filter(function (d) { return d.city === Pages._dpiCity; });
+        if (this._dpiProto) data = data.filter(function (d) { return d.protocol === Pages._dpiProto; });
+        if (this._dpiApp) data = data.filter(function (d) { return d.app === Pages._dpiApp; });
         if (this._dpiAccount) {
             var kw = this._dpiAccount.toLowerCase();
-            data = data.filter(function(d) { return (d.userAccount || '').toLowerCase().indexOf(kw) >= 0; });
+            data = data.filter(function (d) { return (d.userAccount || '').toLowerCase().indexOf(kw) >= 0; });
         }
         // 协议/应用统计
         var protoStats = {}, appStats = {};
-        allData.forEach(function(d) { protoStats[d.protocol] = (protoStats[d.protocol] || 0) + 1; appStats[d.app] = (appStats[d.app] || 0) + 1; });
-        var topApps = Object.keys(appStats).map(function(k) { return { name: k, count: appStats[k] }; }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
+        allData.forEach(function (d) { protoStats[d.protocol] = (protoStats[d.protocol] || 0) + 1; appStats[d.app] = (appStats[d.app] || 0) + 1; });
+        var topApps = Object.keys(appStats).map(function (k) { return { name: k, count: appStats[k] }; }).sort(function (a, b) { return b.count - a.count; }).slice(0, 5);
 
         var p = this.paginate(data, this._dpiPage, 10);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + r.id + '</td><td>' + r.time + '</td><td>' + r.userAccount + '</td><td>' + r.city + '</td><td>' + r.srcIp + '</td><td>' + r.dstIp + '</td><td>' + r.protocol + '</td><td>' + r.app + '</td><td>' + r.upTraffic + ' MB</td><td>' + r.downTraffic + ' MB</td><td>' + r.latency + ' ms</td><td>' + Pages.statusHtml(r.status) + '</td>' +
                 '<td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.dpiDetail(\'' + r.id + '\')">详情</a></td></tr>';
         }).join('') || '<tr><td colspan="13" style="text-align:center;color:#999;padding:20px;">暂无数据</td></tr>';
 
         var protoOpts = '<option value="">全部协议</option>';
-        Object.keys(protoStats).forEach(function(k) { protoOpts += '<option value="' + k + '"' + (k === Pages._dpiProto ? ' selected' : '') + '>' + k + ' (' + protoStats[k] + ')</option>'; });
+        Object.keys(protoStats).forEach(function (k) { protoOpts += '<option value="' + k + '"' + (k === Pages._dpiProto ? ' selected' : '') + '>' + k + ' (' + protoStats[k] + ')</option>'; });
         var appOpts = '<option value="">全部应用</option>';
-        Object.keys(appStats).forEach(function(k) { appOpts += '<option value="' + k + '"' + (k === Pages._dpiApp ? ' selected' : '') + '>' + k + '</option>'; });
+        Object.keys(appStats).forEach(function (k) { appOpts += '<option value="' + k + '"' + (k === Pages._dpiApp ? ' selected' : '') + '>' + k + '</option>'; });
 
         var captureBtn = this._dpiCapturing ?
             '<button class="btn" style="background:#e74c3c;border-color:#e74c3c;color:#fff;" onclick="Pages.stopDpiCapture()">⏹ 停止抓包</button>' :
@@ -2123,27 +2123,27 @@ var Pages = {
         container.innerHTML =
             '<div class="page-content">' +
             '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + allData.length + '</div><div class="wo-stat-label">抓包总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + Object.keys(protoStats).length + '</div><div class="wo-stat-label">协议数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + Object.keys(appStats).length + '</div><div class="wo-stat-label">应用数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + allData.filter(function(d){return d.status==='异常';}).length + '</div><div class="wo-stat-label">异常会话</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:' + (this._dpiCapturing ? '#27ae60' : '#999') + ';">' + (this._dpiCapturing ? '抓包中' : '已停止') + '</div><div class="wo-stat-label">抓包状态</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + allData.length + '</div><div class="wo-stat-label">抓包总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + Object.keys(protoStats).length + '</div><div class="wo-stat-label">协议数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + Object.keys(appStats).length + '</div><div class="wo-stat-label">应用数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + allData.filter(function (d) { return d.status === '异常'; }).length + '</div><div class="wo-stat-label">异常会话</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:' + (this._dpiCapturing ? '#27ae60' : '#999') + ';">' + (this._dpiCapturing ? '抓包中' : '已停止') + '</div><div class="wo-stat-label">抓包状态</div></div>' +
             '</div>' +
             '<div class="remote-panel"><div class="remote-panel-title">DPI实时抓包分析</div>' +
             '<div class="remote-form">' +
-                this.cityFilterHtml('dpiCityFilter', 'Pages._dpiCity=this.value;Pages.renderDpiCapture(document.getElementById("page-dpi-capture"),1)', this._dpiCity) +
-                '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" id="dpiAccountInput" value="' + (this._dpiAccount || '') + '" placeholder="用户账号"></div>' +
-                '<div class="form-group"><label class="form-label">协议类型</label><select class="form-select" onchange="Pages._dpiProto=this.value;Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">' + protoOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">应用</label><select class="form-select" onchange="Pages._dpiApp=this.value;Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">' + appOpts + '</select></div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
-                    '<button class="btn btn-primary" onclick="Pages._dpiAccount=document.getElementById(\'dpiAccountInput\').value.trim();Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">查询</button>' +
-                    '<button class="btn" onclick="Pages._dpiCity=\'\';Pages._dpiAccount=\'\';Pages._dpiProto=\'\';Pages._dpiApp=\'\';Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">重置</button>' +
-                    captureBtn +
-                    '<button class="btn" onclick="Pages.exportDpi()">导出PCAP</button>' +
-                '</div></div></div>' +
+            this.cityFilterHtml('dpiCityFilter', 'Pages._dpiCity=this.value;Pages.renderDpiCapture(document.getElementById("page-dpi-capture"),1)', this._dpiCity) +
+            '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" id="dpiAccountInput" value="' + (this._dpiAccount || '') + '" placeholder="用户账号"></div>' +
+            '<div class="form-group"><label class="form-label">协议类型</label><select class="form-select" onchange="Pages._dpiProto=this.value;Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">' + protoOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">应用</label><select class="form-select" onchange="Pages._dpiApp=this.value;Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">' + appOpts + '</select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+            '<button class="btn btn-primary" onclick="Pages._dpiAccount=document.getElementById(\'dpiAccountInput\').value.trim();Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">查询</button>' +
+            '<button class="btn" onclick="Pages._dpiCity=\'\';Pages._dpiAccount=\'\';Pages._dpiProto=\'\';Pages._dpiApp=\'\';Pages.renderDpiCapture(document.getElementById(\'page-dpi-capture\'),1)">重置</button>' +
+            captureBtn +
+            '<button class="btn" onclick="Pages.exportDpi()">导出PCAP</button>' +
+            '</div></div></div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">协议占比</span></div><div class="chart-container" id="dpiProtoChart"></div></div>' +
-                '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">TOP5应用</span></div><div class="chart-container" id="dpiAppChart"></div></div>' +
+            '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">协议占比</span></div><div class="chart-container" id="dpiProtoChart"></div></div>' +
+            '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">TOP5应用</span></div><div class="chart-container" id="dpiAppChart"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>ID</th><th>时间</th><th>用户</th><th>地市</th><th>源IP</th><th>目的IP</th><th>协议</th><th>应用</th><th>上行</th><th>下行</th><th>时延</th><th>状态</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderDpiCapture.bind(Pages,document.getElementById("page-dpi-capture"))') + '</div></div>';
@@ -2154,7 +2154,7 @@ var Pages = {
             var pc = echarts.init(pdom); App.chartInstances['dpiProtoChart'] = pc;
             var pData = []; for (var k in protoStats) pData.push({ name: k, value: protoStats[k] });
             pc.setOption({ tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { fontSize: 10 } }, series: [{ type: 'pie', radius: ['35%', '60%'], center: ['50%', '45%'], data: pData, label: { fontSize: 10 } }] });
-            window.addEventListener('resize', function() { pc.resize(); });
+            window.addEventListener('resize', function () { pc.resize(); });
         }
         // TOP5应用条形
         var adom = document.getElementById('dpiAppChart');
@@ -2163,14 +2163,14 @@ var Pages = {
             ac.setOption({
                 grid: { top: 10, right: 30, bottom: 20, left: 70 }, tooltip: { trigger: 'axis' },
                 xAxis: { type: 'value' },
-                yAxis: { type: 'category', data: topApps.map(function(a) { return a.name; }).reverse(), axisLabel: { fontSize: 11 } },
-                series: [{ type: 'bar', data: topApps.map(function(a) { return a.count; }).reverse(), itemStyle: { color: '#5b8ff9' }, label: { show: true, position: 'right', fontSize: 10 } }]
+                yAxis: { type: 'category', data: topApps.map(function (a) { return a.name; }).reverse(), axisLabel: { fontSize: 11 } },
+                series: [{ type: 'bar', data: topApps.map(function (a) { return a.count; }).reverse(), itemStyle: { color: '#5b8ff9' }, label: { show: true, position: 'right', fontSize: 10 } }]
             });
-            window.addEventListener('resize', function() { ac.resize(); });
+            window.addEventListener('resize', function () { ac.resize(); });
         }
     },
 
-    dpiDetail: function(id) {
+    dpiDetail: function (id) {
         var data = this._getDpiRecords();
         var r = null;
         for (var i = 0; i < data.length; i++) { if (data[i].id === id) { r = data[i]; break; } }
@@ -2182,12 +2182,12 @@ var Pages = {
         if (r.protocol === 'HTTP') {
             protoFields = '<div style="margin-top:12px;padding:12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#2b7de9;">HTTP xDR明细字段</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
-                '<div><strong>请求URL：</strong><code style="word-break:break-all;">http://' + r.dstIp + '/api/v1/stream?id=' + Math.floor(Math.random()*9999) + '</code></div>' +
+                '<div><strong>请求URL：</strong><code style="word-break:break-all;">http://' + r.dstIp + '/api/v1/stream?id=' + Math.floor(Math.random() * 9999) + '</code></div>' +
                 '<div><strong>请求方法：</strong>GET</div>' +
                 '<div><strong>响应状态码：</strong><span style="color:' + (Math.random() > 0.8 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.pick([200, 200, 200, 301, 404, 500, 503]) + '</span></div>' +
                 '<div><strong>Content-Type：</strong>' + SeededRandom.pick(['text/html', 'application/json', 'video/mp4', 'image/jpeg']) + '</div>' +
                 '<div><strong>User-Agent：</strong>' + SeededRandom.pick(['Mozilla/5.0 (Windows NT 10.0)', 'Dalvik/2.1.0 (Android)', 'AppleCoreMedia/1.0']) + '</div>' +
-                '<div><strong>首包响应时延：</strong><span style="color:' + (SeededRandom.float(50,300,0) > 200 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(50, 300, 0) + 'ms</span></div>' +
+                '<div><strong>首包响应时延：</strong><span style="color:' + (SeededRandom.float(50, 300, 0) > 200 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(50, 300, 0) + 'ms</span></div>' +
                 '<div><strong>HTTP事务时延：</strong>' + SeededRandom.float(100, 800, 0) + 'ms</div>' +
                 '<div><strong>响应体大小：</strong>' + SeededRandom.float(1, 5000, 0) + ' KB</div>' +
                 '</div></div>';
@@ -2207,8 +2207,8 @@ var Pages = {
                 '<div><strong>查询域名：</strong>' + SeededRandom.pick(['www.baidu.com', 'v.qq.com', 'api.bilibili.com', 'live.douyin.com', 'dns.alidns.com']) + '</div>' +
                 '<div><strong>查询类型：</strong>' + SeededRandom.pick(['A', 'A', 'AAAA', 'CNAME', 'MX']) + '</div>' +
                 '<div><strong>响应码：</strong><span style="color:' + (Math.random() > 0.9 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.pick(['NOERROR', 'NOERROR', 'NOERROR', 'NXDOMAIN', 'SERVFAIL']) + '</span></div>' +
-                '<div><strong>解析IP：</strong>' + Math.floor(Math.random()*200+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '.' + Math.floor(Math.random()*254+1) + '</div>' +
-                '<div><strong>DNS时延：</strong><span style="color:' + (SeededRandom.float(5,80,0) > 50 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(5, 80, 0) + 'ms</span></div>' +
+                '<div><strong>解析IP：</strong>' + Math.floor(Math.random() * 200 + 1) + '.' + Math.floor(Math.random() * 254 + 1) + '.' + Math.floor(Math.random() * 254 + 1) + '.' + Math.floor(Math.random() * 254 + 1) + '</div>' +
+                '<div><strong>DNS时延：</strong><span style="color:' + (SeededRandom.float(5, 80, 0) > 50 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(5, 80, 0) + 'ms</span></div>' +
                 '<div><strong>DNS服务器：</strong>' + SeededRandom.pick(['114.114.114.114', '8.8.8.8', '223.5.5.5', '119.29.29.29']) + '</div>' +
                 '<div><strong>TTL：</strong>' + SeededRandom.int(60, 3600) + 's</div>' +
                 '<div><strong>是否劫持：</strong>' + SeededRandom.pick(['否', '否', '否', '疑似']) + '</div>' +
@@ -2217,7 +2217,7 @@ var Pages = {
             protoFields = '<div style="margin-top:12px;padding:12px;background:#fefce8;border:1px solid #fde68a;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#92400e;">QUIC xDR明细字段</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
                 '<div><strong>QUIC版本：</strong>' + SeededRandom.pick(['QUICv1', 'QUICv2', 'h3-29']) + '</div>' +
-                '<div><strong>Connection ID：</strong>0x' + Math.floor(Math.random()*0xFFFFFFFF).toString(16) + '</div>' +
+                '<div><strong>Connection ID：</strong>0x' + Math.floor(Math.random() * 0xFFFFFFFF).toString(16) + '</div>' +
                 '<div><strong>SNI域名：</strong>' + SeededRandom.pick(['www.google.com', 'www.youtube.com', 'quic.rocks']) + '</div>' +
                 '<div><strong>0-RTT：</strong>' + SeededRandom.pick(['是', '否', '否']) + '</div>' +
                 '<div><strong>丢包率：</strong>' + SeededRandom.float(0, 5, 2) + '%</div>' +
@@ -2228,12 +2228,12 @@ var Pages = {
             protoFields = '<div style="margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;"><div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#333;">TCP/传输层 xDR明细字段</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">' +
                 '<div><strong>TCP窗口大小：</strong>' + SeededRandom.pick([65535, 131072, 262144]) + '</div>' +
-                '<div><strong>TCP重传率：</strong><span style="color:' + (SeededRandom.float(0,5,2) > 2 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(0, 5, 2) + '%</span></div>' +
+                '<div><strong>TCP重传率：</strong><span style="color:' + (SeededRandom.float(0, 5, 2) > 2 ? '#e74c3c' : '#27ae60') + ';">' + SeededRandom.float(0, 5, 2) + '%</span></div>' +
                 '<div><strong>RTT：</strong>' + SeededRandom.float(5, 80, 1) + 'ms</div>' +
                 '<div><strong>MSS：</strong>' + SeededRandom.pick([1460, 1380, 1440]) + '</div>' +
                 '<div><strong>建连时延：</strong>' + SeededRandom.float(10, 120, 0) + 'ms</div>' +
                 '<div><strong>建连成功率：</strong>' + SeededRandom.float(95, 100, 1) + '%</div>' +
-                (r.protocol === 'RTMP' ? '<div><strong>流媒体地址：</strong>rtmp://' + r.dstIp + '/live/stream_' + Math.floor(Math.random()*999) + '</div><div><strong>视频码率：</strong>' + SeededRandom.pick([2500, 4000, 6000, 8000]) + ' kbps</div>' : '') +
+                (r.protocol === 'RTMP' ? '<div><strong>流媒体地址：</strong>rtmp://' + r.dstIp + '/live/stream_' + Math.floor(Math.random() * 999) + '</div><div><strong>视频码率：</strong>' + SeededRandom.pick([2500, 4000, 6000, 8000]) + ' kbps</div>' : '') +
                 (r.protocol === 'HLS' ? '<div><strong>m3u8地址：</strong>https://' + r.dstIp + '/live/index.m3u8</div><div><strong>分片时长：</strong>' + SeededRandom.pick([2, 4, 6, 10]) + 's</div>' : '') +
                 '</div></div>';
         }
@@ -2265,13 +2265,13 @@ var Pages = {
     },
 
 
-    startDpiCapture: function() {
+    startDpiCapture: function () {
         this._dpiCapturing = true;
         Modal.toast('已开始实时抓包', 'success');
         DataStore.addLog('启动抓包', 'DPI抓包', '启动DPI实时抓包');
         var self = this;
         // 模拟实时抓包，每2秒新增一条
-        this._dpiTimer = setInterval(function() {
+        this._dpiTimer = setInterval(function () {
             if (!self._dpiCapturing) return;
             var protocols = ['HTTP', 'HTTPS', 'DNS', 'RTMP', 'HLS', 'QUIC', 'TCP', 'UDP'];
             var apps = ['抖音', '快手', 'B站', '腾讯视频', '爱奇艺', '微信', '王者荣耀', '和平精英', '淘宝', '百度'];
@@ -2300,7 +2300,7 @@ var Pages = {
         }, 2500);
     },
 
-    stopDpiCapture: function() {
+    stopDpiCapture: function () {
         this._dpiCapturing = false;
         if (this._dpiTimer) { clearInterval(this._dpiTimer); this._dpiTimer = null; }
         Modal.toast('已停止抓包', 'info');
@@ -2308,10 +2308,10 @@ var Pages = {
         this.renderDpiCapture(document.getElementById('page-dpi-capture'), this._dpiPage);
     },
 
-    exportDpi: function() {
+    exportDpi: function () {
         var data = this._getDpiRecords();
         var csv = 'ID,时间,用户,地市,源IP,目的IP,协议,应用,上行(MB),下行(MB),时延(ms),状态\n';
-        data.forEach(function(r) { csv += [r.id, r.time, r.userAccount, r.city, r.srcIp, r.dstIp, r.protocol, r.app, r.upTraffic, r.downTraffic, r.latency, r.status].join(',') + '\n'; });
+        data.forEach(function (r) { csv += [r.id, r.time, r.userAccount, r.city, r.srcIp, r.dstIp, r.protocol, r.app, r.upTraffic, r.downTraffic, r.latency, r.status].join(',') + '\n'; });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -2322,7 +2322,7 @@ var Pages = {
 
     // ========== 质差定界定位 / CE定界 (增强：业务CEI定界+通断CEI定界+定位) ==========
     _qlTab: 'business', // business / disconnect
-    renderQualityLocation: function(container) {
+    renderQualityLocation: function (container) {
         var self = this;
         container.innerHTML =
             '<div class="page-content">' +
@@ -2333,9 +2333,9 @@ var Pages = {
             '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.executeQlQuery()">定位查询</button><button class="btn" onclick="Pages.exportQlResult()">导出报告</button></div></div></div>' +
             '<div id="qlResultArea">' +
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">定界结果分布</span></div><div class="chart-container" id="qlChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差原因TOP5</span></div><div class="chart-container" id="qlChart2"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差指标分布</span></div><div class="chart-container" id="qlChart3"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">定界结果分布</span></div><div class="chart-container" id="qlChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差原因TOP5</span></div><div class="chart-container" id="qlChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差指标分布</span></div><div class="chart-container" id="qlChart3"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">定界定位详情</div>' +
             '<table class="data-table" id="qlDetailTable"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>定位原因</th><th>CEI评分</th><th>影响指标</th><th>严重程度</th><th>时间</th></tr></thead><tbody id="qlDetailBody"></tbody></table></div>' +
@@ -2344,7 +2344,7 @@ var Pages = {
         this._renderQlTable();
     },
 
-    _renderQlCharts: function() {
+    _renderQlCharts: function () {
         var isBiz = this._qlTab === 'business';
         // 定界结果分布（环形图）
         var d1 = document.getElementById('qlChart1');
@@ -2358,7 +2358,7 @@ var Pages = {
                 legend: { bottom: 5, textStyle: { fontSize: 10 } },
                 series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: sideData, label: { fontSize: 10, formatter: '{b}\n{d}%' } }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         // TOP5原因
         var d2 = document.getElementById('qlChart2');
@@ -2369,11 +2369,11 @@ var Pages = {
                 : [{ name: '光衰过大', value: 920 }, { name: '频繁掉线', value: 756 }, { name: 'dying-gasp', value: 534 }, { name: '设备重启', value: 423 }, { name: '光路中断', value: 312 }];
             c2.setOption({
                 grid: { top: 15, right: 50, bottom: 15, left: 80 }, tooltip: { trigger: 'axis' },
-                yAxis: { type: 'category', data: reasons.map(function(r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
+                yAxis: { type: 'category', data: reasons.map(function (r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
                 xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
-                series: [{ type: 'bar', data: reasons.map(function(r) { return r.value; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9 } }]
+                series: [{ type: 'bar', data: reasons.map(function (r) { return r.value; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9 } }]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
         // 质差指标分布
         var d3 = document.getElementById('qlChart3');
@@ -2388,11 +2388,11 @@ var Pages = {
                 radar: { indicator: indicators, radius: '60%', axisName: { fontSize: 9, color: '#666' } },
                 series: [{ type: 'radar', data: [{ value: radarData, name: '当前值', areaStyle: { color: 'rgba(91,143,249,0.2)' } }], itemStyle: { color: '#5b8ff9' } }]
             });
-            window.addEventListener('resize', function() { c3.resize(); });
+            window.addEventListener('resize', function () { c3.resize(); });
         }
     },
 
-    _renderQlTable: function() {
+    _renderQlTable: function () {
         var tbody = document.getElementById('qlDetailBody');
         if (!tbody) return;
         var isBiz = this._qlTab === 'business';
@@ -2408,7 +2408,7 @@ var Pages = {
         tbody.innerHTML = rows;
     },
 
-    executeQlQuery: function() {
+    executeQlQuery: function () {
         var account = document.getElementById('qlAccount').value.trim();
         if (!account) { Modal.toast('请输入用户账号或IP地址', 'warning'); return; }
         DataStore.addLog('定界查询', '质差定界定位', '查询用户 ' + account + ' 的CEI定界定位信息');
@@ -2434,7 +2434,7 @@ var Pages = {
         );
     },
 
-    showCreateOrderFromQl: function(account, reason) {
+    showCreateOrderFromQl: function (account, reason) {
         var isBiz = this._qlTab === 'business';
         var woId = 'WO-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + String(Math.floor(Math.random() * 90000 + 10000));
         var city = SeededRandom.pick(JilinData.cities);
@@ -2444,7 +2444,7 @@ var Pages = {
         // Engineers
         var engList = JilinData.findEngineers ? JilinData.findEngineers(city, null) : [];
         var engOpts = '<option value="">暂不指派（待派单）</option>';
-        engList.forEach(function(e, i) {
+        engList.forEach(function (e, i) {
             engOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + e.name + ' - ' + e.team + ' 工单' + e.workload + '件' + (i === 0 ? ' [推荐]' : '') + '</option>';
         });
         var suggestion = side === '家庭侧' ? '检查用户侧网关设备、WiFi信号及终端连接状态' : (side === '网络侧' || side === '光路侧' ? '检查OLT端口、光路衰减及传输链路' : '联系内容提供商确认服务器状态');
@@ -2453,46 +2453,46 @@ var Pages = {
             '<div style="display:grid;grid-template-columns:280px 1fr;gap:20px;">' +
             // Left: Diagnosis source
             '<div style="background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e0e4e8;">' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.search + ' 定界诊断来源</div>' +
-                '<div style="text-align:center;margin-bottom:12px;">' +
-                    '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + ceiScore + '</div>' +
-                    '<div style="font-size:11px;color:#999;">CEI评分</div>' +
-                '</div>' +
-                '<div style="font-size:12px;color:#666;line-height:2;">' +
-                    '<div><strong>用户账号：</strong>' + account + '</div>' +
-                    '<div><strong>所属地市：</strong>' + city + '</div>' +
-                    '<div><strong>定界类型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + (isBiz ? '业务CEI定界' : '通断CEI定界') + '</span></div>' +
-                    '<div><strong>定界结果：</strong><span style="color:#e74c3c;font-weight:600;">' + side + '</span></div>' +
-                    '<div><strong>定位原因：</strong><span style="color:#e74c3c;">' + reason + '</span></div>' +
-                    '<div><strong>影响时段：</strong>2025-12-02 08:00 ~ 14:00</div>' +
-                '</div>' +
-                '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
-                    '<strong>处理建议：</strong>' + suggestion +
-                '</div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.search + ' 定界诊断来源</div>' +
+            '<div style="text-align:center;margin-bottom:12px;">' +
+            '<div style="width:72px;height:72px;border-radius:50%;border:4px solid ' + scoreColor + ';display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:22px;font-weight:700;color:' + scoreColor + ';">' + ceiScore + '</div>' +
+            '<div style="font-size:11px;color:#999;">CEI评分</div>' +
+            '</div>' +
+            '<div style="font-size:12px;color:#666;line-height:2;">' +
+            '<div><strong>用户账号：</strong>' + account + '</div>' +
+            '<div><strong>所属地市：</strong>' + city + '</div>' +
+            '<div><strong>定界类型：</strong><span style="padding:1px 6px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:2px;font-size:10px;color:#2b7de9;">' + (isBiz ? '业务CEI定界' : '通断CEI定界') + '</span></div>' +
+            '<div><strong>定界结果：</strong><span style="color:#e74c3c;font-weight:600;">' + side + '</span></div>' +
+            '<div><strong>定位原因：</strong><span style="color:#e74c3c;">' + reason + '</span></div>' +
+            '<div><strong>影响时段：</strong>2025-12-02 08:00 ~ 14:00</div>' +
+            '</div>' +
+            '<div style="margin-top:10px;padding:8px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:11px;color:#666;">' +
+            '<strong>处理建议：</strong>' + suggestion +
+            '</div>' +
             '</div>' +
             // Right: Order form
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
-                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
-                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qlWoTitle" value="' + reason + ' - ' + account + '"></div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qlWoType"><option selected>系统告警</option><option>质差定界</option><option>主动发现</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qlWoPriority"><option>低</option><option>中</option><option selected>高</option><option>紧急</option></select></div>' +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qlWoDeadline"><option value="4">4小时（紧急）</option><option value="8" selected>8小时</option><option value="24">24小时（标准）</option><option value="48">48小时</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">定界侧</label><input class="form-input" value="' + side + '" readonly style="background:#f8fafc;"></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">指派工程师（' + city + '地区）</label><select class="form-select" id="qlWoAssignee">' + engOpts + '</select></div>' +
-                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qlWoDesc" rows="3" style="resize:vertical;">用户 ' + account + ' CEI定界分析，评分 ' + ceiScore + '，定界结果：' + side + '，定位原因：' + reason + '。建议：' + suggestion + '</textarea></div>' +
-                '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qlWoNote" placeholder="如：需现场检测光路、用户晚上在家"></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单信息</div>' +
+            '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="qlWoTitle" value="' + reason + ' - ' + account + '"></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="qlWoType"><option selected>系统告警</option><option>质差定界</option><option>主动发现</option></select></div>' +
+            '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="qlWoPriority"><option>低</option><option>中</option><option selected>高</option><option>紧急</option></select></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="qlWoDeadline"><option value="4">4小时（紧急）</option><option value="8" selected>8小时</option><option value="24">24小时（标准）</option><option value="48">48小时</option></select></div>' +
+            '<div class="form-group"><label class="form-label">定界侧</label><input class="form-input" value="' + side + '" readonly style="background:#f8fafc;"></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">指派工程师（' + city + '地区）</label><select class="form-select" id="qlWoAssignee">' + engOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="qlWoDesc" rows="3" style="resize:vertical;">用户 ' + account + ' CEI定界分析，评分 ' + ceiScore + '，定界结果：' + side + '，定位原因：' + reason + '。建议：' + suggestion + '</textarea></div>' +
+            '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="qlWoNote" placeholder="如：需现场检测光路、用户晚上在家"></div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doQlCreateOrder(\'' + account + '\',\'' + city + '\',\'' + woId + '\')">确认生成工单</button>',
             '820px'
         );
     },
 
-    doQlCreateOrder: function(account, city, woId) {
+    doQlCreateOrder: function (account, city, woId) {
         var title = document.getElementById('qlWoTitle').value.trim();
         if (!title) { Modal.toast('请填写工单标题', 'warning'); return; }
         var assignee = document.getElementById('qlWoAssignee').value;
@@ -2521,30 +2521,30 @@ var Pages = {
         Modal.toast('工单 ' + woId + ' 已创建' + (assignee ? '，已派发至 ' + assignee : '，等待派单'), 'success');
     },
 
-    exportQlResult: function() {
+    exportQlResult: function () {
         Modal.toast('定界定位报告已导出', 'success');
         DataStore.addLog('导出报告', '质差定界定位', '导出CEI定界定位分析报告');
     },
 
     // ========== 工单管理 (增强CRUD - localStorage持久化) ==========
     _woPage: 1, _woCity: '', _woStatus: '',
-    _getWorkOrders: function() {
+    _getWorkOrders: function () {
         var stored = DataStore.load('workOrders', null);
         if (!stored || !stored.length) { DataStore.save('workOrders', JilinData.workOrderList); return JilinData.workOrderList; }
         return stored;
     },
-    _saveWorkOrders: function(data) { DataStore.save('workOrders', data); },
-    renderWorkOrder: function(container, page) {
+    _saveWorkOrders: function (data) { DataStore.save('workOrders', data); },
+    renderWorkOrder: function (container, page) {
         this._woPage = page || 1;
         var allData = this._getWorkOrders();
         var s = { total: allData.length, pending: 0, processing: 0, completed: 0, overdueCount: 0 };
-        allData.forEach(function(wo) { if (wo.status === '待派单') s.pending++; else if (wo.status === '处理中' || wo.status === '已派单') s.processing++; else if (wo.status === '已解决' || wo.status === '已关闭') s.completed++; });
+        allData.forEach(function (wo) { if (wo.status === '待派单') s.pending++; else if (wo.status === '处理中' || wo.status === '已派单') s.processing++; else if (wo.status === '已解决' || wo.status === '已关闭') s.completed++; });
         s.overdueCount = Math.floor(s.total * 0.012);
         var data = allData;
-        if (this._woCity) data = data.filter(function(d) { return d.city === Pages._woCity; });
-        if (this._woStatus) data = data.filter(function(d) { return d.status === Pages._woStatus; });
+        if (this._woCity) data = data.filter(function (d) { return d.city === Pages._woCity; });
+        if (this._woStatus) data = data.filter(function (d) { return d.status === Pages._woStatus; });
         var p = this.paginate(data, this._woPage, 10);
-        var rows = p.data.map(function(r, idx) {
+        var rows = p.data.map(function (r, idx) {
             var globalIdx = (Pages._woPage - 1) * 10 + idx;
             return '<tr><td>' + r.id + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showWorkOrderDetail(' + globalIdx + ')">' + r.title + '</a></td><td>' + r.type + '</td><td>' + r.city + '</td><td>' + r.userAccount + '</td><td>' + Pages.statusHtml(r.status) + '</td><td>' + Pages.statusHtml(r.priority) + '</td><td>' + r.assignee + '</td><td>' + r.createTime + '</td><td>' +
                 '<a style="color:#2b7de9;cursor:pointer;margin-right:6px;" onclick="Pages.dispatchOrder(' + globalIdx + ')">派单</a>' +
@@ -2552,16 +2552,16 @@ var Pages = {
                 '<a style="color:#e74c3c;cursor:pointer;" onclick="Pages.closeOrder(' + globalIdx + ')">关闭</a></td></tr>';
         }).join('');
         var statusOpts = '<option value="">全部状态</option>';
-        ['待派单','已派单','处理中','已解决','已关闭'].forEach(function(st) {
+        ['待派单', '已派单', '处理中', '已解决', '已关闭'].forEach(function (st) {
             statusOpts += '<option value="' + st + '"' + (st === Pages._woStatus ? ' selected' : '') + '>' + st + '</option>';
         });
         container.innerHTML =
             '<div class="page-content"><div class="work-order-stats">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value">' + s.total + '</div><div class="wo-stat-label">工单总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + s.pending + '</div><div class="wo-stat-label">待处理</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">' + s.processing + '</div><div class="wo-stat-label">处理中</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + s.completed + '</div><div class="wo-stat-label">已完成</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + s.overdueCount + '</div><div class="wo-stat-label">超时工单</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value">' + s.total + '</div><div class="wo-stat-label">工单总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">' + s.pending + '</div><div class="wo-stat-label">待处理</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">' + s.processing + '</div><div class="wo-stat-label">处理中</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">' + s.completed + '</div><div class="wo-stat-label">已完成</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + s.overdueCount + '</div><div class="wo-stat-label">超时工单</div></div>' +
             '</div>' +
             '<div class="remote-panel" style="margin-bottom:8px"><div class="remote-form">' +
             this.cityFilterHtml('woCityFilter', 'Pages._woCity=this.value;Pages.renderWorkOrder(document.getElementById("page-work-order"),1)', this._woCity) +
@@ -2571,10 +2571,10 @@ var Pages = {
             this.paginationHtml(p, 'Pages.renderWorkOrder.bind(Pages,document.getElementById("page-work-order"))') + '</div></div>';
     },
 
-    showWorkOrderDetail: function(idx) {
+    showWorkOrderDetail: function (idx) {
         var data = this._getWorkOrders();
-        if (this._woCity) data = data.filter(function(d) { return d.city === Pages._woCity; });
-        if (this._woStatus) data = data.filter(function(d) { return d.status === Pages._woStatus; });
+        if (this._woCity) data = data.filter(function (d) { return d.city === Pages._woCity; });
+        if (this._woStatus) data = data.filter(function (d) { return d.status === Pages._woStatus; });
         var wo = data[idx];
         if (!wo) return;
         Modal.show('工单详情 - ' + wo.id,
@@ -2601,13 +2601,13 @@ var Pages = {
         );
     },
 
-    showCreateOrder: function() {
+    showCreateOrder: function () {
         var cityOpts = '';
-        JilinData.cities.forEach(function(c) { cityOpts += '<option value="' + c + '">' + c + '</option>'; });
+        JilinData.cities.forEach(function (c) { cityOpts += '<option value="' + c + '">' + c + '</option>'; });
         // 默认显示全部工程师
         var defaultEngineers = JilinData.findEngineers('', null);
         var engineerOpts = '<option value="">暂不指派（待派单）</option>';
-        defaultEngineers.forEach(function(e) {
+        defaultEngineers.forEach(function (e) {
             var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' - ' + e.city + ' (' + e.team + ') 工单' + e.workload + '件</option>';
         });
@@ -2615,42 +2615,42 @@ var Pages = {
         Modal.show('新建工单',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单基本信息</div>' +
-                '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
-                '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="woTitle" placeholder="如：宽带无法上网 - JL20250001"></div>' +
-                '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="woType"><option>用户申诉</option><option>主动发现</option><option>系统告警</option><option>AI预测</option><option>巡检发现</option></select></div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">所属地市 *</label><select class="form-select" id="woCity" onchange="Pages._refreshWoEngineers()">' + cityOpts + '</select></div>' +
-                    '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="woPriority"><option>低</option><option>中</option><option selected>高</option><option>紧急</option></select></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" id="woAccount" placeholder="请输入用户账号"></div>' +
-                '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="woDesc" rows="3" placeholder="请描述故障现象..." style="resize:vertical;"></textarea></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.clipboard + ' 工单基本信息</div>' +
+            '<div class="form-group"><label class="form-label">工单编号</label><input class="form-input" value="' + woId + '" readonly style="background:#f8fafc;"></div>' +
+            '<div class="form-group"><label class="form-label">工单标题 *</label><input class="form-input" id="woTitle" placeholder="如：宽带无法上网 - JL20250001"></div>' +
+            '<div class="form-group"><label class="form-label">工单类型</label><select class="form-select" id="woType"><option>用户申诉</option><option>主动发现</option><option>系统告警</option><option>AI预测</option><option>巡检发现</option></select></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">所属地市 *</label><select class="form-select" id="woCity" onchange="Pages._refreshWoEngineers()">' + cityOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="woPriority"><option>低</option><option>中</option><option selected>高</option><option>紧急</option></select></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">用户账号</label><input class="form-input" id="woAccount" placeholder="请输入用户账号"></div>' +
+            '<div class="form-group"><label class="form-label">故障描述</label><textarea class="form-input" id="woDesc" rows="3" placeholder="请描述故障现象..." style="resize:vertical;"></textarea></div>' +
             '</div>' +
             '<div>' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.wrench + ' 指派工程师</div>' +
-                '<div class="form-group"><label class="form-label">指派工程师</label><select class="form-select" id="woAssignee">' + engineerOpts + '</select></div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                    '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="woDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option><option value="72">72小时</option></select></div>' +
-                    '<div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="woPhone" placeholder="用户联系电话"></div>' +
-                '</div>' +
-                '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="woNote" placeholder="如：需携带光功率计、用户白天在家"></div>' +
-                '<div style="margin-top:12px;padding:10px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:11px;color:#1a5bb8;">' +
-                    '<strong>提示：</strong>选择地市后，工程师列表将自动筛选为该地市的可用人员。系统按在线状态和当前工作量排序推荐。' +
-                '</div>' +
-                '<div id="woEngineerInfo" style="margin-top:8px;"></div>' +
+            '<div style="font-weight:600;font-size:13px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e4e8;">' + ICO.wrench + ' 指派工程师</div>' +
+            '<div class="form-group"><label class="form-label">指派工程师</label><select class="form-select" id="woAssignee">' + engineerOpts + '</select></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="woDeadline"><option value="4">4小时（紧急）</option><option value="8">8小时</option><option value="24" selected>24小时（标准）</option><option value="48">48小时</option><option value="72">72小时</option></select></div>' +
+            '<div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="woPhone" placeholder="用户联系电话"></div>' +
+            '</div>' +
+            '<div class="form-group"><label class="form-label">派单备注</label><input class="form-input" id="woNote" placeholder="如：需携带光功率计、用户白天在家"></div>' +
+            '<div style="margin-top:12px;padding:10px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:11px;color:#1a5bb8;">' +
+            '<strong>提示：</strong>选择地市后，工程师列表将自动筛选为该地市的可用人员。系统按在线状态和当前工作量排序推荐。' +
+            '</div>' +
+            '<div id="woEngineerInfo" style="margin-top:8px;"></div>' +
             '</div></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doCreateOrder(\'' + woId + '\')">创建工单</button>',
             '780px'
         );
     },
 
-    _refreshWoEngineers: function() {
+    _refreshWoEngineers: function () {
         var city = document.getElementById('woCity').value;
         var engineers = JilinData.findEngineers(city, null);
         var sel = document.getElementById('woAssignee');
         if (!sel) return;
         var opts = '<option value="">暂不指派（待派单）</option>';
-        engineers.forEach(function(e) {
+        engineers.forEach(function (e) {
             var statusIcon = e.online ? '[+]' : '[-]';
             opts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' (' + e.team + ') 工单' + e.workload + '件</option>';
         });
@@ -2659,13 +2659,13 @@ var Pages = {
         var info = document.getElementById('woEngineerInfo');
         if (info && engineers.length > 0) {
             info.innerHTML = '<div style="font-size:11px;color:#666;margin-bottom:4px;">' + city + ' 可用工程师 (' + engineers.length + '人)：</div>' +
-                engineers.slice(0, 4).map(function(e) {
+                engineers.slice(0, 4).map(function (e) {
                     return '<div style="font-size:11px;padding:3px 0;color:#333;">' + (e.online ? '<span style="color:#27ae60;">●</span>' : '<span style="color:#ccc;">●</span>') + ' ' + e.name + ' · ' + e.area + ' · 工单' + e.workload + '件</div>';
                 }).join('');
         }
     },
 
-    doCreateOrder: function(woId) {
+    doCreateOrder: function (woId) {
         var title = document.getElementById('woTitle').value.trim();
         if (!title) { Modal.toast('请输入工单标题', 'warning'); return; }
         var assignee = document.getElementById('woAssignee').value;
@@ -2695,58 +2695,58 @@ var Pages = {
         this.renderWorkOrder(document.getElementById('page-work-order'), 1);
     },
 
-    dispatchOrder: function(idx) {
+    dispatchOrder: function (idx) {
         var data = this._getWorkOrders();
-        if (this._woCity) data = data.filter(function(d) { return d.city === Pages._woCity; });
-        if (this._woStatus) data = data.filter(function(d) { return d.status === Pages._woStatus; });
+        if (this._woCity) data = data.filter(function (d) { return d.city === Pages._woCity; });
+        if (this._woStatus) data = data.filter(function (d) { return d.status === Pages._woStatus; });
         var wo = data[idx];
         if (!wo) return;
         if (wo.status !== '待派单' && wo.status !== '已派单') { Modal.toast('当前状态不可派单', 'warning'); return; }
         // 根据工单地市筛选工程师
         var engineers = JilinData.findEngineers(wo.city, null);
         var engineerOpts = '';
-        engineers.forEach(function(e, i) {
+        engineers.forEach(function (e, i) {
             var statusIcon = e.online ? '[+]' : '[-]';
             engineerOpts += '<option value="' + e.name + '"' + (i === 0 ? ' selected' : '') + '>' + statusIcon + ' ' + e.name + ' - ' + e.team + ' (' + e.skill.join('/') + ') 工单' + e.workload + '件</option>';
         });
         // 如果该地市没有工程师，显示全部
         if (engineers.length === 0) {
-            JilinData.engineers.forEach(function(e) {
+            JilinData.engineers.forEach(function (e) {
                 var statusIcon = e.online ? '[+]' : '[-]';
                 engineerOpts += '<option value="' + e.name + '">' + statusIcon + ' ' + e.name + ' - ' + e.city + ' (' + e.team + ')</option>';
             });
         }
-        var engineerCards = engineers.slice(0, 4).map(function(e) {
+        var engineerCards = engineers.slice(0, 4).map(function (e) {
             var statusColor = e.online ? '#27ae60' : '#bbb';
             var loadColor = e.workload > 10 ? '#e74c3c' : (e.workload > 7 ? '#f39c12' : '#27ae60');
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #e0e4e8;border-radius:4px;margin-bottom:6px;">' +
                 '<span style="width:10px;height:10px;border-radius:50%;background:' + statusColor + ';flex-shrink:0;"></span>' +
                 '<div style="flex:1;">' +
-                    '<div style="font-size:12px;font-weight:600;">' + e.name + ' <span style="font-weight:400;color:#666;">(' + e.level + ')</span></div>' +
-                    '<div style="font-size:11px;color:#666;">' + e.team + ' · ' + e.area + '</div>' +
-                    '<div style="font-size:11px;color:#666;">技能：' + e.skill.join('、') + '</div>' +
+                '<div style="font-size:12px;font-weight:600;">' + e.name + ' <span style="font-weight:400;color:#666;">(' + e.level + ')</span></div>' +
+                '<div style="font-size:11px;color:#666;">' + e.team + ' · ' + e.area + '</div>' +
+                '<div style="font-size:11px;color:#666;">技能：' + e.skill.join('、') + '</div>' +
                 '</div>' +
                 '<div style="text-align:right;">' +
-                    '<div style="font-size:11px;color:' + loadColor + ';font-weight:600;">工单' + e.workload + '件</div>' +
-                    '<div style="font-size:10px;color:#999;">' + e.phone + '</div>' +
+                '<div style="font-size:11px;color:' + loadColor + ';font-weight:600;">工单' + e.workload + '件</div>' +
+                '<div style="font-size:10px;color:#999;">' + e.phone + '</div>' +
                 '</div></div>';
         }).join('');
 
         Modal.show('派发工单 - ' + wo.id,
             '<div style="margin-bottom:12px;padding:10px;background:#f8fafc;border:1px solid #e0e4e8;border-radius:4px;font-size:12px;">' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
-                '<div><strong>工单：</strong>' + wo.id + '</div>' +
-                '<div><strong>标题：</strong>' + wo.title + '</div>' +
-                '<div><strong>地市：</strong>' + wo.city + '</div>' +
-                '<div><strong>优先级：</strong>' + wo.priority + '</div>' +
-                '<div><strong>用户：</strong>' + wo.userAccount + '</div>' +
-                '<div><strong>类型：</strong>' + wo.type + '</div>' +
-                '</div></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+            '<div><strong>工单：</strong>' + wo.id + '</div>' +
+            '<div><strong>标题：</strong>' + wo.title + '</div>' +
+            '<div><strong>地市：</strong>' + wo.city + '</div>' +
+            '<div><strong>优先级：</strong>' + wo.priority + '</div>' +
+            '<div><strong>用户：</strong>' + wo.userAccount + '</div>' +
+            '<div><strong>类型：</strong>' + wo.type + '</div>' +
+            '</div></div>' +
             '<div class="form-group"><label class="form-label">指派工程师 *（' + wo.city + '地区，按工作量排序）</label><select class="form-select" id="dispatchAssignee">' + engineerOpts + '</select></div>' +
             (engineerCards ? '<div style="margin-bottom:10px;"><div style="font-size:11px;color:#999;margin-bottom:6px;">推荐工程师：</div>' + engineerCards + '</div>' : '') +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-                '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="dispatchDeadline"><option value="4">4小时</option><option value="8">8小时</option><option value="24" selected>24小时</option><option value="48">48小时</option></select></div>' +
-                '<div class="form-group"><label class="form-label">派单方式</label><select class="form-select" id="dispatchMethod"><option>系统派单</option><option>电话通知</option><option>短信通知</option><option>企业微信</option></select></div>' +
+            '<div class="form-group"><label class="form-label">处理时限</label><select class="form-select" id="dispatchDeadline"><option value="4">4小时</option><option value="8">8小时</option><option value="24" selected>24小时</option><option value="48">48小时</option></select></div>' +
+            '<div class="form-group"><label class="form-label">派单方式</label><select class="form-select" id="dispatchMethod"><option>系统派单</option><option>电话通知</option><option>短信通知</option><option>企业微信</option></select></div>' +
             '</div>' +
             '<div class="form-group"><label class="form-label">派单备注</label><textarea class="form-input" id="dispatchNote" rows="2" placeholder="如：用户反映晚间网速慢，需携带光功率计上门检测" style="resize:vertical;"></textarea></div>',
             '<button class="btn" onclick="Modal.close()">取消</button><button class="btn btn-primary" onclick="Pages.doDispatch(\'' + wo.id + '\')">确认派单</button>',
@@ -2754,7 +2754,7 @@ var Pages = {
         );
     },
 
-    doDispatch: function(woId) {
+    doDispatch: function (woId) {
         var orders = this._getWorkOrders();
         var assignee = document.getElementById('dispatchAssignee').value;
         var method = document.getElementById('dispatchMethod').value;
@@ -2778,15 +2778,15 @@ var Pages = {
         this.renderWorkOrder(document.getElementById('page-work-order'), this._woPage);
     },
 
-    resolveOrder: function(idx) {
+    resolveOrder: function (idx) {
         var data = this._getWorkOrders();
-        if (this._woCity) data = data.filter(function(d) { return d.city === Pages._woCity; });
-        if (this._woStatus) data = data.filter(function(d) { return d.status === Pages._woStatus; });
+        if (this._woCity) data = data.filter(function (d) { return d.city === Pages._woCity; });
+        if (this._woStatus) data = data.filter(function (d) { return d.status === Pages._woStatus; });
         var wo = data[idx];
         if (!wo) return;
         if (wo.status === '已解决' || wo.status === '已关闭') { Modal.toast('工单已完结', 'warning'); return; }
         var woId = wo.id;
-        Modal.confirm('解决工单', '确认将工单【' + woId + '】标记为已解决？', function() {
+        Modal.confirm('解决工单', '确认将工单【' + woId + '】标记为已解决？', function () {
             var orders = Pages._getWorkOrders();
             for (var i = 0; i < orders.length; i++) {
                 if (orders[i].id === woId) { orders[i].status = '已解决'; orders[i].resolveTime = Math.floor(Math.random() * 20 + 1) + '小时'; break; }
@@ -2798,15 +2798,15 @@ var Pages = {
         });
     },
 
-    closeOrder: function(idx) {
+    closeOrder: function (idx) {
         var data = this._getWorkOrders();
-        if (this._woCity) data = data.filter(function(d) { return d.city === Pages._woCity; });
-        if (this._woStatus) data = data.filter(function(d) { return d.status === Pages._woStatus; });
+        if (this._woCity) data = data.filter(function (d) { return d.city === Pages._woCity; });
+        if (this._woStatus) data = data.filter(function (d) { return d.status === Pages._woStatus; });
         var wo = data[idx];
         if (!wo) return;
         if (wo.status === '已关闭') { Modal.toast('工单已关闭', 'warning'); return; }
         var woId = wo.id;
-        Modal.confirm('关闭工单', '确认关闭工单【' + woId + '】？关闭后不可重新打开。', function() {
+        Modal.confirm('关闭工单', '确认关闭工单【' + woId + '】？关闭后不可重新打开。', function () {
             var orders = Pages._getWorkOrders();
             for (var i = 0; i < orders.length; i++) {
                 if (orders[i].id === woId) { orders[i].status = '已关闭'; break; }
@@ -2820,16 +2820,16 @@ var Pages = {
 
     // ========== 工单后评估 (增强多维度分析) ==========
     _woEvalDimension: 'city',
-    _getStandardQualityTags: function() {
+    _getStandardQualityTags: function () {
         if (window.QualityTagSystem && QualityTagSystem.tagDefinitions) {
-            return QualityTagSystem.tagDefinitions.map(function(t) { return t.name; });
+            return QualityTagSystem.tagDefinitions.map(function (t) { return t.name; });
         }
         return ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿', '游戏高时延', 'DNS解析慢', 'HTTP响应慢', 'TCP重传高', '高时延', '高丢包', 'WiFi干扰', '网关CPU高', '网关频繁重启', '带宽不足'];
     },
-    _getWoEvalTrendTags: function() {
+    _getWoEvalTrendTags: function () {
         return ['弱光', '高误码', '频繁掉线', '掉电', '视频卡顿'];
     },
-    _buildWoEvalDrillRows: function(dimension) {
+    _buildWoEvalDrillRows: function (dimension) {
         var tags = this._getWoEvalTrendTags();
         var rows = [];
         var networks = ['长春朝阳网格', '吉林昌邑网格', '四平铁西网格', '延边延吉网格', '松原宁江网格'];
@@ -2853,47 +2853,69 @@ var Pages = {
         }
         return rows;
     },
-    showWoEvalTrend: function(seedName) {
+    showWoEvalTrend: function (seedName) {
         var tags = this._getWoEvalTrendTags();
+        // 仅展示当前行标签在 tags 中的下标，用于生成确定性数据
+        var tagIdx = tags.indexOf(seedName);
+        if (tagIdx < 0) tagIdx = 0;
         var labels = ['05-17 12:00', '05-17 13:00', '05-17 14:00', '05-17 15:00', '05-17 16:00', '05-17 17:00', '05-17 18:00'];
         Modal.show('趋势评估 - ' + seedName,
             '<div style="display:grid;grid-template-columns:1fr;gap:8px;">' +
-            '<div class="chart-card" style="min-height:260px;"><div class="chart-card-header"><span class="chart-title">质差标签工单数趋势</span></div><div class="chart-container" id="woEvalTagTrend1"></div></div>' +
-            '<div class="chart-card" style="min-height:260px;"><div class="chart-card-header"><span class="chart-title">质差标签关联用户CEI均值</span></div><div class="chart-container" id="woEvalTagTrend2"></div></div>' +
+            '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">【' + seedName + '】工单数趋势</span></div><div class="chart-container" id="woEvalTagTrend1"></div></div>' +
+            '<div class="chart-card" style="min-height:240px;"><div class="chart-card-header"><span class="chart-title">【' + seedName + '】关联用户CEI均值趋势</span></div><div class="chart-container" id="woEvalTagTrend2"></div></div>' +
             '</div>',
             '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>',
-            '820px'
+            '720px'
         );
-        setTimeout(function() {
-            ['woEvalTagTrend1', 'woEvalTagTrend2'].forEach(function(id, chartIdx) {
-                var dom = document.getElementById(id);
-                if (!dom) return;
-                var chart = echarts.init(dom);
-                App.chartInstances[id] = chart;
-                chart.setOption({
-                    tooltip: { trigger: 'axis' },
-                    legend: { data: tags, top: 0, textStyle: { fontSize: 10 } },
-                    grid: { top: 35, right: 24, bottom: 30, left: 45 },
+        var tIdx = tagIdx;
+        setTimeout(function () {
+            // 图1：工单数趋势（单条折线）
+            var d1 = document.getElementById('woEvalTagTrend1');
+            if (d1) {
+                var c1 = echarts.init(d1);
+                App.chartInstances['woEvalTagTrend1'] = c1;
+                c1.setOption({
+                    tooltip: { trigger: 'axis', formatter: '{b}<br/>' + seedName + ': {c} 件' },
+                    grid: { top: 36, right: 24, bottom: 30, left: 50 },
                     xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
-                    yAxis: { type: 'value', name: chartIdx === 0 ? '工单数' : 'CEI', min: chartIdx === 0 ? null : 60, max: chartIdx === 0 ? null : 100, splitLine: { lineStyle: { color: '#f0f2f5' } } },
-                    series: tags.map(function(tag, idx) {
-                        return {
-                            name: tag,
-                            type: 'line',
-                            smooth: true,
-                            data: labels.map(function(_, j) { return chartIdx === 0 ? (18 + idx * 5 + ((j + idx) % 4) * 3) : (70 + idx * 2 + ((j * 3 + idx) % 8)); })
-                        };
-                    })
+                    yAxis: { type: 'value', name: '工单数', splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                    series: [{
+                        name: seedName, type: 'line', smooth: true,
+                        symbol: 'circle', symbolSize: 6,
+                        itemStyle: { color: '#5b8ff9' },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(91,143,249,0.3)' }, { offset: 1, color: 'rgba(91,143,249,0.02)' }] } },
+                        data: labels.map(function (_, j) { return 18 + tIdx * 5 + ((j + tIdx) % 4) * 3; })
+                    }]
                 });
-                window.addEventListener('resize', function() { chart.resize(); });
-            });
+                window.addEventListener('resize', function () { c1.resize(); });
+            }
+            // 图2：CEI趋势（单条折线）
+            var d2 = document.getElementById('woEvalTagTrend2');
+            if (d2) {
+                var c2 = echarts.init(d2);
+                App.chartInstances['woEvalTagTrend2'] = c2;
+                c2.setOption({
+                    tooltip: { trigger: 'axis', formatter: '{b}<br/>' + seedName + ' CEI均值: {c}' },
+                    grid: { top: 36, right: 24, bottom: 30, left: 50 },
+                    xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+                    yAxis: { type: 'value', name: 'CEI', min: 60, max: 100, splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                    series: [{
+                        name: seedName, type: 'line', smooth: true,
+                        symbol: 'circle', symbolSize: 6,
+                        itemStyle: { color: '#5ad8a6' },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(90,216,166,0.3)' }, { offset: 1, color: 'rgba(90,216,166,0.02)' }] } },
+                        data: labels.map(function (_, j) { return 70 + tIdx * 2 + ((j * 3 + tIdx) % 8); })
+                    }]
+                });
+                window.addEventListener('resize', function () { c2.resize(); });
+            }
         }, 50);
     },
-    renderWorkOrderEval: function(container) {
+    renderWorkOrderEval: function (container) {
         var s = JilinData.workOrderStats;
         // Calculate city stats
         var cityStats = {};
-        JilinData.workOrderList.forEach(function(wo) {
+        JilinData.workOrderList.forEach(function (wo) {
             if (!cityStats[wo.city]) cityStats[wo.city] = { total: 0, resolved: 0, closed: 0 };
             cityStats[wo.city].total++;
             if (wo.status === '已解决') cityStats[wo.city].resolved++;
@@ -2909,7 +2931,7 @@ var Pages = {
         // Engineer performance data
         SeededRandom.reset(20251202 + 777);
         var engineers = JilinData.engineers ? JilinData.engineers.slice(0, 10) : [];
-        var perfRows = engineers.map(function(e, idx) {
+        var perfRows = engineers.map(function (e, idx) {
             var resolved = SeededRandom.int(15, 45);
             var avgTime = SeededRandom.float(1.5, 12, 1);
             var satisfaction = SeededRandom.float(3.5, 5.0, 1);
@@ -2931,7 +2953,7 @@ var Pages = {
         }).join('');
         SeededRandom.reset(20251202);
         var dim = this._woEvalDimension || 'city';
-        var drillRows = this._buildWoEvalDrillRows(dim).map(function(r) {
+        var drillRows = this._buildWoEvalDrillRows(dim).map(function (r) {
             var dimCols = dim === 'network' ? ('<td>' + r.network + '</td>') : (dim === 'link' ? ('<td>' + r.network + '</td><td>' + r.maintainer + '</td>') : '');
             return '<tr><td>' + r.time + '</td><td>' + r.city + '</td>' + dimCols + '<td>' + r.totalOrders + '</td><td>' + r.bizQualityOrders + '</td><td>' + r.improveRatio + '</td><td>' + r.closeRate + '</td><td>' + r.avgDuration + '</td><td>' + r.overdueRatio + '</td><td><a style="color:#2b7de9;cursor:pointer;" onclick="Pages.showWoEvalTrend(\'' + r.tag + '\')">' + r.tag + '</a></td></tr>';
         }).join('');
@@ -2945,30 +2967,30 @@ var Pages = {
             '<div class="page-content">' +
             // Time Filter
             '<div class="remote-panel" style="margin-bottom:8px;"><div class="remote-form">' +
-                '<div class="form-group"><label class="form-label">评估周期</label><select class="form-select" id="evalPeriod"><option value="week">近一周</option><option value="month" selected>近一月</option><option value="quarter">近一季度</option></select></div>' +
-                '<div class="form-group"><label class="form-label">地市</label>' + this.cityFilterHtml('evalCity', '', '') + '</div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn" onclick="Modal.toast(\'评估报告已导出\',\'success\')">导出报告</button></div>' +
+            '<div class="form-group"><label class="form-label">评估周期</label><select class="form-select" id="evalPeriod"><option value="week">近一周</option><option value="month" selected>近一月</option><option value="quarter">近一季度</option></select></div>' +
+            '<div class="form-group"><label class="form-label">地市</label>' + this.cityFilterHtml('evalCity', '', '') + '</div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn" onclick="Modal.toast(\'评估报告已导出\',\'success\')">导出报告</button></div>' +
             '</div></div>' +
             // KPI Cards
             '<div class="kpi-grid">' +
-                App.kpiCardHtml('工单总数', s.total, '件', 0) +
-                App.kpiCardHtml('平均处理时长', s.avgProcessTime, '小时', -5.2) +
-                App.kpiCardHtml('超时率', s.overdueRate, '%', -0.5) +
-                App.kpiCardHtml('满意率', s.satisfactionRate, '%', 1.2) +
-                App.kpiCardHtml('闭环率', ((s.completed + s.closed) / s.total * 100).toFixed(1), '%', 2.1) +
-                App.kpiCardHtml('业务质量提升', Math.floor(s.completed * 0.78), '件', 3.5) +
-                App.kpiCardHtml('首次解决率', '72.8', '%', 1.8) +
-                App.kpiCardHtml('超时工单数', Math.max(1, Math.floor(s.total * 0.012)), '件', -0.3) +
+            App.kpiCardHtml('工单总数', s.total, '件', 0) +
+            App.kpiCardHtml('平均处理时长', s.avgProcessTime, '小时', -5.2) +
+            App.kpiCardHtml('超时率', s.overdueRate, '%', -0.5) +
+            App.kpiCardHtml('满意率', s.satisfactionRate, '%', 1.2) +
+            App.kpiCardHtml('闭环率', ((s.completed + s.closed) / s.total * 100).toFixed(1), '%', 2.1) +
+            App.kpiCardHtml('业务质量提升', Math.floor(s.completed * 0.78), '件', 3.5) +
+            App.kpiCardHtml('首次解决率', '72.8', '%', 1.8) +
+            App.kpiCardHtml('超时工单数', Math.max(1, Math.floor(s.total * 0.012)), '件', -0.3) +
             '</div>' +
             // Charts Row
             '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px;">' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">工单量与解决率趋势</span></div><div class="chart-container" id="woEvalChart"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">满意度评分分布</span></div><div class="chart-container" id="woSatChart"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">工单量与解决率趋势</span></div><div class="chart-container" id="woEvalChart"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">满意度评分分布</span></div><div class="chart-container" id="woSatChart"></div></div>' +
             '</div>' +
             '<div class="remote-panel" style="margin-top:8px;"><div class="remote-form">' +
-                '<div class="form-group"><label class="form-label">维度</label><div style="display:flex;gap:12px;height:30px;align-items:center;"><label><input type="radio" name="woEvalDim" value="city" ' + (dim === 'city' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 地市</label><label><input type="radio" name="woEvalDim" value="network" ' + (dim === 'network' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 网格</label><label><input type="radio" name="woEvalDim" value="link" ' + (dim === 'link' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 装维</label></div></div>' +
-                '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" style="width:120px;" value=""></div>' +
-                '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn">重置</button></div>' +
+            '<div class="form-group"><label class="form-label">维度</label><div style="display:flex;gap:12px;height:30px;align-items:center;"><label><input type="radio" name="woEvalDim" value="city" ' + (dim === 'city' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 地市</label><label><input type="radio" name="woEvalDim" value="network" ' + (dim === 'network' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 网格</label><label><input type="radio" name="woEvalDim" value="link" ' + (dim === 'link' ? 'checked' : '') + ' onchange="Pages._woEvalDimension=this.value;Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))"> 装维</label></div></div>' +
+            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" style="width:120px;" value=""></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderWorkOrderEval(document.getElementById(\'page-work-order-eval\'))">查询</button><button class="btn">重置</button></div>' +
             '</div></div>' +
             '<div class="data-table-wrapper" style="margin-top:8px;"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">趋势评估下钻</div>' +
             '<table class="data-table"><thead><tr>' + drillHead + '</tr></thead><tbody>' + drillRows + '</tbody></table></div>' +
@@ -2977,24 +2999,24 @@ var Pages = {
             '<table class="data-table"><thead><tr><th style="width:50px;">排名</th><th>姓名</th><th>地市</th><th>团队</th><th>已解决</th><th>平均时长</th><th>满意度</th><th>评分</th></tr></thead><tbody>' + perfRows + '</tbody></table></div>' +
             // City Stats
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
-                '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市工单统计</div>' +
-                '<table class="data-table"><thead><tr><th>地市</th><th>工单总数</th><th>已解决</th><th>已关闭</th><th>闭环率</th></tr></thead><tbody>' + cityRows + '</tbody></table></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">工单类型分布</span></div><div class="chart-container" id="woEvalPie"></div></div>' +
+            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市工单统计</div>' +
+            '<table class="data-table"><thead><tr><th>地市</th><th>工单总数</th><th>已解决</th><th>已关闭</th><th>闭环率</th></tr></thead><tbody>' + cityRows + '</tbody></table></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">工单类型分布</span></div><div class="chart-container" id="woEvalPie"></div></div>' +
             '</div></div>';
         // Charts
         var dom = document.getElementById('woEvalChart');
         if (dom) {
             var chart = echarts.init(dom); App.chartInstances['woEvalChart'] = chart;
             chart.setOption({
-                grid:{top:30,right:60,bottom:30,left:40}, legend:{data:['工单数','解决率'],top:0}, tooltip:{trigger:'axis'},
-                xAxis:{type:'category',data:JilinData.dateRange.labels},
-                yAxis:[{type:'value',name:'工单数',splitLine:{lineStyle:{color:'#f0f2f5'}}},{type:'value',name:'解决率(%)',min:85,max:100,splitLine:{show:false}}],
-                series:[
-                    {name:'工单数',type:'bar',data:[198,215,256,230,210,245,268,282,240,225,235,218,242,210,228,250,238],itemStyle:{color:'#5b8ff9'}},
-                    {name:'解决率',type:'line',yAxisIndex:1,data:[93.5,94.2,92.8,95.1,94.5,93.8,94.8,93.2,95.5,94.0,93.5,95.2,94.8,95.0,93.8,94.5,94.2],smooth:true,itemStyle:{color:'#5ad8a6'}}
+                grid: { top: 30, right: 60, bottom: 30, left: 40 }, legend: { data: ['工单数', '解决率'], top: 0 }, tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: JilinData.dateRange.labels },
+                yAxis: [{ type: 'value', name: '工单数', splitLine: { lineStyle: { color: '#f0f2f5' } } }, { type: 'value', name: '解决率(%)', min: 85, max: 100, splitLine: { show: false } }],
+                series: [
+                    { name: '工单数', type: 'bar', data: [198, 215, 256, 230, 210, 245, 268, 282, 240, 225, 235, 218, 242, 210, 228, 250, 238], itemStyle: { color: '#5b8ff9' } },
+                    { name: '解决率', type: 'line', yAxisIndex: 1, data: [93.5, 94.2, 92.8, 95.1, 94.5, 93.8, 94.8, 93.2, 95.5, 94.0, 93.5, 95.2, 94.8, 95.0, 93.8, 94.5, 94.2], smooth: true, itemStyle: { color: '#5ad8a6' } }
                 ]
             });
-            window.addEventListener('resize',function(){chart.resize();});
+            window.addEventListener('resize', function () { chart.resize(); });
         }
         // Satisfaction Distribution
         var satDom = document.getElementById('woSatChart');
@@ -3017,27 +3039,27 @@ var Pages = {
                     label: { show: true, position: 'top', fontSize: 10 }
                 }]
             });
-            window.addEventListener('resize',function(){satChart.resize();});
+            window.addEventListener('resize', function () { satChart.resize(); });
         }
         var pie = document.getElementById('woEvalPie');
         if (pie) {
             var c2 = echarts.init(pie); App.chartInstances['woEvalPie'] = c2;
             var typeMap = {};
-            JilinData.workOrderList.forEach(function(wo) { typeMap[wo.type] = (typeMap[wo.type] || 0) + 1; });
+            JilinData.workOrderList.forEach(function (wo) { typeMap[wo.type] = (typeMap[wo.type] || 0) + 1; });
             var pieData = [];
             for (var t in typeMap) pieData.push({ name: t, value: typeMap[t] });
-            c2.setOption({ tooltip:{trigger:'item',formatter:'{b}: {c}件 ({d}%)'}, series:[{type:'pie',radius:['30%','60%'],center:['50%','55%'],data:pieData,label:{fontSize:10}}] });
-            window.addEventListener('resize',function(){c2.resize();});
+            c2.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' }, series: [{ type: 'pie', radius: ['30%', '60%'], center: ['50%', '55%'], data: pieData, label: { fontSize: 10 } }] });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
     // ========== 用户管理 (完整CRUD) ==========
     _umPage: 1, _umKeyword: '',
-    renderUserManagement: function(container, page) {
+    renderUserManagement: function (container, page) {
         this._umPage = page || 1;
         var users = DataStore.query('users', this._umKeyword ? { _keyword: this._umKeyword } : null);
         var p = this.paginate(users, this._umPage, 10);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             var statusCls = r.status === '启用' ? 'status-normal' : 'status-warning';
             var toggleBtn = r.status === '启用'
                 ? '<a style="color:#e74c3c;cursor:pointer;" onclick="Pages.toggleUserStatus(\'' + r._id + '\',\'禁用\')">禁用</a>'
@@ -3058,15 +3080,15 @@ var Pages = {
             '</div></div></div>';
     },
 
-    searchUsers: function() {
+    searchUsers: function () {
         var input = document.getElementById('umSearchInput');
         this._umKeyword = input ? input.value.trim() : '';
         this.renderUserManagement(document.getElementById('page-user-management'), 1);
     },
 
-    showAddUser: function() {
+    showAddUser: function () {
         var cityOpts = '<option value="全省">全省</option>';
-        JilinData.cities.forEach(function(c) { cityOpts += '<option value="' + c + '">' + c + '</option>'; });
+        JilinData.cities.forEach(function (c) { cityOpts += '<option value="' + c + '">' + c + '</option>'; });
         Modal.show('新增用户',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
             '<div class="form-group"><label class="form-label">用户名 *</label><input class="form-input" id="addUserName" placeholder="请输入用户名"></div>' +
@@ -3081,7 +3103,7 @@ var Pages = {
         );
     },
 
-    doAddUser: function() {
+    doAddUser: function () {
         var username = document.getElementById('addUserName').value.trim();
         var realName = document.getElementById('addRealName').value.trim();
         if (!username || !realName) { Modal.toast('请填写用户名和姓名', 'warning'); return; }
@@ -3105,15 +3127,15 @@ var Pages = {
         this.renderUserManagement(document.getElementById('page-user-management'), 1);
     },
 
-    editUser: function(id) {
+    editUser: function (id) {
         var users = DataStore.load('users');
         var user = null;
         for (var i = 0; i < users.length; i++) { if (users[i]._id === id) { user = users[i]; break; } }
         if (!user) return;
         var cityOpts = '';
-        ['全省'].concat(JilinData.cities).forEach(function(c) { cityOpts += '<option value="' + c + '"' + (c === user.city ? ' selected' : '') + '>' + c + '</option>'; });
+        ['全省'].concat(JilinData.cities).forEach(function (c) { cityOpts += '<option value="' + c + '"' + (c === user.city ? ' selected' : '') + '>' + c + '</option>'; });
         var roleOpts = '';
-        ['系统管理员','地市管理员','运维人员','只读用户'].forEach(function(r) { roleOpts += '<option' + (r === user.role ? ' selected' : '') + '>' + r + '</option>'; });
+        ['系统管理员', '地市管理员', '运维人员', '只读用户'].forEach(function (r) { roleOpts += '<option' + (r === user.role ? ' selected' : '') + '>' + r + '</option>'; });
         Modal.show('编辑用户 - ' + user.username,
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
             '<div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="editUserName" value="' + user.username + '" disabled style="background:#f5f5f5;"></div>' +
@@ -3128,7 +3150,7 @@ var Pages = {
         );
     },
 
-    doEditUser: function(id) {
+    doEditUser: function (id) {
         DataStore.update('users', id, {
             realName: document.getElementById('editRealName').value.trim(),
             role: document.getElementById('editRole').value,
@@ -3142,23 +3164,23 @@ var Pages = {
         this.renderUserManagement(document.getElementById('page-user-management'), this._umPage);
     },
 
-    toggleUserStatus: function(id, newStatus) {
-        Modal.confirm('确认操作', '确定要将该用户状态设置为【' + newStatus + '】吗？', function() {
+    toggleUserStatus: function (id, newStatus) {
+        Modal.confirm('确认操作', '确定要将该用户状态设置为【' + newStatus + '】吗？', function () {
             DataStore.update('users', id, { status: newStatus });
             Modal.toast('用户状态已更新为: ' + newStatus, 'success');
             Pages.renderUserManagement(document.getElementById('page-user-management'), Pages._umPage);
         });
     },
 
-    resetUserPwd: function(id) {
-        Modal.confirm('重置密码', '确定要重置该用户的登录密码吗？重置后密码为默认密码 Abc@123456', function() {
+    resetUserPwd: function (id) {
+        Modal.confirm('重置密码', '确定要重置该用户的登录密码吗？重置后密码为默认密码 Abc@123456', function () {
             DataStore.addLog('重置密码', '用户管理', '重置用户 ' + id + ' 的登录密码');
             Modal.toast('密码已重置为: Abc@123456', 'success');
         });
     },
 
-    deleteUser: function(id) {
-        Modal.confirm('删除用户', '确定要删除该用户吗？此操作不可恢复！', function() {
+    deleteUser: function (id) {
+        Modal.confirm('删除用户', '确定要删除该用户吗？此操作不可恢复！', function () {
             DataStore.remove('users', id);
             Modal.toast('用户已删除', 'success');
             Pages.renderUserManagement(document.getElementById('page-user-management'), 1);
@@ -3167,7 +3189,7 @@ var Pages = {
 
     // ========== 日志管理 (完整搜索/分页/导出) ==========
     _logPage: 1, _logModule: '', _logKeyword: '',
-    renderLogManagement: async function(container, page) {
+    renderLogManagement: async function (container, page) {
         this._logPage = page || 1;
         var useApi = window.API && API.logs;
         var resp = useApi ? await API.logs({
@@ -3177,18 +3199,18 @@ var Pages = {
             username: this._logKeyword || ''
         }) : null;
         var logs = resp && resp.data ? resp.data : DataStore.load('logs', []);
-        if (!useApi && this._logModule) logs = logs.filter(function(l) { return l.module === Pages._logModule; });
+        if (!useApi && this._logModule) logs = logs.filter(function (l) { return l.module === Pages._logModule; });
         if (!useApi && this._logKeyword) {
             var kw = this._logKeyword.toLowerCase();
-            logs = logs.filter(function(l) {
+            logs = logs.filter(function (l) {
                 return (l.operator || '').toLowerCase().indexOf(kw) >= 0 ||
-                       (l.content || '').toLowerCase().indexOf(kw) >= 0 ||
-                       (l.action || '').toLowerCase().indexOf(kw) >= 0;
+                    (l.content || '').toLowerCase().indexOf(kw) >= 0 ||
+                    (l.action || '').toLowerCase().indexOf(kw) >= 0;
             });
         }
         var p = useApi && resp && resp.pagination ? resp.pagination : this.paginate(logs, this._logPage, 12);
         var pageRows = useApi ? logs : p.data;
-        var rows = pageRows.map(function(r) {
+        var rows = pageRows.map(function (r) {
             var resCls = r.result === '成功' ? 'status-normal' : 'status-error';
             var actor = r.operator || r.username || '-';
             var ip = r.ip || r.ip_address || '-';
@@ -3196,7 +3218,7 @@ var Pages = {
             return '<tr><td>' + (r.time || r.created_at || '-') + '</td><td>' + actor + '</td><td>' + ip + '</td><td>' + (r.module || '-') + '</td><td>' + (r.action || '-') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + content + '">' + content + '</td><td><span class="' + resCls + '">' + (r.result || '成功') + '</span></td></tr>';
         }).join('');
         var moduleOpts = '<option value="">全部模块</option>';
-        ['远程操作','质量画像','工单管理','系统管理','用户管理','配置中心','质差识别','全景视图'].forEach(function(m) {
+        ['远程操作', '质量画像', '工单管理', '系统管理', '用户管理', '配置中心', '质差识别', '全景视图'].forEach(function (m) {
             moduleOpts += '<option value="' + m + '"' + (m === Pages._logModule ? ' selected' : '') + '>' + m + '</option>';
         });
         container.innerHTML =
@@ -3213,16 +3235,16 @@ var Pages = {
             '</div></div></div>';
     },
 
-    searchLogs: function() {
+    searchLogs: function () {
         var input = document.getElementById('logSearchInput');
         this._logKeyword = input ? input.value.trim() : '';
         this.renderLogManagement(document.getElementById('page-log-management'), 1);
     },
 
-    exportLogs: function() {
+    exportLogs: function () {
         var logs = DataStore.load('logs', []);
         var csv = '时间,操作人,IP地址,模块,操作类型,操作内容,结果\n';
-        logs.forEach(function(l) {
+        logs.forEach(function (l) {
             csv += [l.time, l.operator, l.ip, l.module, l.action, l.content, l.result].join(',') + '\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -3233,8 +3255,8 @@ var Pages = {
         Modal.toast('日志导出成功', 'success');
     },
 
-    clearLogs: function() {
-        Modal.confirm('清空日志', '确定要清空所有操作日志吗？此操作不可恢复！', function() {
+    clearLogs: function () {
+        Modal.confirm('清空日志', '确定要清空所有操作日志吗？此操作不可恢复！', function () {
             DataStore.save('logs', []);
             Modal.toast('日志已清空', 'success');
             Pages.renderLogManagement(document.getElementById('page-log-management'), 1);
@@ -3243,20 +3265,20 @@ var Pages = {
 
     // ========== 配置中心 (完整CRUD) ==========
     _cfgCategory: '',
-    renderConfigCenter: function(container) {
+    renderConfigCenter: function (container) {
         var configs = DataStore.load('configs', []);
-        if (this._cfgCategory) configs = configs.filter(function(c) { return c.category === Pages._cfgCategory; });
+        if (this._cfgCategory) configs = configs.filter(function (c) { return c.category === Pages._cfgCategory; });
         // 按分类分组
         var groups = {};
-        configs.forEach(function(c) { if (!groups[c.category]) groups[c.category] = []; groups[c.category].push(c); });
+        configs.forEach(function (c) { if (!groups[c.category]) groups[c.category] = []; groups[c.category].push(c); });
         var categoryOpts = '<option value="">全部分类</option>';
         var allCats = {};
-        DataStore.load('configs', []).forEach(function(c) { allCats[c.category] = 1; });
+        DataStore.load('configs', []).forEach(function (c) { allCats[c.category] = 1; });
         for (var cat in allCats) { categoryOpts += '<option value="' + cat + '"' + (cat === Pages._cfgCategory ? ' selected' : '') + '>' + cat + '</option>'; }
 
         var tableRows = '';
         for (var g in groups) {
-            groups[g].forEach(function(r, idx) {
+            groups[g].forEach(function (r, idx) {
                 tableRows += '<tr>' +
                     (idx === 0 ? '<td rowspan="' + groups[g].length + '" style="font-weight:600;background:#f8fafc;vertical-align:middle;">' + g + '</td>' : '') +
                     '<td>' + r.name + '</td><td><code style="background:#f0f5ff;padding:2px 8px;border-radius:2px;color:#2b7de9;">' + r.value + (r.unit ? ' ' + r.unit : '') + '</code></td><td style="color:#666;max-width:250px;">' + r.desc + '</td><td>' + (r.updatedBy || '-') + '</td><td>' + (r.updatedAt || '-') + '</td>' +
@@ -3271,7 +3293,7 @@ var Pages = {
             '<div class="system-panel-body"><table class="data-table"><thead><tr><th style="width:100px;">分类</th><th>配置项</th><th>配置值</th><th>说明</th><th>修改人</th><th>修改时间</th><th style="width:100px;">操作</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div></div>';
     },
 
-    showAddConfig: function() {
+    showAddConfig: function () {
         Modal.show('新增配置项',
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
             '<div class="form-group"><label class="form-label">分类 *</label><input class="form-input" id="cfgCategory" placeholder="如：质差阈值、工单规则"></div>' +
@@ -3284,7 +3306,7 @@ var Pages = {
         );
     },
 
-    doAddConfig: function() {
+    doAddConfig: function () {
         var category = document.getElementById('cfgCategory').value.trim();
         var name = document.getElementById('cfgName').value.trim();
         var value = document.getElementById('cfgValue').value.trim();
@@ -3304,7 +3326,7 @@ var Pages = {
         this.renderConfigCenter(document.getElementById('page-config-center'));
     },
 
-    editConfig: function(id) {
+    editConfig: function (id) {
         var configs = DataStore.load('configs', []);
         var cfg = null;
         for (var i = 0; i < configs.length; i++) { if (configs[i]._id === id) { cfg = configs[i]; break; } }
@@ -3321,8 +3343,8 @@ var Pages = {
         );
     },
 
-    doEditConfig: function(id) {
-        var oldCfg = DataStore.load('configs', []).find(function(c) { return c._id === id; });
+    doEditConfig: function (id) {
+        var oldCfg = DataStore.load('configs', []).find(function (c) { return c._id === id; });
         var newValue = document.getElementById('editCfgValue').value.trim();
         if (!newValue) { Modal.toast('配置值不能为空', 'warning'); return; }
         DataStore.update('configs', id, {
@@ -3340,8 +3362,8 @@ var Pages = {
         this.renderConfigCenter(document.getElementById('page-config-center'));
     },
 
-    deleteConfig: function(id) {
-        Modal.confirm('删除配置', '确定要删除该配置项吗？', function() {
+    deleteConfig: function (id) {
+        Modal.confirm('删除配置', '确定要删除该配置项吗？', function () {
             DataStore.remove('configs', id);
             Modal.toast('配置项已删除', 'success');
             Pages.renderConfigCenter(document.getElementById('page-config-center'));
@@ -3349,7 +3371,7 @@ var Pages = {
     },
 
     // ========== 首页驾驶舱 ==========
-    renderHome: function(container) {
+    renderHome: function (container) {
         var d = JilinData.dashboardData;
         var m = JilinData.kpiMetrics;
         var s = JilinData.workOrderStats;
@@ -3364,7 +3386,7 @@ var Pages = {
             { time: '13:10', level: 'major', text: '通化梅河口OLT-TH-0008端口利用率95%，建议扩容' },
             { time: '12:55', level: 'critical', text: '四平公主岭传输链路丢包率8.5%，影响下游580用户' }
         ];
-        var tickerHtml = alerts.map(function(a) {
+        var tickerHtml = alerts.map(function (a) {
             return '<span class="alert-ticker-item"><span class="ticker-time">' + a.time + '</span><span class="ticker-level ' + a.level + '">' + (a.level === 'critical' ? '紧急' : (a.level === 'major' ? '重要' : '一般')) + '</span>' + a.text + '</span>';
         }).join('');
         // Duplicate for seamless scroll
@@ -3374,123 +3396,127 @@ var Pages = {
             '<div class="page-content">' +
             // Dashboard Header
             '<div class="dashboard-header-enhanced">' +
-                '<div class="dashboard-title-area">' +
-                    '<h2 class="dashboard-title-enhanced">家宽网络质量运营驾驶舱</h2>' +
-                    '<div class="dashboard-time-badge"><span class="live-dot"></span>实时监控中</div>' +
-                '</div>' +
-                '<div class="dashboard-actions">' +
-                    '<div class="refresh-timer"><span>自动刷新</span><div class="refresh-timer-progress"><div class="refresh-timer-fill"></div></div></div>' +
-                    '<button class="btn" onclick="loadPageContent(\'home\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> 刷新</button>' +
-                    '<button class="btn" onclick="Modal.toast(\'全屏模式开发中\',\'info\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg> 全屏</button>' +
-                '</div>' +
+            '<div class="dashboard-title-area">' +
+            '<h2 class="dashboard-title-enhanced">家宽网络质量运营驾驶舱</h2>' +
+            '<div class="dashboard-time-badge"><span class="live-dot"></span>实时监控中</div>' +
+            '</div>' +
+            '<div class="dashboard-actions">' +
+            '<div class="refresh-timer"><span>自动刷新</span><div class="refresh-timer-progress"><div class="refresh-timer-fill"></div></div></div>' +
+            '<button class="btn" onclick="loadPageContent(\'home\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> 刷新</button>' +
+            '<button class="btn" onclick="Modal.toast(\'全屏模式开发中\',\'info\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg> 全屏</button>' +
+            '</div>' +
             '</div>' +
             // Alert Ticker
             '<div class="alert-ticker">' +
-                '<div class="alert-ticker-label"><span class="ticker-dot"></span>实时告警</div>' +
-                '<div class="alert-ticker-content"><div class="alert-ticker-scroll">' + tickerHtml + '</div></div>' +
+            '<div class="alert-ticker-label"><span class="ticker-dot"></span>实时告警</div>' +
+            '<div class="alert-ticker-content"><div class="alert-ticker-scroll">' + tickerHtml + '</div></div>' +
             '</div>' +
             // Enhanced KPI Row
             '<div class="dash-kpi-row-enhanced">' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">宽带用户总数</span><div class="dke-icon" style="background:rgba(91,143,249,0.1);color:#5b8ff9;">' + ICO.antenna + '</div></div><div class="dke-value">' + m.totalBroadbandUsers + '<span>万</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.3% 环比</span><span class="dke-compare">较昨日 +856户</span></div></div>' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">综合CEI评分</span><div class="dke-icon" style="background:rgba(90,216,166,0.1);color:#5ad8a6;">' + ICO.chart + '</div></div><div class="dke-value">' + m.totalCeiScore + '<span>分</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.5 环比</span><span class="dke-compare">目标 ≥93</span></div></div>' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">平均下载速率</span><div class="dke-icon" style="background:rgba(246,189,22,0.1);color:#f6bd16;">' + ICO.bolt + '</div></div><div class="dke-value">' + m.avgDownloadSpeed + '<span>Mbps</span></div><div class="dke-footer"><span class="dke-trend up">↑ 2.1%</span><span class="dke-compare">100M达标率 98.5%</span></div></div>' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">今日告警</span><div class="dke-icon" style="background:rgba(231,76,60,0.1);color:#e74c3c;">' + ICO.bell + '</div></div><div class="dke-value">' + d.todayAlerts + '<span>条</span></div><div class="dke-footer"><span class="dke-trend down">↓ 5.2% 环比</span><span class="dke-compare">紧急 ' + Math.floor(d.todayAlerts * 0.12) + ' / 重要 ' + Math.floor(d.todayAlerts * 0.35) + '</span></div></div>' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">待处理工单</span><div class="dke-icon" style="background:rgba(155,89,182,0.1);color:#9b59b6;">' + ICO.clipboard + '</div></div><div class="dke-value">' + s.pending + '<span>件</span></div><div class="dke-footer"><span class="dke-trend down">↓ 3件</span><span class="dke-compare">' + (s.pending > 0 ? '<span class="overdue-badge">超时 ' + Math.max(1, Math.floor(s.pending * 0.1)) + '</span>' : '无超时') + '</span></div></div>' +
-                '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">网络健康度</span><div class="dke-icon" style="background:rgba(26,188,156,0.1);color:#1abc9c;">' + ICO.heart + '</div></div><div class="dke-value">' + d.networkHealth + '<span>%</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.8%</span><span class="dke-compare">较上周提升</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">宽带用户总数</span><div class="dke-icon" style="background:rgba(91,143,249,0.1);color:#5b8ff9;">' + ICO.antenna + '</div></div><div class="dke-value">' + m.totalBroadbandUsers + '<span>万</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.3% 环比</span><span class="dke-compare">较昨日 +856户</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">综合CEI评分</span><div class="dke-icon" style="background:rgba(90,216,166,0.1);color:#5ad8a6;">' + ICO.chart + '</div></div><div class="dke-value">' + m.totalCeiScore + '<span>分</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.5 环比</span><span class="dke-compare">目标 ≥93</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">平均下载速率</span><div class="dke-icon" style="background:rgba(246,189,22,0.1);color:#f6bd16;">' + ICO.bolt + '</div></div><div class="dke-value">' + m.avgDownloadSpeed + '<span>Mbps</span></div><div class="dke-footer"><span class="dke-trend up">↑ 2.1%</span><span class="dke-compare">100M达标率 98.5%</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">今日告警</span><div class="dke-icon" style="background:rgba(231,76,60,0.1);color:#e74c3c;">' + ICO.bell + '</div></div><div class="dke-value">' + d.todayAlerts + '<span>条</span></div><div class="dke-footer"><span class="dke-trend down">↓ 5.2% 环比</span><span class="dke-compare">紧急 ' + Math.floor(d.todayAlerts * 0.12) + ' / 重要 ' + Math.floor(d.todayAlerts * 0.35) + '</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">待处理工单</span><div class="dke-icon" style="background:rgba(155,89,182,0.1);color:#9b59b6;">' + ICO.clipboard + '</div></div><div class="dke-value">' + s.pending + '<span>件</span></div><div class="dke-footer"><span class="dke-trend down">↓ 3件</span><span class="dke-compare">' + (s.pending > 0 ? '<span class="overdue-badge">超时 ' + Math.max(1, Math.floor(s.pending * 0.1)) + '</span>' : '无超时') + '</span></div></div>' +
+            '<div class="dash-kpi-enhanced"><div class="dke-header"><span class="dke-label">网络健康度</span><div class="dke-icon" style="background:rgba(26,188,156,0.1);color:#1abc9c;">' + ICO.heart + '</div></div><div class="dke-value">' + d.networkHealth + '<span>%</span></div><div class="dke-footer"><span class="dke-trend up">↑ 0.8%</span><span class="dke-compare">较上周提升</span></div></div>' +
             '</div>' +
             // System Status Strip
             '<div class="sys-status-strip">' +
-                '<div class="sys-status-item"><span class="sys-status-dot online"></span>应用服务器 <span class="sys-status-value">正常</span></div>' +
-                '<div class="sys-status-item"><span class="sys-status-dot online"></span>数据库 <span class="sys-status-value">正常</span> <span style="color:#999;">延迟 2ms</span></div>' +
-                '<div class="sys-status-item"><span class="sys-status-dot online"></span>Redis缓存 <span class="sys-status-value">正常</span> <span style="color:#999;">命中率 97.8%</span></div>' +
-                '<div class="sys-status-item"><span class="sys-status-dot online"></span>采集服务 <span class="sys-status-value">运行中</span></div>' +
-                '<div class="sys-status-item"><span class="sys-status-dot warning"></span>Kafka队列 <span class="sys-status-value" style="color:#f39c12;">积压 1.2k</span></div>' +
-                '<div style="margin-left:auto;display:flex;align-items:center;gap:6px;"><span style="color:#999;">在线用户</span><span class="sys-status-value">23</span><span style="color:#999;margin-left:12px;">今日访问</span><span class="sys-status-value">158</span></div>' +
+            '<div class="sys-status-item"><span class="sys-status-dot online"></span>应用服务器 <span class="sys-status-value">正常</span></div>' +
+            '<div class="sys-status-item"><span class="sys-status-dot online"></span>数据库 <span class="sys-status-value">正常</span> <span style="color:#999;">延迟 2ms</span></div>' +
+            '<div class="sys-status-item"><span class="sys-status-dot online"></span>Redis缓存 <span class="sys-status-value">正常</span> <span style="color:#999;">命中率 97.8%</span></div>' +
+            '<div class="sys-status-item"><span class="sys-status-dot online"></span>采集服务 <span class="sys-status-value">运行中</span></div>' +
+            '<div class="sys-status-item"><span class="sys-status-dot warning"></span>Kafka队列 <span class="sys-status-value" style="color:#f39c12;">积压 1.2k</span></div>' +
+            '<div style="margin-left:auto;display:flex;align-items:center;gap:6px;"><span style="color:#999;">在线用户</span><span class="sys-status-value">23</span><span style="color:#999;margin-left:12px;">今日访问</span><span class="sys-status-value">158</span></div>' +
             '</div>' +
             // Quick Actions
             '<div class="quick-actions">' +
-                '<div class="quick-action" onclick="loadPageContent(\'cei-query\')"><div class="quick-action-icon" style="color:#5b8ff9;">' + ICO.search + '</div><div class="quick-action-label">CEI查询</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'work-order\')"><div class="quick-action-icon" style="color:#9b59b6;">' + ICO.clipboard + '</div><div class="quick-action-label">工单管理</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'user-quality\')"><div class="quick-action-icon" style="color:#e74c3c;">' + ICO.user + '</div><div class="quick-action-label">质差用户</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'gis-view\')"><div class="quick-action-icon" style="color:#27ae60;">' + ICO.map + '</div><div class="quick-action-label">GIS视图</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'quality-model\')"><div class="quick-action-icon" style="color:#2b7de9;">' + ICO.robot + '</div><div class="quick-action-label">质差模型</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'dpi-capture\')"><div class="quick-action-icon" style="color:#f39c12;">' + ICO.antenna + '</div><div class="quick-action-label">DPI抓包</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'ping-test\')"><div class="quick-action-icon" style="color:#1abc9c;">' + ICO.wrench + '</div><div class="quick-action-label">PING测试</div></div>' +
-                '<div class="quick-action" onclick="loadPageContent(\'pon-power\')"><div class="quick-action-icon" style="color:#f6bd16;">' + ICO.bulb + '</div><div class="quick-action-label">光功率异常</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'cei-query\')"><div class="quick-action-icon" style="color:#5b8ff9;">' + ICO.search + '</div><div class="quick-action-label">CEI查询</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'work-order\')"><div class="quick-action-icon" style="color:#9b59b6;">' + ICO.clipboard + '</div><div class="quick-action-label">工单管理</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'user-quality\')"><div class="quick-action-icon" style="color:#e74c3c;">' + ICO.user + '</div><div class="quick-action-label">质差用户</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'gis-view\')"><div class="quick-action-icon" style="color:#27ae60;">' + ICO.map + '</div><div class="quick-action-label">GIS视图</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'quality-model\')"><div class="quick-action-icon" style="color:#2b7de9;">' + ICO.robot + '</div><div class="quick-action-label">质差模型</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'dpi-capture\')"><div class="quick-action-icon" style="color:#f39c12;">' + ICO.antenna + '</div><div class="quick-action-label">DPI抓包</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'ping-test\')"><div class="quick-action-icon" style="color:#1abc9c;">' + ICO.wrench + '</div><div class="quick-action-label">PING测试</div></div>' +
+            '<div class="quick-action" onclick="loadPageContent(\'pon-power\')"><div class="quick-action-icon" style="color:#f6bd16;">' + ICO.bulb + '</div><div class="quick-action-label">光功率异常</div></div>' +
             '</div>' +
             // Charts Row 1
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">CEI评分趋势</span></div><div class="chart-container" id="homeChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">各地市CEI排名</span></div><div class="chart-container" id="homeChart2"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务类型分布</span></div><div class="chart-container" id="homeChart3"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">CEI评分趋势</span></div><div class="chart-container" id="homeChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">各地市CEI排名</span></div><div class="chart-container" id="homeChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务类型分布</span></div><div class="chart-container" id="homeChart3"></div></div>' +
             '</div>' +
             // Charts Row 2
             '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">' +
-                '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">24小时告警趋势</span></div><div class="chart-container" id="homeChart4"></div></div>' +
-                '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">质差类型TOP5</span></div><div class="chart-container" id="homeChart5"></div></div>' +
+            '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">24小时告警趋势</span></div><div class="chart-container" id="homeChart4"></div></div>' +
+            '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">质差类型TOP5</span></div><div class="chart-container" id="homeChart5"></div></div>' +
             '</div></div>';
         this.initHomeCharts();
     },
 
-    initHomeCharts: function() {
+    initHomeCharts: function () {
         var d = JilinData.dashboardData;
         // CEI趋势
         var h1 = document.getElementById('homeChart1');
         if (h1) {
             var c1 = echarts.init(h1); App.chartInstances['homeChart1'] = c1;
             var t = JilinData.ceiTrendData;
-            c1.setOption({ grid:{top:30,right:15,bottom:25,left:35}, tooltip:{trigger:'axis'}, legend:{data:['综合','业务','网络'],top:0,textStyle:{fontSize:10}},
-                xAxis:{type:'category',data:t.labels,axisLabel:{fontSize:9}}, yAxis:{type:'value',min:89,max:95,axisLabel:{fontSize:9},splitLine:{lineStyle:{color:'#f0f2f5'}}},
-                series:[{name:'综合',type:'line',data:t.overall,smooth:true,lineStyle:{width:2},itemStyle:{color:'#5b8ff9'}},{name:'业务',type:'line',data:t.business,smooth:true,lineStyle:{width:2},itemStyle:{color:'#5ad8a6'}},{name:'网络',type:'line',data:t.network,smooth:true,lineStyle:{width:2},itemStyle:{color:'#f6bd16'}}]
+            c1.setOption({
+                grid: { top: 30, right: 15, bottom: 25, left: 35 }, tooltip: { trigger: 'axis' }, legend: { data: ['综合', '业务', '网络'], top: 0, textStyle: { fontSize: 10 } },
+                xAxis: { type: 'category', data: t.labels, axisLabel: { fontSize: 9 } }, yAxis: { type: 'value', min: 89, max: 95, axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                series: [{ name: '综合', type: 'line', data: t.overall, smooth: true, lineStyle: { width: 2 }, itemStyle: { color: '#5b8ff9' } }, { name: '业务', type: 'line', data: t.business, smooth: true, lineStyle: { width: 2 }, itemStyle: { color: '#5ad8a6' } }, { name: '网络', type: 'line', data: t.network, smooth: true, lineStyle: { width: 2 }, itemStyle: { color: '#f6bd16' } }]
             });
-            window.addEventListener('resize',function(){c1.resize();});
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         // 地市排名
         var h2 = document.getElementById('homeChart2');
         if (h2) {
             var c2 = echarts.init(h2); App.chartInstances['homeChart2'] = c2;
             var ranking = d.cityRanking;
-            c2.setOption({ grid:{top:10,right:40,bottom:10,left:60}, tooltip:{trigger:'axis'},
-                yAxis:{type:'category',data:ranking.map(function(r){return r.city;}).reverse(),axisLabel:{fontSize:10}},
-                xAxis:{type:'value',min:89,max:95},
-                series:[{type:'bar',data:ranking.map(function(r){return r.ceiScore;}).reverse(),barWidth:'50%',itemStyle:{color:function(p){return p.value>=93?'#27ae60':(p.value>=91?'#f39c12':'#e74c3c');}},label:{show:true,position:'right',fontSize:9}}]
+            c2.setOption({
+                grid: { top: 10, right: 40, bottom: 10, left: 60 }, tooltip: { trigger: 'axis' },
+                yAxis: { type: 'category', data: ranking.map(function (r) { return r.city; }).reverse(), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'value', min: 89, max: 95 },
+                series: [{ type: 'bar', data: ranking.map(function (r) { return r.ceiScore; }).reverse(), barWidth: '50%', itemStyle: { color: function (p) { return p.value >= 93 ? '#27ae60' : (p.value >= 91 ? '#f39c12' : '#e74c3c'); } }, label: { show: true, position: 'right', fontSize: 9 } }]
             });
-            window.addEventListener('resize',function(){c2.resize();});
+            window.addEventListener('resize', function () { c2.resize(); });
         }
         // 业务分布
         var h3 = document.getElementById('homeChart3');
         if (h3) {
             var c3 = echarts.init(h3); App.chartInstances['homeChart3'] = c3;
-            c3.setOption({ tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)'}, series:[{type:'pie',radius:['35%','60%'],center:['50%','55%'],data:d.bizDistribution,label:{fontSize:10},itemStyle:{borderRadius:4}}] });
-            window.addEventListener('resize',function(){c3.resize();});
+            c3.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' }, series: [{ type: 'pie', radius: ['35%', '60%'], center: ['50%', '55%'], data: d.bizDistribution, label: { fontSize: 10 }, itemStyle: { borderRadius: 4 } }] });
+            window.addEventListener('resize', function () { c3.resize(); });
         }
         // 告警趋势
         var h4 = document.getElementById('homeChart4');
         if (h4) {
             var c4 = echarts.init(h4); App.chartInstances['homeChart4'] = c4;
-            c4.setOption({ grid:{top:15,right:15,bottom:25,left:35}, tooltip:{trigger:'axis'},
-                xAxis:{type:'category',data:d.alertTrend.map(function(a){return a.hour;}),axisLabel:{fontSize:9}},
-                yAxis:{type:'value',axisLabel:{fontSize:9},splitLine:{lineStyle:{color:'#f0f2f5'}}},
-                series:[{type:'bar',data:d.alertTrend.map(function(a){return a.count;}),itemStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#5b8ff9'},{offset:1,color:'#b8d4fe'}]}}}]
+            c4.setOption({
+                grid: { top: 15, right: 15, bottom: 25, left: 35 }, tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: d.alertTrend.map(function (a) { return a.hour; }), axisLabel: { fontSize: 9 } },
+                yAxis: { type: 'value', axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#f0f2f5' } } },
+                series: [{ type: 'bar', data: d.alertTrend.map(function (a) { return a.count; }), itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#b8d4fe' }] } } }]
             });
-            window.addEventListener('resize',function(){c4.resize();});
+            window.addEventListener('resize', function () { c4.resize(); });
         }
         // 质差TOP5
         var h5 = document.getElementById('homeChart5');
         if (h5) {
             var c5 = echarts.init(h5); App.chartInstances['homeChart5'] = c5;
             var rs = JilinData.qualityTop5Reasons;
-            c5.setOption({ grid:{top:10,right:40,bottom:10,left:70}, tooltip:{trigger:'axis'},
-                yAxis:{type:'category',data:rs.map(function(r){return r.reason;}).reverse(),axisLabel:{fontSize:10}},
-                xAxis:{type:'value'},
-                series:[{type:'bar',data:rs.map(function(r){return r.count;}).reverse(),barWidth:'50%',itemStyle:{color:'#f39c12'},label:{show:true,position:'right',fontSize:9}}]
+            c5.setOption({
+                grid: { top: 10, right: 40, bottom: 10, left: 70 }, tooltip: { trigger: 'axis' },
+                yAxis: { type: 'category', data: rs.map(function (r) { return r.reason; }).reverse(), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'value' },
+                series: [{ type: 'bar', data: rs.map(function (r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: '#f39c12' }, label: { show: true, position: 'right', fontSize: 9 } }]
             });
-            window.addEventListener('resize',function(){c5.resize();});
+            window.addEventListener('resize', function () { c5.resize(); });
         }
     },
 
     // ========== 业务CEI定界（拆分页面） ==========
-    renderBizCeiBoundary: function(container) {
+    renderBizCeiBoundary: function (container) {
         var sides = [
             { name: '家庭侧', value: 32.8, color: '#5ad8a6', reasons: ['WiFi信号弱', '网关CPU高', '终端兼容性差', '组网不合理', '带宽不足'] },
             { name: '网络侧', value: 45.2, color: '#5b8ff9', reasons: ['OLT上行拥塞', 'BRAS负载高', '传输链路抖动', '路由环路', '光衰过大'] },
@@ -3526,16 +3552,16 @@ var Pages = {
             '<div style="margin-bottom:8px;padding:10px 12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;color:#1a5bb8;"><strong>业务CEI定界说明：</strong>基于用户业务体验指标(视频卡顿率、HTTP首包时延、DNS解析时延、下载速率等)，将质差根因定界到<strong>家庭侧、网络侧、内容侧</strong>三大区域。阈值从配置中心动态读取。</div>' +
             // 统计卡片
             '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">3,812</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">45.2%</div><div class="wo-stat-label">网络侧占比</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">32.8%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">15.5%</div><div class="wo-stat-label">内容侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">3,812</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">45.2%</div><div class="wo-stat-label">网络侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">32.8%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">15.5%</div><div class="wo-stat-label">内容侧占比</div></div>' +
             '</div>' +
             // 图表行
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">定界结果分布</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差原因TOP5</span></div><div class="chart-container" id="bizBdChart2"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务指标雷达图</span></div><div class="chart-container" id="bizBdChart3"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">定界结果分布</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">质差原因TOP5</span></div><div class="chart-container" id="bizBdChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">业务指标雷达图</span></div><div class="chart-container" id="bizBdChart3"></div></div>' +
             '</div>' +
             // 表格
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定界明细</div>' +
@@ -3547,7 +3573,7 @@ var Pages = {
     },
 
     // ========== 业务CEI定位（拆分页面） ==========
-    renderBizCeiLocate: function(container) {
+    renderBizCeiLocate: function (container) {
         var locateItems = [
             { name: 'OLT上行拥塞', count: 856, dim: 'OLT', devices: ['OLT-CC-0012', 'OLT-JL-0008', 'OLT-SP-0003'], affectedUsers: 2340 },
             { name: 'BRAS负载高', count: 698, dim: 'BRAS', devices: ['BRAS-CC-01', 'BRAS-JL-02'], affectedUsers: 5680 },
@@ -3555,7 +3581,7 @@ var Pages = {
             { name: '传输链路抖动', count: 412, dim: '传输', devices: ['TRANS-SP-Link03'], affectedUsers: 890 },
             { name: '光路衰减', count: 356, dim: 'PON', devices: ['PON-CC-0045', 'PON-YB-0012', 'PON-BS-0023'], affectedUsers: 720 }
         ];
-        var locateRows = locateItems.map(function(item, idx) {
+        var locateRows = locateItems.map(function (item, idx) {
             var sevCls = idx < 2 ? 'status-error' : (idx < 4 ? 'status-warning' : 'status-normal');
             return '<tr><td>BL-' + String(idx + 1).padStart(3, '0') + '</td><td style="color:#e74c3c;font-weight:600;">' + item.name + '</td><td>' + item.dim + '</td><td>' + item.devices.join(', ') + '</td><td>' + item.count + '</td><td>' + item.affectedUsers + '</td><td><span class="' + sevCls + '">' + (idx < 2 ? '高' : (idx < 4 ? '中' : '低')) + '</span></td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td></tr>';
         });
@@ -3569,8 +3595,8 @@ var Pages = {
             '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiLocate(document.getElementById(\'page-biz-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
             '<div style="margin-bottom:8px;padding:10px 12px;background:#fff8e6;border:1px solid #f6bd16;border-radius:4px;font-size:12px;color:#666;"><strong>业务CEI定位说明：</strong>在定界确定质差侧（家庭/网络/内容）后，进一步下钻定位到具体的设备、链路或节点。支持按OLT、BRAS、CDN、传输链路、PON口等维度交叉分析。</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">定位原因设备聚合分析</span></div><div class="chart-container" id="bizLocChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各维度影响用户数对比</span></div><div class="chart-container" id="bizLocChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">定位原因设备聚合分析</span></div><div class="chart-container" id="bizLocChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各维度影响用户数对比</span></div><div class="chart-container" id="bizLocChart2"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定位明细（已按影响用户数排序）</div>' +
             '<table class="data-table"><thead><tr><th>定位ID</th><th>定位原因</th><th>维度</th><th>关联设备</th><th>质差事件数</th><th>影响用户</th><th>严重程度</th><th>发现时间</th></tr></thead><tbody>' + locateRows.join('') + '</tbody></table></div></div>';
@@ -3581,11 +3607,11 @@ var Pages = {
             c1.setOption({
                 tooltip: { trigger: 'axis' },
                 grid: { top: 15, right: 40, bottom: 15, left: 100 },
-                yAxis: { type: 'category', data: locateItems.map(function(r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
+                yAxis: { type: 'category', data: locateItems.map(function (r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
                 xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
-                series: [{ type: 'bar', data: locateItems.map(function(r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9 } }]
+                series: [{ type: 'bar', data: locateItems.map(function (r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9 } }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById('bizLocChart2');
         if (d2) {
@@ -3593,16 +3619,27 @@ var Pages = {
             c2.setOption({
                 tooltip: { trigger: 'axis' },
                 grid: { top: 20, right: 20, bottom: 40, left: 50 },
-                xAxis: { type: 'category', data: locateItems.map(function(r) { return r.dim; }), axisLabel: { fontSize: 10 } },
+                xAxis: { type: 'category', data: locateItems.map(function (r) { return r.dim; }), axisLabel: { fontSize: 10 } },
                 yAxis: { type: 'value', name: '影响用户数', splitLine: { lineStyle: { color: '#f0f2f5' } } },
-                series: [{ type: 'bar', data: locateItems.map(function(r) { return { value: r.affectedUsers, itemStyle: { color: r.affectedUsers > 2000 ? '#e74c3c' : (r.affectedUsers > 1000 ? '#f39c12' : '#5b8ff9') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }]
+                series: [{ type: 'bar', data: locateItems.map(function (r) { return { value: r.affectedUsers, itemStyle: { color: r.affectedUsers > 2000 ? '#e74c3c' : (r.affectedUsers > 1000 ? '#f39c12' : '#5b8ff9') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
     // ========== 通断CEI定界（拆分页面） ==========
-    renderConnCeiBoundary: function(container) {
+    _connBdCity: '', _connBdAccount: '', _connBdHour: '',
+    _collectConnBdFilters: function () {
+        var city = document.getElementById('connBdCity');
+        var acct = document.getElementById('connBdAccount');
+        var hour = document.getElementById('connBdHour');
+        if (city) this._connBdCity = city.value;
+        if (acct) this._connBdAccount = acct.value;
+        if (hour) this._connBdHour = hour.value;
+    },
+    renderConnCeiBoundary: function (container, fromBtn) {
+        if (fromBtn) this._collectConnBdFilters();
+
         var sides = [
             { name: '家庭侧', value: 28.5, color: '#5ad8a6', reasons: ['网关掉电', '网关死机', 'WiFi模块故障', '用户拔线', '电源不稳'] },
             { name: '光路侧', value: 38.2, color: '#5b8ff9', reasons: ['光衰过大', '光纤断裂', '接头松动', '分光器故障', '弯曲过度'] },
@@ -3617,32 +3654,33 @@ var Pages = {
             { name: '光路中断', count: 312, pct: 8.2 }
         ];
         var tableRows = '';
+        var baseAccounts = ['13700000001', '18900000002', '13500000003', '15900000004', '17700000005', '13800000006', '18600000007', '13900000008', '15800000009', '17600000010', '13700000011', '18900000012', '13500000013', '15900000014', '17700000015'];
         for (var i = 0; i < 15; i++) {
             var city = SeededRandom.pick(JilinData.cities);
             var side = SeededRandom.pick(sides);
             var reason = SeededRandom.pick(topReasons);
             var cei = SeededRandom.float(40, 78, 1);
             var ceiCls = cei < 55 ? 'status-error' : (cei < 70 ? 'status-warning' : 'status-normal');
-            tableRows += '<tr><td>JL' + (20250000 + SeededRandom.int(1, 500)) + '</td><td>' + city + '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color + ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td><td>' + reason.name + '</td><td><span class="' + ceiCls + '">' + cei + '</span></td><td>' + SeededRandom.float(-28, -16, 1) + 'dBm</td><td>' + SeededRandom.int(1, 15) + '次</td><td>' + Pages.statusHtml(SeededRandom.pick(['紧急', '一般', '告警'])) + '</td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td></tr>';
+            tableRows += '<tr><td>' + baseAccounts[i] + '</td><td>' + city + '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color + ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td><td>' + reason.name + '</td><td><span class="' + ceiCls + '">' + cei + '</span></td><td>' + SeededRandom.float(-28, -16, 1) + 'dBm</td><td>' + SeededRandom.int(1, 15) + '次</td><td>' + Pages.statusHtml(SeededRandom.pick(['紧急', '一般', '告警'])) + '</td><td>' + SeededRandom.date('2025-12-01', '2025-12-02') + '</td></tr>';
         }
         container.innerHTML =
             '<div class="page-content">' +
             '<div class="remote-panel"><div class="remote-panel-title">' + ICO.bolt + ' 通断CEI定界分析</div>' +
-            '<div class="remote-form">' + this.cityFilterHtml('connBdCity', '', '') +
-            '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" placeholder="输入用户账号或IP"></div>' +
-            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" type="date" value="2025-12-02"></div>' +
-            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderConnCeiBoundary(document.getElementById(\'page-conn-cei-boundary\'))">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
-            '<div style="margin-bottom:8px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;font-size:12px;color:#c0392b;"><strong>通断CEI定界说明：</strong>基于用户通断体验指标(掉线次数、掉线时长、dying-gasp、光功率)，将连通性质差根因定界到<strong>家庭侧、光路侧、接入侧</strong>三大区域。弱光阈值：接收光功率 < -25dBm（可在配置中心调整）。</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('connBdCity', 'Pages._connBdCity=this.value', this._connBdCity) +
+            '<div class="form-group"><label class="form-label">用户账号/IP</label><input class="form-input" id="connBdAccount" placeholder="输入用户账号或IP" maxlength="11" pattern="[0-9]{11}" value="' + (this._connBdAccount || '') + '" onchange="Pages._connBdAccount=this.value"></div>' +
+            '<div class="form-group"><label class="form-label">时间范围</label><input class="form-input" type="date" value="2025-12-02" style="width:140px;"></div>' +
+            '<div class="form-group"><label class="form-label">小时</label><select class="form-select" id="connBdHour" style="width:90px;" onchange="Pages._connBdHour=this.value"><option value="">全天</option>' + (function (sel) { var opts = ''; for (var h = 0; h < 24; h++) { opts += '<option value="' + h + '"' + (String(h) === sel ? ' selected' : '') + '>' + String(h).padStart(2, '0') + ':00</option>'; } return opts; })(this._connBdHour) + '</select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages._collectConnBdFilters();Pages.renderConnCeiBoundary(document.getElementById(\'page-conn-cei-boundary\'),true)">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
             '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">2,945</div><div class="wo-stat-label">通断质差用户总数</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">38.2%</div><div class="wo-stat-label">光路侧占比</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">28.5%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
-                '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">25.8%</div><div class="wo-stat-label">接入侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">2,945</div><div class="wo-stat-label">通断质差用户总数</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">38.2%</div><div class="wo-stat-label">光路侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">28.5%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">25.8%</div><div class="wo-stat-label">接入侧占比</div></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断定界结果分布</span></div><div class="chart-container" id="connBdChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断原因TOP5</span></div><div class="chart-container" id="connBdChart2"></div></div>' +
-                '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断指标雷达图</span></div><div class="chart-container" id="connBdChart3"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断定界结果分布</span></div><div class="chart-container" id="connBdChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断原因TOP5</span></div><div class="chart-container" id="connBdChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断指标雷达图</span></div><div class="chart-container" id="connBdChart3"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">通断CEI定界明细</div>' +
             '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>主要原因</th><th>CEI评分</th><th>接收光功率</th><th>掉线次数</th><th>严重程度</th><th>时间</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
@@ -3652,7 +3690,16 @@ var Pages = {
     },
 
     // ========== 通断CEI定位（拆分页面） ==========
-    renderConnCeiLocate: function(container) {
+    _connLocCity: '', _connLocDim: '全部', _connLocTag: '',
+    _collectConnLocFilters: function () {
+        var city = document.getElementById('connLocCity');
+        var dim = document.getElementById('connLocDim');
+        var tag = document.getElementById('connLocTag');
+        if (city) this._connLocCity = city.value;
+        if (dim) this._connLocDim = dim.value;
+        if (tag) this._connLocTag = tag.value;
+    },
+    renderConnCeiLocate: function (container, fromBtn) {
         var locateItems = [
             { name: '光衰过大(弱光)', count: 920, dim: 'PON/光路', devices: ['PON-CC-0045', 'PON-JL-0023', 'PON-YB-0012'], affectedUsers: 1450, tag: '弱光' },
             { name: '高误码', count: 756, dim: 'OLT', devices: ['OLT-CC-0012', 'OLT-SP-0008'], affectedUsers: 980, tag: '高误码' },
@@ -3660,72 +3707,103 @@ var Pages = {
             { name: 'dying-gasp(掉电)', count: 423, dim: '家庭侧', devices: ['区域：长春朝阳', '区域：吉林龙潭'], affectedUsers: 560, tag: '掉电' },
             { name: '光路中断', count: 312, dim: '光缆', devices: ['光缆段-CC-A023', '光缆段-SP-B012'], affectedUsers: 2100, tag: '光路中断' }
         ];
-        var locateRows = locateItems.map(function(item, idx) {
+        var locateRows = locateItems.map(function (item, idx) {
             var sevCls = item.affectedUsers > 1500 ? 'status-error' : (item.affectedUsers > 800 ? 'status-warning' : 'status-normal');
             return '<tr><td>CL-' + String(idx + 1).padStart(3, '0') + '</td><td style="color:#e74c3c;font-weight:600;">' + item.name + '</td><td>' + item.dim + '</td><td>' + item.devices.join(', ') + '</td><td><span class="badge badge-warning" style="font-size:10px;">' + item.tag + '</span></td><td>' + item.count + '</td><td>' + item.affectedUsers + '</td><td><span class="' + sevCls + '">' + (item.affectedUsers > 1500 ? '高' : (item.affectedUsers > 800 ? '中' : '低')) + '</span></td></tr>';
         });
 
+        var familyCauses = [
+            { name: '光猫掉电', value: 40 },
+            { name: '光猫中断', value: 21 },
+            { name: 'ONU信号丢失', value: 17 },
+            { name: 'ONU掉/关电', value: 13 },
+            { name: 'ONU物理设备异常', value: 9 }
+        ];
+        var networkCauses = [
+            { name: '主干光纤中断', value: 40 },
+            { name: '分支光纤中断', value: 21 },
+            { name: '尾纤中断', value: 17 },
+            { name: '单板电源异常/离线/不在位', value: 13 },
+            { name: '业务单板硬件故障', value: 9 }
+        ];
+        var pieColors = ['#5b8ff9', '#5ad8a6', '#f6bd16', '#f6903d', '#e96a6a'];
+        // 若从按钮触发，先读取当前DOM中筛选值保存到状态
+        if (fromBtn) this._collectConnLocFilters();
+        var self = this;
+        var dims = ['全部', 'PON/光路', 'OLT', 'BNG/BRAS', '光缆', '家庭侧'];
+        var tags = ['', '弱光', '高误码', '频繁掉线', '掉电', '光路中断'];
+        var tagLabels = ['全部', '弱光', '高误码', '频繁掉线', '掉电', '光路中断'];
+        var dimOpts = dims.map(function (d) { return '<option value="' + d + '"' + (d === self._connLocDim ? ' selected' : '') + '>' + d + '</option>'; }).join('');
+        var tagOpts = tags.map(function (v, i) { return '<option value="' + v + '"' + (v === self._connLocTag ? ' selected' : '') + '>' + tagLabels[i] + '</option>'; }).join('');
         container.innerHTML =
             '<div class="page-content">' +
             '<div class="remote-panel"><div class="remote-panel-title">' + ICO.search + ' 通断CEI定位分析</div>' +
-            '<div class="remote-form">' + this.cityFilterHtml('connLocCity', '', '') +
-            '<div class="form-group"><label class="form-label">定位维度</label><select class="form-select"><option>全部</option><option>PON/光路</option><option>OLT</option><option>BNG/BRAS</option><option>光缆</option><option>家庭侧</option></select></div>' +
-            '<div class="form-group"><label class="form-label">质差标签</label><select class="form-select"><option value="">全部</option><option>弱光</option><option>高误码</option><option>频繁掉线</option><option>掉电</option><option>光路中断</option></select></div>' +
-            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderConnCeiLocate(document.getElementById(\'page-conn-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
-            '<div style="margin-bottom:8px;padding:10px 12px;background:#e8f8f0;border:1px solid #a3e4c1;border-radius:4px;font-size:12px;color:#1a7a4a;"><strong>通断CEI定位说明：</strong>在通断定界确定质差侧后，下钻定位到具体PON口、OLT端口、BNG设备或光缆段。支持<strong>弱光、高误码、频繁掉线、dying-gasp</strong>等标准化质差标签筛选，自动聚类相同设备/区域下的同类故障。</div>' +
+            '<div class="remote-form">' + this.cityFilterHtml('connLocCity', 'Pages._connLocCity=this.value', this._connLocCity) +
+            '<div class="form-group"><label class="form-label">定位维度</label><select class="form-select" id="connLocDim" onchange="Pages._connLocDim=this.value">' + dimOpts + '</select></div>' +
+            '<div class="form-group"><label class="form-label">质差标签</label><select class="form-select" id="connLocTag" onchange="Pages._connLocTag=this.value">' + tagOpts + '</select></div>' +
+            '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages._collectConnLocFilters();Pages.renderConnCeiLocate(document.getElementById(\'page-conn-cei-locate\'),true)">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">质差标签分布（通断）</span></div><div class="chart-container" id="connLocChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各维度影响用户数</span></div><div class="chart-container" id="connLocChart2"></div></div>' +
+            '<div class="chart-card" style="min-height:340px;"><div class="chart-card-header"><span class="chart-title">家庭侧定位TOP5原因分布</span></div><div class="chart-container" id="connLocChart1"></div></div>' +
+            '<div class="chart-card" style="min-height:340px;"><div class="chart-card-header"><span class="chart-title">网络侧定位TOP5原因分布</span></div><div class="chart-container" id="connLocChart2"></div></div>' +
             '</div>' +
-            '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">通断CEI定位明细（按影响用户数排序）</div>' +
-            '<table class="data-table"><thead><tr><th>定位ID</th><th>定位原因</th><th>维度</th><th>关联设备/区域</th><th>质差标签</th><th>事件数</th><th>影响用户</th><th>严重程度</th></tr></thead><tbody>' + locateRows.join('') + '</tbody></table></div></div>';
+            '</div>';
         // 图表
         var d1 = document.getElementById('connLocChart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances['connLocChart1'] = c1;
             c1.setOption({
-                tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' },
-                legend: { bottom: 5, textStyle: { fontSize: 10 } },
-                series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: locateItems.map(function(r) { return { name: r.tag, value: r.count }; }), label: { fontSize: 10, formatter: '{b}\n{d}%' }, itemStyle: { borderRadius: 4 } }]
+                tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+                legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 }, data: familyCauses.map(function (r) { return r.name; }) },
+                color: pieColors,
+                series: [{
+                    type: 'pie', radius: ['40%', '65%'], center: ['38%', '50%'],
+                    data: familyCauses.map(function (r, i) { return { name: r.name, value: r.value, itemStyle: { color: pieColors[i] } }; }),
+                    label: { show: true, formatter: '{d}%', fontSize: 11 },
+                    itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 }
+                }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById('connLocChart2');
         if (d2) {
             var c2 = echarts.init(d2); App.chartInstances['connLocChart2'] = c2;
             c2.setOption({
-                tooltip: { trigger: 'axis' },
-                grid: { top: 15, right: 50, bottom: 15, left: 80 },
-                yAxis: { type: 'category', data: locateItems.map(function(r) { return r.dim; }).reverse(), axisLabel: { fontSize: 10 } },
-                xAxis: { type: 'value' },
-                series: [{ type: 'bar', data: locateItems.map(function(r) { return { value: r.affectedUsers, itemStyle: { color: r.affectedUsers > 1500 ? '#e74c3c' : (r.affectedUsers > 800 ? '#f39c12' : '#27ae60') } }; }).reverse(), barWidth: '50%', label: { show: true, position: 'right', fontSize: 9 } }]
+                tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+                legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 }, data: networkCauses.map(function (r) { return r.name; }) },
+                color: pieColors,
+                series: [{
+                    type: 'pie', radius: ['40%', '65%'], center: ['38%', '50%'],
+                    data: networkCauses.map(function (r, i) { return { name: r.name, value: r.value, itemStyle: { color: pieColors[i] } }; }),
+                    label: { show: true, formatter: '{d}%', fontSize: 11 },
+                    itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 }
+                }]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
     },
 
     // ========== 通用CEI拆分页面图表渲染 ==========
-    _renderCeiSplitCharts: function(prefix, sides, topReasons, radarIndicators, radarData) {
+    _renderCeiSplitCharts: function (prefix, sides, topReasons, radarIndicators, radarData) {
         var d1 = document.getElementById(prefix + 'Chart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances[prefix + 'Chart1'] = c1;
             c1.setOption({
                 tooltip: { trigger: 'item', formatter: '{b}: {c}% ({d}%)' },
                 legend: { bottom: 5, textStyle: { fontSize: 10 } },
-                series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: sides.map(function(s) { return { name: s.name, value: s.value, itemStyle: { color: s.color } }; }), label: { fontSize: 10, formatter: '{b}\n{d}%' } }]
+                series: [{ type: 'pie', radius: ['35%', '58%'], center: ['50%', '45%'], data: sides.map(function (s) { return { name: s.name, value: s.value, itemStyle: { color: s.color } }; }), label: { fontSize: 10, formatter: '{b}\n{d}%' } }]
             });
-            window.addEventListener('resize', function() { c1.resize(); });
+            window.addEventListener('resize', function () { c1.resize(); });
         }
         var d2 = document.getElementById(prefix + 'Chart2');
         if (d2) {
             var c2 = echarts.init(d2); App.chartInstances[prefix + 'Chart2'] = c2;
             c2.setOption({
                 grid: { top: 15, right: 50, bottom: 15, left: 80 }, tooltip: { trigger: 'axis' },
-                yAxis: { type: 'category', data: topReasons.map(function(r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
+                yAxis: { type: 'category', data: topReasons.map(function (r) { return r.name; }).reverse(), axisLabel: { fontSize: 10 } },
                 xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
-                series: [{ type: 'bar', data: topReasons.map(function(r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9, formatter: function(p) { return p.value + '件'; } } }]
+                series: [{ type: 'bar', data: topReasons.map(function (r) { return r.count; }).reverse(), barWidth: '50%', itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#5b8ff9' }, { offset: 1, color: '#85c1ff' }] } }, label: { show: true, position: 'right', fontSize: 9, formatter: function (p) { return p.value + '件'; } } }]
             });
-            window.addEventListener('resize', function() { c2.resize(); });
+            window.addEventListener('resize', function () { c2.resize(); });
         }
         var d3 = document.getElementById(prefix + 'Chart3');
         if (d3) {
@@ -3735,11 +3813,11 @@ var Pages = {
                 radar: { indicator: radarIndicators, radius: '60%', axisName: { fontSize: 9, color: '#666' } },
                 series: [{ type: 'radar', data: [{ value: radarData, name: '当前值', areaStyle: { color: 'rgba(91,143,249,0.2)' } }], itemStyle: { color: '#5b8ff9' } }]
             });
-            window.addEventListener('resize', function() { c3.resize(); });
+            window.addEventListener('resize', function () { c3.resize(); });
         }
     },
 
-    _showBizBoundaryDetail: function(city) {
+    _showBizBoundaryDetail: function (city) {
         Modal.show('定界详情 - ' + city,
             '<div style="font-size:13px;line-height:2;">' +
             '<div><strong>地市：</strong>' + city + '</div>' +
@@ -3754,37 +3832,37 @@ var Pages = {
     },
 
     // 通用模块占位
-    renderModulePlaceholder: function(container, title) {
+    renderModulePlaceholder: function (container, title) {
         container.innerHTML = '<div class="empty-state" style="height:100%;"><div class="empty-icon" style="font-size:36px;opacity:0.2;">[ ]</div><div class="empty-text" style="font-size:14px;color:#999;">' + title + '</div></div>';
     }
 };
 
 // Business CEI boundary adjustments for the split page.
-Pages._businessBoundaryAccount = function(idx) {
+Pages._businessBoundaryAccount = function (idx) {
     return '211' + String(20250018 + (idx || 0)).padStart(8, '0');
 };
 
-Pages._renderBizBoundaryDistribution = function(chartId, sides, totalUsers) {
+Pages._renderBizBoundaryDistribution = function (chartId, sides, totalUsers) {
     var el = document.getElementById(chartId);
     if (!el) return;
-    el.setAttribute('data-series', sides.map(function(s) { return s.name + ':' + s.value + ':' + s.count; }).join('|'));
+    el.setAttribute('data-series', sides.map(function (s) { return s.name + ':' + s.value + ':' + s.count; }).join('|'));
 
     var chart = echarts.init(el);
     App.chartInstances[chartId] = chart;
 
     // Reverse for ECharts (bottom-to-top rendering)
     var reversedSides = sides.slice().reverse();
-    var names = reversedSides.map(function(s) { return s.name; });
-    var values = reversedSides.map(function(s) { return s.value; });
-    var colors = reversedSides.map(function(s) { return s.color; });
-    var counts = reversedSides.map(function(s) { return s.count; });
+    var names = reversedSides.map(function (s) { return s.name; });
+    var values = reversedSides.map(function (s) { return s.value; });
+    var colors = reversedSides.map(function (s) { return s.color; });
+    var counts = reversedSides.map(function (s) { return s.count; });
 
     chart.setOption({
         grid: { top: 30, right: 130, bottom: 40, left: 80 },
         tooltip: {
             trigger: 'axis',
             axisPointer: { type: 'shadow' },
-            formatter: function(params) {
+            formatter: function (params) {
                 var p = params[0];
                 var idx = p.dataIndex;
                 return '<strong>' + names[idx] + '</strong><br/>' +
@@ -3813,7 +3891,7 @@ Pages._renderBizBoundaryDistribution = function(chartId, sides, totalUsers) {
         },
         series: [{
             type: 'bar',
-            data: values.map(function(v, i) {
+            data: values.map(function (v, i) {
                 return {
                     value: v,
                     itemStyle: {
@@ -3833,7 +3911,7 @@ Pages._renderBizBoundaryDistribution = function(chartId, sides, totalUsers) {
                 position: 'right',
                 fontSize: 13,
                 color: '#333',
-                formatter: function(p) {
+                formatter: function (p) {
                     var idx = p.dataIndex;
                     return values[idx] + '% / ' + counts[idx] + '户';
                 }
@@ -3851,34 +3929,34 @@ Pages._renderBizBoundaryDistribution = function(chartId, sides, totalUsers) {
         }]
     });
 
-    window.addEventListener('resize', function() { chart.resize(); });
+    window.addEventListener('resize', function () { chart.resize(); });
 };
 
 // 根据地市生成差异化的业务CEI定界数据
-Pages._bizBdCityProfile = function(city) {
+Pages._bizBdCityProfile = function (city) {
     var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
     var idx = city ? Math.max(0, cityList.indexOf(city)) : -1;
     // 各地市的基础参数（模拟真实差异）
     // 顺序：长春、吉林、四平、辽源、通化、白山、松原、白城、延边、长白山
     var cityProfiles = [
-        { total: 986,  homePct: 80.2, netPct: 11.3, contentPct: 5.8, otherPct: 2.7 }, // 长春 - 省会，用户多
-        { total: 658,  homePct: 83.5, netPct: 8.9,  contentPct: 4.9, otherPct: 2.7 }, // 吉林
-        { total: 425,  homePct: 84.1, netPct: 9.2,  contentPct: 4.3, otherPct: 2.4 }, // 四平
-        { total: 218,  homePct: 79.8, netPct: 12.1, contentPct: 5.4, otherPct: 2.7 }, // 辽源 - 老设备多，网络侧占比高
-        { total: 312,  homePct: 85.3, netPct: 7.8,  contentPct: 4.6, otherPct: 2.3 }, // 通化
-        { total: 195,  homePct: 86.2, netPct: 7.1,  contentPct: 4.2, otherPct: 2.5 }, // 白山 - 山区家庭侧占比高
-        { total: 348,  homePct: 81.6, netPct: 10.5, contentPct: 5.2, otherPct: 2.7 }, // 松原
-        { total: 265,  homePct: 83.9, netPct: 8.6,  contentPct: 4.8, otherPct: 2.7 }, // 白城
-        { total: 302,  homePct: 82.4, netPct: 9.5,  contentPct: 5.6, otherPct: 2.5 }, // 延边
-        { total: 103,  homePct: 87.4, netPct: 6.8,  contentPct: 3.4, otherPct: 2.4 }  // 长白山 - 偏远，用户少
+        { total: 986, homePct: 80.2, netPct: 11.3, contentPct: 5.8, otherPct: 2.7 }, // 长春 - 省会，用户多
+        { total: 658, homePct: 83.5, netPct: 8.9, contentPct: 4.9, otherPct: 2.7 }, // 吉林
+        { total: 425, homePct: 84.1, netPct: 9.2, contentPct: 4.3, otherPct: 2.4 }, // 四平
+        { total: 218, homePct: 79.8, netPct: 12.1, contentPct: 5.4, otherPct: 2.7 }, // 辽源 - 老设备多，网络侧占比高
+        { total: 312, homePct: 85.3, netPct: 7.8, contentPct: 4.6, otherPct: 2.3 }, // 通化
+        { total: 195, homePct: 86.2, netPct: 7.1, contentPct: 4.2, otherPct: 2.5 }, // 白山 - 山区家庭侧占比高
+        { total: 348, homePct: 81.6, netPct: 10.5, contentPct: 5.2, otherPct: 2.7 }, // 松原
+        { total: 265, homePct: 83.9, netPct: 8.6, contentPct: 4.8, otherPct: 2.7 }, // 白城
+        { total: 302, homePct: 82.4, netPct: 9.5, contentPct: 5.6, otherPct: 2.5 }, // 延边
+        { total: 103, homePct: 87.4, netPct: 6.8, contentPct: 3.4, otherPct: 2.4 }  // 长白山 - 偏远，用户少
     ];
     // 全省汇总
     if (idx < 0 || idx >= cityProfiles.length) {
         var allTotal = 0;
-        cityProfiles.forEach(function(p) { allTotal += p.total; });
+        cityProfiles.forEach(function (p) { allTotal += p.total; });
         // 加权平均
         var wHome = 0, wNet = 0, wContent = 0, wOther = 0;
-        cityProfiles.forEach(function(p) {
+        cityProfiles.forEach(function (p) {
             wHome += p.homePct * p.total;
             wNet += p.netPct * p.total;
             wContent += p.contentPct * p.total;
@@ -3895,7 +3973,7 @@ Pages._bizBdCityProfile = function(city) {
     return cityProfiles[idx];
 };
 
-Pages.renderBizCeiBoundary = function(container) {
+Pages.renderBizCeiBoundary = function (container) {
     var selectedCity = this._bizBdCity || '';
     var profile = this._bizBdCityProfile(selectedCity);
     var totalUsers = profile.total;
@@ -3935,24 +4013,24 @@ Pages.renderBizCeiBoundary = function(container) {
         '<div class="form-group"><label class="form-label">时间范围</label><div style="display:flex;gap:6px;"><input class="form-input" type="date" value="2025-12-02"><select class="form-select" style="width:86px;"><option>00时</option><option>01时</option><option>02时</option><option>03时</option><option>04时</option><option>05时</option><option>06时</option><option>07时</option><option>08时</option><option>09时</option><option>10时</option><option>11时</option><option>12时</option><option>13时</option><option>14时</option><option>15时</option><option>16时</option><option>17时</option><option selected>18时</option><option>19时</option><option>20时</option><option>21时</option><option>22时</option><option>23时</option></select></div></div>' +
         '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiBoundary(document.getElementById(\'page-biz-cei-boundary\'))">定界查询</button><button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button></div></div></div>' +
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
-            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + totalUsers.toLocaleString() + '</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
-            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">' + profile.homePct + '%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
-            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + profile.netPct + '%</div><div class="wo-stat-label">网络侧占比</div></div>' +
-            '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">' + profile.contentPct + '%</div><div class="wo-stat-label">内容侧占比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + totalUsers.toLocaleString() + '</div><div class="wo-stat-label">业务质差用户总数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">' + profile.homePct + '%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + profile.netPct + '%</div><div class="wo-stat-label">网络侧占比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">' + profile.contentPct + '%</div><div class="wo-stat-label">内容侧占比</div></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">' +
-            '<div class="chart-card" style="min-height:360px;"><div class="chart-card-header"><span class="chart-title">定界结果分布' + (selectedCity ? '（' + selectedCity + '）' : '（全省）') + '</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
+        '<div class="chart-card" style="min-height:360px;"><div class="chart-card-header"><span class="chart-title">定界结果分布' + (selectedCity ? '（' + selectedCity + '）' : '（全省）') + '</span></div><div class="chart-container" id="bizBdChart1"></div></div>' +
         '</div>' +
         '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务CEI定界明细' + (selectedCity ? '（' + selectedCity + '）' : '') + '</div>' +
         '<table class="data-table"><thead><tr><th>用户账号</th><th>地市</th><th>定界结果</th><th>CEI评分</th><th>时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
     this._renderBizBoundaryDistribution('bizBdChart1', sides, totalUsers);
 };
 
-Pages._renderBizLocateDonut = function(chartId, title, total, data) {
+Pages._renderBizLocateDonut = function (chartId, title, total, data) {
     var el = document.getElementById(chartId);
     if (!el) return;
     el.setAttribute('data-total', String(total));
-    el.setAttribute('data-series', data.map(function(d) { return d.name + ':' + d.value; }).join('|'));
+    el.setAttribute('data-series', data.map(function (d) { return d.name + ':' + d.value; }).join('|'));
     var chart = echarts.init(el);
     App.chartInstances[chartId] = chart;
     chart.setOption({
@@ -3974,13 +4052,13 @@ Pages._renderBizLocateDonut = function(chartId, title, total, data) {
             itemStyle: { borderColor: '#fff', borderWidth: 2 }
         }]
     });
-    window.addEventListener('resize', function() { chart.resize(); });
+    window.addEventListener('resize', function () { chart.resize(); });
 };
 
-Pages._renderBizLocateBar = function(chartId, title, data) {
+Pages._renderBizLocateBar = function (chartId, title, data) {
     var el = document.getElementById(chartId);
     if (!el) return;
-    el.setAttribute('data-series', data.map(function(d) { return d.name + ':' + d.value; }).join('|'));
+    el.setAttribute('data-series', data.map(function (d) { return d.name + ':' + d.value; }).join('|'));
     var chart = echarts.init(el);
     App.chartInstances[chartId] = chart;
     chart.setOption({
@@ -3988,19 +4066,19 @@ Pages._renderBizLocateBar = function(chartId, title, data) {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         grid: { top: 52, right: 30, bottom: 24, left: 86 },
         xAxis: { type: 'value', axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f5' } } },
-        yAxis: { type: 'category', data: data.map(function(d) { return d.name; }).reverse(), axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'category', data: data.map(function (d) { return d.name; }).reverse(), axisLabel: { fontSize: 10 } },
         series: [{
             type: 'bar',
-            data: data.map(function(d) { return d.value; }).reverse(),
+            data: data.map(function (d) { return d.value; }).reverse(),
             barWidth: 18,
             itemStyle: { color: '#6f9df6' },
             label: { show: false }
         }]
     });
-    window.addEventListener('resize', function() { chart.resize(); });
+    window.addEventListener('resize', function () { chart.resize(); });
 };
 
-Pages._bizLocateCityProfile = function(city) {
+Pages._bizLocateCityProfile = function (city) {
     var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
     var idx = city ? Math.max(0, cityList.indexOf(city)) + 1 : 0;
     var homeTotal = 200 + idx * 17;
@@ -4024,7 +4102,7 @@ Pages._bizLocateCityProfile = function(city) {
     };
 };
 
-Pages.renderBizCeiLocate = function(container) {
+Pages.renderBizCeiLocate = function (container) {
     var city = this._bizLocCity || '';
     var profile = this._bizLocateCityProfile(city);
     var homeData = [
@@ -4056,16 +4134,16 @@ Pages.renderBizCeiLocate = function(container) {
         '<div class="form-group"><label class="form-label">时间范围</label><div style="display:flex;gap:6px;"><input class="form-input" type="date" value="2025-12-02"><select class="form-select" style="width:86px;"><option>00时</option><option>01时</option><option>02时</option><option>03时</option><option>04时</option><option>05时</option><option>06时</option><option>07时</option><option>08时</option><option>09时</option><option>10时</option><option>11时</option><option>12时</option><option>13时</option><option>14时</option><option>15时</option><option>16时</option><option>17时</option><option selected>18时</option><option>19时</option><option>20时</option><option>21时</option><option>22时</option><option>23时</option></select></div></div>' +
         '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizCeiLocate(document.getElementById(\'page-biz-cei-locate\'))">定位分析</button><button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button></div></div></div>' +
         '<div style="display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:8px;margin-bottom:8px;overflow-x:auto;">' +
-            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart1"></div></div>' +
-            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart2"></div></div>' +
-            '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart3"></div></div>' +
+        '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart1"></div></div>' +
+        '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart2"></div></div>' +
+        '<div class="chart-card" style="min-height:360px;min-width:300px;"><div class="chart-container" id="bizLocChart3"></div></div>' +
         '</div></div>';
     this._renderBizLocateDonut('bizLocChart1', '家庭侧定位TOP5原因分布', profile.homeTotal, homeData);
     this._renderBizLocateDonut('bizLocChart2', '网络侧定位TOP5原因分布', profile.networkTotal, networkData);
     this._renderBizLocateBar('bizLocChart3', '内容侧定位用户质量指标分布', contentData);
 };
 
-Pages._showBizBoundaryDetail = function(city) {
+Pages._showBizBoundaryDetail = function (city) {
     Modal.show('定界详情 - ' + city,
         '<div style="font-size:13px;line-height:2;">' +
         '<div><strong>地市：</strong>' + city + '</div>' +
@@ -4078,14 +4156,272 @@ Pages._showBizBoundaryDetail = function(city) {
     );
 };
 
+// ========== 通断CEI定界 - 城市Profile版（覆盖对象内旧版本） ==========
+Pages._connBdCityProfile = function (city) {
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    var idx = city ? Math.max(0, cityList.indexOf(city)) : -1;
+    // 各地市的通断质差参数，顺序同 JilinData.cities
+    // 长春、吉林、四平、辽源、通化、白山、松原、白城、延边、长白山
+    var profiles = [
+        { total: 756,  optPct: 40.2, homePct: 27.8, accPct: 24.6, otherPct: 7.4 }, // 长春
+        { total: 512,  optPct: 38.5, homePct: 29.2, accPct: 25.1, otherPct: 7.2 }, // 吉林
+        { total: 348,  optPct: 41.3, homePct: 26.9, accPct: 24.2, otherPct: 7.6 }, // 四平
+        { total: 195,  optPct: 35.8, homePct: 31.4, accPct: 26.5, otherPct: 6.3 }, // 辽源
+        { total: 267,  optPct: 42.1, homePct: 25.6, accPct: 25.3, otherPct: 7.0 }, // 通化
+        { total: 183,  optPct: 44.6, homePct: 24.1, accPct: 23.8, otherPct: 7.5 }, // 白山（山区光路问题多）
+        { total: 298,  optPct: 37.9, homePct: 28.6, accPct: 25.9, otherPct: 7.6 }, // 松原
+        { total: 221,  optPct: 39.4, homePct: 27.5, accPct: 25.7, otherPct: 7.4 }, // 白城
+        { total: 252,  optPct: 38.8, homePct: 28.3, accPct: 25.4, otherPct: 7.5 }, // 延边
+        { total:  89,  optPct: 46.1, homePct: 23.2, accPct: 22.9, otherPct: 7.8 }  // 长白山（偏远山区光路最多）
+    ];
+    if (idx < 0 || idx >= profiles.length) {
+        // 全省汇总：加权平均
+        var total = 0;
+        profiles.forEach(function (p) { total += p.total; });
+        var wOpt = 0, wHome = 0, wAcc = 0, wOther = 0;
+        profiles.forEach(function (p) {
+            wOpt   += p.optPct   * p.total;
+            wHome  += p.homePct  * p.total;
+            wAcc   += p.accPct   * p.total;
+            wOther += p.otherPct * p.total;
+        });
+        return {
+            total:    total,
+            optPct:   Math.round(wOpt   / total * 10) / 10,
+            homePct:  Math.round(wHome  / total * 10) / 10,
+            accPct:   Math.round(wAcc   / total * 10) / 10,
+            otherPct: Math.round(wOther / total * 10) / 10
+        };
+    }
+    return profiles[idx];
+};
+
+Pages.renderConnCeiBoundary = function (container) {
+    var selectedCity = this._connBdCity || '';
+    var profile = this._connBdCityProfile(selectedCity);
+    var totalUsers = profile.total;
+
+    var sides = [
+        { name: '光路侧', value: profile.optPct,   color: '#5b8ff9',
+          count: Math.round(totalUsers * profile.optPct   / 100),
+          reasons: ['光衰过大', '光纤断裂', '接头松动', '分光器故障', '弯曲过度'] },
+        { name: '家庭侧', value: profile.homePct,  color: '#5ad8a6',
+          count: Math.round(totalUsers * profile.homePct  / 100),
+          reasons: ['网关掉电', '网关死机', 'WiFi模块故障', '用户拔线', '电源不稳'] },
+        { name: '接入侧', value: profile.accPct,   color: '#f6bd16',
+          count: Math.round(totalUsers * profile.accPct   / 100),
+          reasons: ['OLT端口故障', 'PON板卡异常', 'MAC认证失败', 'VLAN配置错误', '端口拉闸'] },
+        { name: '其他',   value: profile.otherPct, color: '#bdc3c7',
+          count: Math.round(totalUsers * profile.otherPct / 100),
+          reasons: ['未知中断', '施工割接', '计划停电'] }
+    ];
+    var topReasons = [
+        { name: '光衰过大',     count: Math.round(totalUsers * 0.241) },
+        { name: '频繁掉线',     count: Math.round(totalUsers * 0.198) },
+        { name: 'dying-gasp',  count: Math.round(totalUsers * 0.140) },
+        { name: '设备重启',     count: Math.round(totalUsers * 0.111) },
+        { name: '光路中断',     count: Math.round(totalUsers * 0.082) }
+    ];
+
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    var baseAccounts = [
+        '13700000001','18900000002','13500000003','15900000004','17700000005',
+        '13800000006','18600000007','13900000008','15800000009','17600000010',
+        '13700000011','18900000012','13500000013','15900000014','17700000015'
+    ];
+    var tableRows = '';
+    for (var i = 0; i < 15; i++) {
+        var city = selectedCity || cityList[i % cityList.length] || '长春';
+        var rnd = (i * 7 + 3) % 100;
+        var side;
+        if      (rnd < profile.optPct)                              side = sides[0];
+        else if (rnd < profile.optPct + profile.homePct)           side = sides[1];
+        else if (rnd < profile.optPct + profile.homePct + profile.accPct) side = sides[2];
+        else                                                         side = sides[3];
+        var reason = topReasons[i % topReasons.length];
+        var ceiBase = selectedCity ? (cityList.indexOf(selectedCity) * 3 + 40) : 45;
+        var cei = (ceiBase + (i * 7 + 13) % 30).toFixed(1);
+        var cls = cei < 55 ? 'status-error' : (cei < 70 ? 'status-warning' : 'status-normal');
+        var dateDay = 1 + (i % 2);
+        var dateHour = (8 + i * 2) % 24;
+        var dateStr = '2025-12-0' + dateDay + ' ' + String(dateHour).padStart(2, '0') + ':' + String((i * 17) % 60).padStart(2, '0');
+        var optPwr = (-28 + (i * 31 + 7) % 12).toFixed(1);
+        var dropCnt = 1 + (i * 3) % 14;
+        tableRows += '<tr><td>' + baseAccounts[i] + '</td><td>' + city +
+            '</td><td><span style="padding:2px 8px;background:' + side.color + '22;color:' + side.color +
+            ';border-radius:10px;font-size:11px;font-weight:600;">' + side.name + '</span></td>' +
+            '<td>' + reason.name + '</td>' +
+            '<td><span class="' + cls + '">' + cei + '</span></td>' +
+            '<td>' + optPwr + 'dBm</td>' +
+            '<td>' + dropCnt + '次</td>' +
+            '<td>' + Pages.statusHtml(dropCnt > 8 ? '紧急' : (dropCnt > 4 ? '告警' : '一般')) + '</td>' +
+            '<td>' + dateStr + '</td></tr>';
+    }
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div class="remote-panel"><div class="remote-panel-title">' + ICO.bolt + ' 通断CEI定界分析</div>' +
+        '<div class="remote-form">' +
+        this.cityFilterHtml('connBdCity',
+            'Pages._connBdCity=this.value;Pages.renderConnCeiBoundary(document.getElementById("page-conn-cei-boundary"))',
+            selectedCity) +
+        '<div class="form-group"><label class="form-label">用户账号/IP</label>' +
+        '<input class="form-input" id="connBdAccount" placeholder="输入用户账号或IP" maxlength="11" pattern="[0-9]{11}" value="' + (this._connBdAccount || '') + '" onchange="Pages._connBdAccount=this.value"></div>' +
+        '<div class="form-group"><label class="form-label">时间范围</label>' +
+        '<input class="form-input" type="date" value="2025-12-02" style="width:140px;"></div>' +
+        '<div class="form-group"><label class="form-label">小时</label>' +
+        '<select class="form-select" id="connBdHour" style="width:90px;" onchange="Pages._connBdHour=this.value">' +
+        '<option value="">全天</option>' +
+        (function (sel) { var opts = ''; for (var h = 0; h < 24; h++) { opts += '<option value="' + h + '"' + (String(h) === sel ? ' selected' : '') + '>' + String(h).padStart(2,'0') + ':00</option>'; } return opts; })(this._connBdHour) +
+        '</select></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="Pages.renderConnCeiBoundary(document.getElementById(\'page-conn-cei-boundary\'))">定界查询</button>' +
+        '<button class="btn" onclick="Modal.toast(\'定界报告已导出\',\'success\')">导出报告</button>' +
+        '</div></div></div>' +
+        // 统计卡片
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">' + totalUsers.toLocaleString() + '</div><div class="wo-stat-label">通断质差用户总数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5b8ff9;">' + profile.optPct  + '%</div><div class="wo-stat-label">光路侧占比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#5ad8a6;">' + profile.homePct + '%</div><div class="wo-stat-label">家庭侧占比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f6bd16;">' + profile.accPct  + '%</div><div class="wo-stat-label">接入侧占比</div></div>' +
+        '</div>' +
+        // 图表行
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断定界结果分布' + (selectedCity ? '（' + selectedCity + '）' : '（全省）') + '</span></div><div class="chart-container" id="connBdChart1"></div></div>' +
+        '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断原因TOP5</span></div><div class="chart-container" id="connBdChart2"></div></div>' +
+        '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">通断指标雷达图</span></div><div class="chart-container" id="connBdChart3"></div></div>' +
+        '</div>' +
+        // 明细表格
+        '<div class="data-table-wrapper">' +
+        '<div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">通断CEI定界明细' + (selectedCity ? '（' + selectedCity + '）' : '') + '</div>' +
+        '<table class="data-table"><thead><tr>' +
+        '<th>用户账号</th><th>地市</th><th>定界结果</th><th>主要原因</th>' +
+        '<th>CEI评分</th><th>接收光功率</th><th>掉线次数</th><th>严重程度</th><th>时间</th>' +
+        '</tr></thead><tbody>' + tableRows + '</tbody></table>' +
+        '</div></div>';
+
+    this._renderCeiSplitCharts('connBd', sides, topReasons, [
+        { name: '接收光功率', max: 5 }, { name: '发送光功率', max: 5 },
+        { name: '中断次数',   max: 20 }, { name: '中断时长', max: 60 },
+        { name: '误码率',     max: 10 }
+    ], [3.5, 2.8, 8, 25, 2.5]);
+};
+
+// ========== 通断CEI定位 - 城市Profile版（覆盖对象内旧版本） ==========
+Pages._connLocCityProfile = function (city) {
+    var cityList = (window.JilinData && JilinData.cities) ? JilinData.cities : [];
+    var idx = city ? Math.max(0, cityList.indexOf(city)) + 1 : 0;
+    // 家庭侧定位总数（按城市差异化）
+    var homeBase = 180 + idx * 15;
+    // 网络侧定位总数
+    var netBase  = 160 + idx * 12;
+    function split5(total) {
+        return [
+            Math.round(total * 0.40),
+            Math.round(total * 0.21),
+            Math.round(total * 0.17),
+            Math.round(total * 0.13),
+            total - Math.round(total * 0.40) - Math.round(total * 0.21) - Math.round(total * 0.17) - Math.round(total * 0.13)
+        ];
+    }
+    return {
+        homeTotal:  homeBase,
+        netTotal:   netBase,
+        homeValues: split5(homeBase),
+        netValues:  split5(netBase)
+    };
+};
+
+Pages.renderConnCeiLocate = function (container) {
+    var selectedCity = this._connLocCity || '';
+    var profile = this._connLocCityProfile(selectedCity);
+
+    var familyCauses = [
+        { name: '光猫掉电',          value: profile.homeValues[0] },
+        { name: '光猫中断',          value: profile.homeValues[1] },
+        { name: 'ONU信号丢失',       value: profile.homeValues[2] },
+        { name: 'ONU掉/关电',        value: profile.homeValues[3] },
+        { name: 'ONU物理设备异常',   value: profile.homeValues[4] }
+    ];
+    var networkCauses = [
+        { name: '主干光纤中断',             value: profile.netValues[0] },
+        { name: '分支光纤中断',             value: profile.netValues[1] },
+        { name: '尾纤中断',                 value: profile.netValues[2] },
+        { name: '单板电源异常/离线/不在位', value: profile.netValues[3] },
+        { name: '业务单板硬件故障',         value: profile.netValues[4] }
+    ];
+    var pieColors = ['#5b8ff9','#5ad8a6','#f6bd16','#f6903d','#e96a6a'];
+
+    var self = this;
+    var dims = ['全部','PON/光路','OLT','BNG/BRAS','光缆','家庭侧'];
+    var tags = ['','弱光','高误码','频繁掉线','掉电','光路中断'];
+    var tagLabels = ['全部','弱光','高误码','频繁掉线','掉电','光路中断'];
+    var dimOpts = dims.map(function (d) { return '<option value="' + d + '"' + (d === self._connLocDim ? ' selected' : '') + '>' + d + '</option>'; }).join('');
+    var tagOpts = tags.map(function (v, i) { return '<option value="' + v + '"' + (v === self._connLocTag ? ' selected' : '') + '>' + tagLabels[i] + '</option>'; }).join('');
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div class="remote-panel"><div class="remote-panel-title">' + ICO.search + ' 通断CEI定位分析</div>' +
+        '<div class="remote-form">' +
+        this.cityFilterHtml('connLocCity',
+            'Pages._connLocCity=this.value;Pages.renderConnCeiLocate(document.getElementById("page-conn-cei-locate"))',
+            selectedCity) +
+        '<div class="form-group"><label class="form-label">定位维度</label>' +
+        '<select class="form-select" id="connLocDim" onchange="Pages._connLocDim=this.value">' + dimOpts + '</select></div>' +
+        '<div class="form-group"><label class="form-label">质差标签</label>' +
+        '<select class="form-select" id="connLocTag" onchange="Pages._connLocTag=this.value">' + tagOpts + '</select></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="Pages.renderConnCeiLocate(document.getElementById(\'page-conn-cei-locate\'))">定位分析</button>' +
+        '<button class="btn" onclick="Modal.toast(\'定位报告已导出\',\'success\')">导出</button>' +
+        '</div></div></div>' +
+        // 图表：两个饼图
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:340px;"><div class="chart-card-header"><span class="chart-title">家庭侧定位TOP5原因分布' + (selectedCity ? '（' + selectedCity + '）' : '') + '</span></div><div class="chart-container" id="connLocChart1"></div></div>' +
+        '<div class="chart-card" style="min-height:340px;"><div class="chart-card-header"><span class="chart-title">网络侧定位TOP5原因分布' + (selectedCity ? '（' + selectedCity + '）' : '') + '</span></div><div class="chart-container" id="connLocChart2"></div></div>' +
+        '</div></div>';
+
+    // 家庭侧饼图
+    var d1 = document.getElementById('connLocChart1');
+    if (d1) {
+        var c1 = echarts.init(d1); App.chartInstances['connLocChart1'] = c1;
+        c1.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}户 ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 },
+                      data: familyCauses.map(function (r) { return r.name; }) },
+            color: pieColors,
+            series: [{ type: 'pie', radius: ['40%','65%'], center: ['38%','50%'],
+                data: familyCauses.map(function (r, i) { return { name: r.name, value: r.value, itemStyle: { color: pieColors[i] } }; }),
+                label: { show: true, formatter: '{d}%', fontSize: 11 },
+                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 } }]
+        });
+        window.addEventListener('resize', function () { c1.resize(); });
+    }
+    // 网络侧饼图
+    var d2 = document.getElementById('connLocChart2');
+    if (d2) {
+        var c2 = echarts.init(d2); App.chartInstances['connLocChart2'] = c2;
+        c2.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}户 ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 },
+                      data: networkCauses.map(function (r) { return r.name; }) },
+            color: pieColors,
+            series: [{ type: 'pie', radius: ['40%','65%'], center: ['38%','50%'],
+                data: networkCauses.map(function (r, i) { return { name: r.name, value: r.value, itemStyle: { color: pieColors[i] } }; }),
+                label: { show: true, formatter: '{d}%', fontSize: 11 },
+                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 } }]
+        });
+        window.addEventListener('resize', function () { c2.resize(); });
+    }
+};
+
 // Legacy fallback cleanup for remote-operation pages. enhance-pages.js will replace
 // these when backend APIs are available; this keeps cached/old render paths consistent.
-(function() {
+(function () {
     if (!window.Pages) return;
 
     function esc(v) {
-        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
-            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
     }
 
@@ -4129,20 +4465,20 @@ Pages._showBizBoundaryDetail = function(city) {
     Pages._pingOnt = Pages._pingOnt || '';
     Pages._pingStatus = Pages._pingStatus || '';
 
-    Pages.renderPingTest = function(container, page) {
+    Pages.renderPingTest = function (container, page) {
         this._pingPage = page || this._pingPage || 1;
-        var data = (JilinData.pingTestHistory || []).map(function(r, idx) {
+        var data = (JilinData.pingTestHistory || []).map(function (r, idx) {
             return Object.assign({}, r, { ontId: normalizeOnuId(r.ontId, idx + 1) });
         });
-        if (this._pingCity) data = data.filter(function(r) { return r.city === Pages._pingCity; });
-        if (this._pingTarget) data = data.filter(function(r) { return String(r.target || '').indexOf(Pages._pingTarget) >= 0; });
-        if (this._pingOnt) data = data.filter(function(r) { return String(r.ontId || '').indexOf(Pages._pingOnt.toUpperCase()) >= 0; });
-        if (this._pingStatus) data = data.filter(function(r) { return r.status === Pages._pingStatus; });
+        if (this._pingCity) data = data.filter(function (r) { return r.city === Pages._pingCity; });
+        if (this._pingTarget) data = data.filter(function (r) { return String(r.target || '').indexOf(Pages._pingTarget) >= 0; });
+        if (this._pingOnt) data = data.filter(function (r) { return String(r.ontId || '').indexOf(Pages._pingOnt.toUpperCase()) >= 0; });
+        if (this._pingStatus) data = data.filter(function (r) { return r.status === Pages._pingStatus; });
         var p = this.paginate(data, this._pingPage, 12);
-        var rows = p.data.map(function(r) {
+        var rows = p.data.map(function (r) {
             return '<tr><td>' + esc(r.time) + '</td><td>' + esc(r.ontId) + '</td><td>' + esc(r.target) + '</td><td>' + esc(r.packetSize || 64) + '</td><td>' + esc(r.count || 10) + '</td><td>' + esc(r.interval || 1) + 's</td><td>' + esc(r.city || '-') + '</td><td>' + esc(r.avgDelay) + 'ms</td><td>' + esc(r.maxDelay) + 'ms</td><td>' + esc(r.minDelay || '-') + 'ms</td><td>' + esc(r.packetLoss) + '%</td><td>' + Pages.statusHtml(r.status) + '</td></tr>';
         }).join('') || '<tr><td colspan="12" style="text-align:center;color:#999;padding:18px;">暂无PING历史记录</td></tr>';
-        var statusOpts = ['正常', '告警', '异常'].map(function(s) {
+        var statusOpts = ['正常', '告警', '异常'].map(function (s) {
             return '<option value="' + s + '"' + (s === Pages._pingStatus ? ' selected' : '') + '>' + s + '</option>';
         }).join('');
         container.innerHTML =
@@ -4165,14 +4501,14 @@ Pages._showBizBoundaryDetail = function(city) {
             this.paginationHtml(p, 'Pages.renderPingTest.bind(Pages,document.getElementById("page-ping-test"))') + '</div></div>';
     };
 
-    Pages.applyPingHistoryFilter = function() {
+    Pages.applyPingHistoryFilter = function () {
         this._pingTarget = (document.getElementById('pingTargetFilter') || {}).value || '';
         this._pingOnt = (document.getElementById('pingOntFilter') || {}).value || '';
         this._pingStatus = (document.getElementById('pingStatusFilter') || {}).value || '';
         this.renderPingTest(document.getElementById('page-ping-test'), 1);
     };
 
-    Pages.resetPingFilters = function() {
+    Pages.resetPingFilters = function () {
         this._pingTarget = '';
         this._pingOnt = '';
         this._pingStatus = '';
@@ -4182,7 +4518,7 @@ Pages._showBizBoundaryDetail = function(city) {
         this.renderPingTest(document.getElementById('page-ping-test'), 1);
     };
 
-    Pages.executePing = function() {
+    Pages.executePing = function () {
         if (this._pingRunning) { Modal.toast('PING测试正在执行中，请等待完成', 'warning'); return; }
         var result = document.getElementById('pingResult');
         var target = (document.getElementById('pingTarget') || {}).value.trim();
@@ -4201,13 +4537,13 @@ Pages._showBizBoundaryDetail = function(city) {
             this._pingLastOutput = result.innerHTML;
         }
         var self = this;
-        setTimeout(function() {
+        setTimeout(function () {
             var delays = [];
             for (var i = 0; i < count; i++) delays.push(Math.random() * 15 + 2 + (Math.random() > 0.9 ? Math.random() * 50 : 0));
-            var avg = delays.reduce(function(s, d) { return s + d; }, 0) / delays.length;
+            var avg = delays.reduce(function (s, d) { return s + d; }, 0) / delays.length;
             var min = Math.min.apply(null, delays);
             var max = Math.max.apply(null, delays);
-            var lossRate = parseFloat((delays.filter(function(d) { return d > 100; }).length / count * 100).toFixed(1));
+            var lossRate = parseFloat((delays.filter(function (d) { return d > 100; }).length / count * 100).toFixed(1));
             var html = '<span style="color:#f39c12;">发送给RMS ...</span><br><span style="color:#27ae60;font-weight:600;">RMS返回ping结果</span>' +
                 '<br><span style="color:#00ff88;">--- ' + esc(target) + ' ping统计 ---</span>' +
                 '<br><span style="color:#00ff88;">ONT设备ID：' + esc(ontId) + '</span>' +
@@ -4236,9 +4572,9 @@ Pages._showBizBoundaryDetail = function(city) {
     };
 
     var originalGatewayRender = Pages.renderGatewayRestart;
-    Pages.renderGatewayRestart = function(container, page) {
+    Pages.renderGatewayRestart = function (container, page) {
         if (!JilinData.gatewayRestartRecords) return originalGatewayRender.call(this, container, page);
-        JilinData.gatewayRestartRecords.forEach(function(r, idx) {
+        JilinData.gatewayRestartRecords.forEach(function (r, idx) {
             r.gwId = normalizeOnuId(r.gwId, idx + 1);
             r.sn = /^211\d{8}$/.test(String(r.sn || '')) ? r.sn : ('211' + String(idx + 1).padStart(8, '0'));
             r.reason = normalizeReason(r.reason);
