@@ -380,6 +380,7 @@
     <script src="js/mapdata.js"></script>
     <script src="js/map.js"></script>
     <script src="js/gis-drill.js"></script>
+    <script src="js/cei-cluster.js"></script>
 
     <script>
         // Menu click handler
@@ -406,6 +407,11 @@
             // Hide GIS map if navigating away
             if (window.Pages && Pages._restoreCeiClusterMapHome && page === 'gis-view') { Pages._restoreCeiClusterMapHome(); }
             if (page !== 'gis-view' && page !== 'cei-cluster') { hideGisMap(); }
+            // Clean up cluster map when navigating away from cei-cluster
+            if (page !== 'cei-cluster' && window.Pages && Pages._clusterMapObj) {
+                Pages._clusterMapObj.remove();
+                Pages._clusterMapObj = null;
+            }
 
             // Hide all pages
             document.querySelectorAll('.page-container').forEach(function (c) { c.classList.remove('active'); });
