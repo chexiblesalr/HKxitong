@@ -1261,7 +1261,12 @@ EnhancePages.showXdrDetail = async function (recordId) {
             '<div><strong>上行流量：</strong>' + this._mb(cached.up_bytes) + '</div>' +
             '<div><strong>下行流量：</strong>' + this._mb(cached.down_bytes) + '</div>' +
             '</div>' +
-            '' +
+            '<div style="font-weight:600;margin:12px 0 6px;color:#2b7de9;">原始/协议字段</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:360px;overflow:auto;border:1px solid #e0e4e8;padding:8px;border-radius:4px;">' +
+            Object.keys(cached).filter(function(k){return k!=='_isRealtime';}).map(function(k){
+                return '<div><strong>' + k + '：</strong><span style="word-break:break-all;">' + (cached[k]===null||cached[k]===undefined?'-':cached[k]) + '</span></div>';
+            }).join('') +
+            '</div>' +
             '</div>',
             '<button class="btn" onclick="Modal.close()">关闭</button>', '620px');
         return;
