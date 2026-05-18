@@ -298,12 +298,29 @@ var JilinData = {
         }
 
         // ===== BRAS 设备 30台 =====
+        // BRAS命名规范：省-市-机房-BRAS-序号-厂家
+        var cityRooms = {
+            '长春': ['朝阳机房', '南关机房', '宽城机房', '绿园机房', '二道机房'],
+            '吉林': ['昌邑机房', '船营机房', '龙潭机房', '丰满机房'],
+            '四平': ['铁西机房', '铁东机房', '梨树机房'],
+            '辽源': ['龙山机房', '西安机房'],
+            '通化': ['东昌机房', '梅河口机房', '集安机房'],
+            '白山': ['浑江机房', '江源机房'],
+            '松原': ['宁江机房', '前郭机房', '扶余机房'],
+            '白城': ['洮北机房', '洮南机房', '大安机房'],
+            '延边': ['延吉机房', '敦化机房', '珲春机房', '龙井机房'],
+            '长白山': ['池北机房', '池西机房']
+        };
+        var brasVendors = ['HW', 'ZTE', 'FH'];
         this.brasDevices = [];
         cities.forEach(function(city) {
+            var rooms = cityRooms[city] || [city + '机房'];
             var count = city === '长春' ? 5 : (city === '吉林' || city === '延边' ? 4 : 3);
             for (var i = 1; i <= count; i++) {
+                var room = rooms[(i - 1) % rooms.length];
+                var vendor = SeededRandom.pick(brasVendors);
                 self.brasDevices.push({
-                    name: 'BRAS-' + cityPrefixes[city] + '-' + (i < 10 ? '0' + i : i),
+                    name: 'JL-' + city + '-' + room + '-BRAS-' + (i < 10 ? '0' + i : i) + '-' + vendor,
                     city: city,
                     users: SeededRandom.int(25000, 135000),
                     ceiScore: SeededRandom.float(89.5, 95.5, 1),
@@ -315,9 +332,24 @@ var JilinData = {
         });
 
         // ===== OLT 设备 220台 =====
+        // OLT命名规范：省-市-区县-站点-OLT-序号-厂家-型号
+        var cityDistricts = {
+            '长春': ['南关区', '朝阳区', '宽城区', '二道区', '绿园区', '双阳区', '九台区'],
+            '吉林': ['昌邑区', '龙潭区', '船营区', '丰满区', '永吉县', '蛟河市'],
+            '四平': ['铁西区', '铁东区', '梨树县', '伊通县', '公主岭市', '双辽市'],
+            '辽源': ['龙山区', '西安区', '东丰县', '东辽县'],
+            '通化': ['东昌区', '二道江区', '梅河口市', '集安市', '通化县', '辉南县'],
+            '白山': ['浑江区', '江源区', '临江市', '抚松县', '靖宇县', '长白县'],
+            '松原': ['宁江区', '前郭县', '长岭县', '乾安县', '扶余市'],
+            '白城': ['洮北区', '镇赉县', '通榆县', '洮南市', '大安市'],
+            '延边': ['延吉市', '图们市', '敦化市', '珲春市', '龙井市', '和龙市', '汪清县', '安图县'],
+            '长白山': ['池北区', '池西区', '池南区']
+        };
+        var oltVendorModels = [['HW', 'MA5800-X17'], ['HW', 'MA5800-X7'], ['HW', 'MA5680T'], ['ZTE', 'C300'], ['ZTE', 'C220'], ['FH', 'AN5516-04']];
         this.oltDevices = [];
         var oltOnline = 0, oltOffline = 0, oltAbnormal = 0, oltOverload = 0;
         cities.forEach(function(city) {
+            var dists = cityDistricts[city] || ['城区'];
             var count = city === '长春' ? 45 : (city === '吉林' ? 30 : SeededRandom.int(12, 25));
             for (var i = 1; i <= count; i++) {
                 var st = weightedStatus();
@@ -325,10 +357,14 @@ var JilinData = {
                 if (isOnline) oltOnline++; else oltOffline++;
                 if (st === '告警') oltAbnormal++;
                 if (SeededRandom.next() < 0.03) oltOverload++;
+                var dist = dists[(i - 1) % dists.length];
+                var siteName = dist.replace(/[区县市]$/, '') + '站';
+                var vm = SeededRandom.pick(oltVendorModels);
                 self.oltDevices.push({
-                    id: 'OLT-' + cityPrefixes[city] + '-' + String(i).padStart(4, '0'),
+                    id: 'JL-' + city + '-' + dist + '-' + siteName + '-OLT-' + String(i).padStart(2, '0') + '-' + vm[0] + '-' + vm[1],
                     city: city,
-                    model: SeededRandom.pick(['MA5800-X17', 'MA5800-X7', 'MA5680T', 'C300', 'C220']),
+                    district: dist,
+                    model: vm[1],
                     ponPorts: SeededRandom.int(8, 64),
                     onlineONT: SeededRandom.int(200, 3500),
                     ceiScore: SeededRandom.float(88, 96, 1),

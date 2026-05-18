@@ -368,6 +368,50 @@ var QualityTagSystem = {
         return tags;
     },
 
+    // 区县映射
+    _cityDistricts: {
+        '长春': ['南关区', '朝阳区', '宽城区', '二道区', '绿园区', '双阳区', '九台区'],
+        '吉林': ['昌邑区', '龙潭区', '船营区', '丰满区', '永吉县', '蛟河市'],
+        '四平': ['铁西区', '铁东区', '梨树县', '伊通县', '公主岭市', '双辽市'],
+        '辽源': ['龙山区', '西安区', '东丰县', '东辽县'],
+        '通化': ['东昌区', '二道江区', '梅河口市', '集安市', '通化县', '辉南县'],
+        '白山': ['浑江区', '江源区', '临江市', '抚松县', '靖宇县', '长白县'],
+        '松原': ['宁江区', '前郭县', '长岭县', '乾安县', '扶余市'],
+        '白城': ['洮北区', '镇赉县', '通榆县', '洮南市', '大安市'],
+        '延边': ['延吉市', '图们市', '敦化市', '珲春市', '龙井市', '和龙市', '汪清县', '安图县'],
+        '长白山': ['池北区', '池西区', '池南区']
+    },
+
+    // 机房名称映射
+    _cityRooms: {
+        '长春': ['朝阳机房', '南关机房', '宽城机房', '绿园机房', '二道机房'],
+        '吉林': ['昌邑机房', '船营机房', '龙潭机房', '丰满机房'],
+        '四平': ['铁西机房', '铁东机房', '梨树机房'],
+        '辽源': ['龙山机房', '西安机房'],
+        '通化': ['东昌机房', '梅河口机房', '集安机房'],
+        '白山': ['浑江机房', '江源机房'],
+        '松原': ['宁江机房', '前郭机房', '扶余机房'],
+        '白城': ['洮北机房', '洮南机房', '大安机房'],
+        '延边': ['延吉机房', '敦化机房', '珲春机房', '龙井机房'],
+        '长白山': ['池北机房', '池西机房']
+    },
+
+    // BRAS厂家
+    _brasVendors: ['HW', 'ZTE', 'FH'],
+    // OLT厂家和型号
+    _oltVendorModels: [['HW', 'MA5800-X17'], ['HW', 'MA5800-X7'], ['HW', 'MA5680T'], ['ZTE', 'C300'], ['ZTE', 'C220'], ['FH', 'AN5516-04']],
+
+    // 生成规范化设备名称
+    _makeBrasName: function (city, room, seq, vendor) {
+        return 'JL-' + city + '-' + room + '-BRAS-' + String(seq).padStart(2, '0') + '-' + vendor;
+    },
+    _makeOltName: function (city, district, site, seq, vendor, model) {
+        return 'JL-' + city + '-' + district + '-' + site + '-OLT-' + String(seq).padStart(2, '0') + '-' + vendor + '-' + model;
+    },
+    _makePonName: function (oltName, rack, slot, port) {
+        return oltName + '-' + rack + '/' + slot + '/' + port;
+    },
+
     // 生成用户质差标签数据（批量）
     generateUserTags: function() {
         var stored = DataStore.load('userQualityTags', null);
@@ -377,6 +421,7 @@ var QualityTagSystem = {
         var tags = [];
         var cities = JilinData.cities;
         var tagDefs = this.tagDefinitions;
+        var self = this;
 
         for (var i = 0; i < 500; i++) {
             var city = SeededRandom.pick(cities);
@@ -387,10 +432,36 @@ var QualityTagSystem = {
                 if (userTags.indexOf(def.id) < 0) userTags.push(def.id);
             }
 
+            var districts = self._cityDistricts[city] || ['城区'];
+            var district = SeededRandom.pick(districts);
+            var rooms = self._cityRooms[city] || [city + '机房'];
+            var room = SeededRandom.pick(rooms);
+            var brasVendor = SeededRandom.pick(self._brasVendors);
+            var brasSeq = SeededRandom.int(1, 5);
+            var brasName = self._makeBrasName(city, room, brasSeq, brasVendor);
+
+            var oltVM = SeededRandom.pick(self._oltVendorModels);
+            var siteName = district.replace(/[区县市]$/, '') + '站';
+            var oltSeq = SeededRandom.int(1, 8);
+            var oltName = self._makeOltName(city, district, siteName, oltSeq, oltVM[0], oltVM[1]);
+
+            var rack = 0;
+            var slot = SeededRandom.int(0, 7);
+            var port = SeededRandom.int(0, 15);
+            var ponName = self._makePonName(oltName, rack, slot, port);
+
+            var cellIdx = SeededRandom.int(1, 30);
+            var cellName = district.replace(/[区县市]$/, '') + '-小区-' + String(cellIdx).padStart(3, '0');
+
             tags.push({
                 userAccount: 'JL' + (20250000 + SeededRandom.int(1, 520)),
                 city: city,
-                area: SeededRandom.pick(['南关区', '朝阳区', '宽城区', '昌邑区', '船营区', '铁西区', '龙山区', '东昌区', '宁江区', '洮北区', '延吉市']),
+                area: district,
+                district: district,
+                bras: brasName,
+                oltId: oltName,
+                ponPort: ponName,
+                cell: cellName,
                 tags: userTags,
                 tagNames: userTags.map(function(tid) {
                     for (var j = 0; j < tagDefs.length; j++) { if (tagDefs[j].id === tid) return tagDefs[j].name; }
@@ -401,9 +472,7 @@ var QualityTagSystem = {
                 lastDetectTime: SeededRandom.date('2025-12-01', '2025-12-02'),
                 duration: SeededRandom.int(1, 168) + '小时',
                 status: SeededRandom.pick(['质差中', '质差中', '已恢复', '待确认']),
-                confidence: SeededRandom.float(72, 99, 1),
-                oltId: 'OLT-' + city.substr(0, 1) + '-' + String(SeededRandom.int(1, 20)).padStart(4, '0'),
-                ponPort: 'GPON 0/' + SeededRandom.int(0, 7) + '/' + SeededRandom.int(0, 15)
+                confidence: SeededRandom.float(72, 99, 1)
             });
         }
 
@@ -417,39 +486,40 @@ var QualityTagSystem = {
 // 4. 多维质差聚类引擎
 // ============================================================
 var QualityClusterEngine = {
+    // 通用聚类入口
+    _cluster: function (userTags, keyFn, dimLabel) {
+        var clusters = {};
+        userTags.forEach(function (u) {
+            var key = keyFn(u);
+            if (!key) return;
+            if (!clusters[key]) clusters[key] = { id: key, city: u.city, dimension: dimLabel, users: [], tagMap: {}, count: 0 };
+            clusters[key].users.push(u.userAccount);
+            clusters[key].count++;
+            u.tagNames.forEach(function (t) { clusters[key].tagMap[t] = (clusters[key].tagMap[t] || 0) + 1; });
+        });
+        return clusters;
+    },
+
     // 按维度聚类
     clusterBy: function(dimension) {
         var userTags = QualityTagSystem.generateUserTags();
         var clusters = {};
+        var self = this;
 
         if (dimension === 'olt') {
-            userTags.forEach(function(u) {
-                var key = u.oltId;
-                if (!clusters[key]) clusters[key] = { id: key, city: u.city, dimension: 'OLT', users: [], tagMap: {}, count: 0 };
-                clusters[key].users.push(u.userAccount);
-                clusters[key].count++;
-                u.tagNames.forEach(function(t) { clusters[key].tagMap[t] = (clusters[key].tagMap[t] || 0) + 1; });
-            });
+            clusters = self._cluster(userTags, function (u) { return u.oltId; }, 'OLT');
         } else if (dimension === 'pon') {
-            userTags.forEach(function(u) {
-                var key = u.oltId + '/' + u.ponPort;
-                if (!clusters[key]) clusters[key] = { id: key, city: u.city, dimension: 'PON口', users: [], tagMap: {}, count: 0 };
-                clusters[key].users.push(u.userAccount);
-                clusters[key].count++;
-                u.tagNames.forEach(function(t) { clusters[key].tagMap[t] = (clusters[key].tagMap[t] || 0) + 1; });
-            });
+            clusters = self._cluster(userTags, function (u) { return u.ponPort || (u.oltId + '/GPON 0/' + 0 + '/' + 0); }, 'PON口');
+        } else if (dimension === 'bras') {
+            clusters = self._cluster(userTags, function (u) { return u.bras || '-'; }, 'BRAS');
+        } else if (dimension === 'cell') {
+            clusters = self._cluster(userTags, function (u) { return u.cell || '-'; }, '小区');
         } else if (dimension === 'city') {
-            userTags.forEach(function(u) {
-                var key = u.city;
-                if (!clusters[key]) clusters[key] = { id: key, city: u.city, dimension: '地市', users: [], tagMap: {}, count: 0 };
-                clusters[key].users.push(u.userAccount);
-                clusters[key].count++;
-                u.tagNames.forEach(function(t) { clusters[key].tagMap[t] = (clusters[key].tagMap[t] || 0) + 1; });
-            });
+            clusters = self._cluster(userTags, function (u) { return u.city; }, '地市');
         } else if (dimension === 'area') {
             userTags.forEach(function(u) {
-                var key = u.city + '-' + u.area;
-                if (!clusters[key]) clusters[key] = { id: key, city: u.city, area: u.area, dimension: '网格', users: [], tagMap: {}, count: 0 };
+                var key = u.city + '-' + (u.area || u.district || '未知');
+                if (!clusters[key]) clusters[key] = { id: key, city: u.city, area: u.area || u.district, dimension: '网格', users: [], tagMap: {}, count: 0 };
                 clusters[key].users.push(u.userAccount);
                 clusters[key].count++;
                 u.tagNames.forEach(function(t) { clusters[key].tagMap[t] = (clusters[key].tagMap[t] || 0) + 1; });
