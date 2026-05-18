@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 家宽网络质量分析平台 - 子页面渲染模块 (增强版)
  * 所有"开发中"页面已实现：筛选、图表、分页、详情
  */
@@ -145,23 +145,37 @@ var Pages = {
 
         var cities = JilinData.gisCoordinates;
         var legendHtml = '';
+        function _hs(v){var h=0;v=String(v||'');for(var i=0;i<v.length;i++)h=((h<<5)-h+v.charCodeAt(i))|0;return Math.abs(h);}
         for (var city in cities) {
             (function(cityName) {
                 var c = cities[cityName];
                 var color = c.ceiScore >= 93 ? '#27ae60' : (c.ceiScore >= 91 ? '#f39c12' : '#e74c3c');
                 var users = JilinData.cityGatewayDistribution[cityName] ? JilinData.cityGatewayDistribution[cityName].users : 0;
+                var connCei = Number((JilinData.ceiDistribution[cityName] || {}).network || c.ceiScore);
+                var bizCei  = Number((JilinData.ceiDistribution[cityName] || {}).business || c.ceiScore);
+                var qualUsers = (JilinData.userQualityRecords||[]).filter(function(r){return r.city===cityName;}).length;
+                var qualApps  = (JilinData.bizQualityRecords||[]).filter(function(r){return r.city===cityName;}).length || (3 + _hs(cityName) % 12);
+                var wOrders   = (JilinData.workOrderCityDistribution||{})[cityName] || (20 + _hs(cityName+'o') % 60);
+                var closeRate = Number((88 + (c.ceiScore - 88) * 2).toFixed(1));
+                var activeUsers = Number((users * (0.93 + (_hs(cityName+'a') % 5) / 100)).toFixed(1));
 
                 var marker = L.marker([c.lat, c.lng], {
                     icon: self._createCeiIcon(c.ceiScore, cityName, 36)
                 }).addTo(map);
 
-                var popupContent = '<div style="padding:4px;min-width:180px;">' +
-                    '<div style="font-weight:600;font-size:14px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:6px;">' + cityName + '</div>' +
-                    '<div style="font-size:12px;line-height:2;">' +
-                    '<div>综合CEI: <strong style="color:' + color + ';">' + c.ceiScore + '</strong> 分</div>' +
-                    '<div>用户数: <strong>' + users + '</strong> 万</div>' +
-                    '<div>业务CEI: ' + JilinData.ceiDistribution[cityName].business + ' 分</div>' +
-                    '<div>网络CEI: ' + JilinData.ceiDistribution[cityName].network + ' 分</div>' +
+                var popupContent = '<div style="padding:4px;min-width:210px;">' +
+                    '<div style="font-weight:600;font-size:14px;margin-bottom:8px;border-bottom:2px solid ' + color + ';padding-bottom:6px;">' + cityName + '</div>' +
+                    '<div style="font-size:12px;line-height:1.9;">' +
+                    '<div>总体CEI: <strong style="color:' + color + ';">' + c.ceiScore + '</strong> 分</div>' +
+                    '<div>业务CEI: <strong>' + bizCei + '</strong> 分</div>' +
+                    '<div>通断CEI: <strong>' + connCei + '</strong> 分</div>' +
+                    '<div style="border-top:1px dashed #eee;margin:4px 0;"></div>' +
+                    '<div>用户总数: <strong>' + users + '</strong> 万</div>' +
+                    '<div>活跃用户数: <strong>' + activeUsers + '</strong> 万</div>' +
+                    '<div>质差用户数: <strong style="color:#e74c3c;">' + qualUsers + '</strong></div>' +
+                    '<div>质差应用数: <strong style="color:#e74c3c;">' + qualApps + '</strong></div>' +
+                    '<div>质差工单量: <strong style="color:#f39c12;">' + wOrders + '</strong></div>' +
+                    '<div>工单闭环率: <strong style="color:' + (closeRate>=95?'#27ae60':'#f39c12') + ';">' + closeRate + '%</strong></div>' +
                     '</div>' +
                     '<div style="margin-top:8px;"><a style="color:#2b7de9;font-size:12px;cursor:pointer;" onclick="Pages.gisDrillTo(\'' + cityName + '\')">下钻查看 →</a></div>' +
                     '</div>';
@@ -295,14 +309,21 @@ var Pages = {
                 icon: self._createCeiIcon(score, dist.name, 30)
             }).addTo(map);
 
-            var popupContent = '<div style="padding:4px;min-width:160px;">' +
-                '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + dist.name + '</div>' +
-                '<div style="font-size:12px;line-height:2;">' +
-                '<div>CEI评分: <strong style="color:' + color + ';">' + score + '</strong></div>' +
-                '<div>用户数: ' + userCount + ' 万</div>' +
-                '<div>质差用户: ' + qualityCount + '</div>' +
+            var popupContent = '<div style="padding:4px;min-width:210px;">' +
+                '<div style="font-weight:600;font-size:13px;margin-bottom:6px;border-bottom:2px solid ' + color + ';padding-bottom:5px;">' + dist.name + '</div>' +
+                '<div style="font-size:12px;line-height:1.9;">' +
+                '<div>总体CEI: <strong style="color:' + color + ';">' + score + '</strong> 分</div>' +
+                '<div>业务CEI: <strong>' + businessScore + '</strong> 分</div>' +
+                '<div>通断CEI: <strong>' + networkScore + '</strong> 分</div>' +
+                '<div style="border-top:1px dashed #eee;margin:4px 0;"></div>' +
+                '<div>用户数: <strong>' + userCount + '</strong> 万</div>' +
+                '<div>活跃用户数: <strong>' + Number((userCount * (0.93 + (score % 5) / 100)).toFixed(1)) + '</strong> 万</div>' +
+                '<div>质差用户数: <strong style="color:#e74c3c;">' + qualityCount + '</strong></div>' +
+                '<div>质差应用数: <strong style="color:#e74c3c;">' + qualityApps + '</strong></div>' +
+                '<div>质差工单量: <strong style="color:#f39c12;">' + workOrders + '</strong></div>' +
+                '<div>工单闭环率: <strong style="color:' + (closeRate>=95?'#27ae60':'#f39c12') + ';">' + closeRate + '%</strong></div>' +
                 '</div></div>';
-            marker.bindPopup(popupContent, { maxWidth: 220 });
+            marker.bindPopup(popupContent, { maxWidth: 240 });
 
             self._leafletMarkers.push(marker);
             districtRows.push({

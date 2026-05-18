@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 家宽网络质量分析平台 - 增强页面渲染模块
  * 增强DPI-XDR明细查询、质差标签管理、聚类告警等页面
  */
@@ -3657,11 +3657,22 @@ EnhancePages.exportXdr = function () {
     }
     function netDeductSection(title, mode, rows) {
         rows = rows || [];
-        return '<div class="cfg-deduct-section"><div class="cfg-section-title">' + h(title) + '</div>' +
+        var safeTitle = h(title);
+        var containerId = 'cfgDeduct_' + title.replace(/\s/g, '');
+        var isRange = mode === '区间扣分';
+        var rowsHtml = rows.map(function (r, i) {
+            if (r.length > 3) {
+                return '<div class="cfg-deduct-row" data-idx="' + i + '">' + select('op', ['=', '>=', '>', '<', '<='], r[0]) + input('limit', r[1]) + '<span>-</span>' + input('limit2', r[2]) + input('score', r[3]) + '<button class="cfg-icon-btn" type="button" onclick="Pages.removeDeductRow(this)">-</button></div>';
+            } else {
+                return '<div class="cfg-deduct-row cfg-deduct-row-threshold" data-idx="' + i + '">' + select('op', ['=', '>=', '>', '<', '<='], r[0]) + input('limit', r[1]) + '<span>:</span>' + input('score', r[2]) + '<button class="cfg-icon-btn" type="button" onclick="Pages.removeDeductRow(this)">-</button></div>';
+            }
+        }).join('');
+        return '<div class="cfg-deduct-section" id="' + containerId + '">' +
+            '<div class="cfg-section-title">' + safeTitle + '</div>' +
             fg('扣分方式', select('netDeduct' + title, ['门限扣分', '区间扣分'], mode || '门限扣分')) +
-            '<div class="cfg-deduct-head"><span>' + (mode === '区间扣分' ? '区间' : '门限') + '</span><span>扣分</span></div>' +
-            rows.map(function (r) { return '<div class="cfg-deduct-row">' + select('op', ['=', '>=', '>', '<', '<='], r[0]) + input('limit', r[1]) + (r.length > 3 ? '<span>-</span>' + input('limit2', r[2]) + input('score', r[3]) : input('score', r[2])) + '<button class="cfg-icon-btn" type="button">-</button></div>'; }).join('') +
-            '<button class="cfg-add-line" type="button">+</button></div>';
+            '<div class="cfg-deduct-head"><span>' + (isRange ? '区间' : '门限') + '</span><span>扣分</span></div>' +
+            '<div class="cfg-deduct-rows">' + rowsHtml + '</div>' +
+            '<button class="cfg-add-line" type="button" onclick="Pages.addDeductRow(this,' + (isRange ? 'true' : 'false') + ')">+</button></div>';
     }
 
     function userQualityHtml(data) {
@@ -3857,6 +3868,31 @@ EnhancePages.exportXdr = function () {
             if (!detailEl) return;
             detailEl.style.display = radioEl && radioEl.value === 'AI动态' ? 'none' : '';
         });
+    };
+    Pages.removeDeductRow = function (btn) {
+        var row = btn.closest('.cfg-deduct-row');
+        if (!row) return;
+        var container = row.parentElement;
+        if (container && container.querySelectorAll('.cfg-deduct-row').length <= 1) {
+            Modal.toast('至少保留一条规则', 'warning');
+            return;
+        }
+        row.remove();
+    };
+    Pages.addDeductRow = function (btn, isRange) {
+        var section = btn.closest('.cfg-deduct-section');
+        if (!section) return;
+        var container = section.querySelector('.cfg-deduct-rows');
+        if (!container) return;
+        var newRow = document.createElement('div');
+        if (isRange) {
+            newRow.className = 'cfg-deduct-row';
+            newRow.innerHTML = select('op', ['=', '>=', '>', '<', '<='], '=') + input('limit', '') + '<span>-</span>' + input('limit2', '') + input('score', '') + '<button class="cfg-icon-btn" type="button" onclick="Pages.removeDeductRow(this)">-</button>';
+        } else {
+            newRow.className = 'cfg-deduct-row cfg-deduct-row-threshold';
+            newRow.innerHTML = select('op', ['=', '>=', '>', '<', '<='], '=') + input('limit', '') + '<span>:</span>' + input('score', '') + '<button class="cfg-icon-btn" type="button" onclick="Pages.removeDeductRow(this)">-</button>';
+        }
+        container.appendChild(newRow);
     };
     Pages.collectConfigPayload = function () {
         var cat = fieldVal('beCfgCat');

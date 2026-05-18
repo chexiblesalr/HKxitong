@@ -1,5 +1,5 @@
 /**
- * GIS视图 - 业务CEI分数下钻
+ * GIS视图 - 钻
  * 四级下钻：地市 → 区县 → BRAS → OLT
  * 替换 enhance-pages.js 中的 showGisMetricDrill
  */

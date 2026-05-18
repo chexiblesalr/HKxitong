@@ -3030,6 +3030,7 @@ html, body {
 .cfg-score-row { display: grid; grid-template-columns: 150px 150px 110px 110px 110px 28px; gap: 10px; align-items: end; margin-bottom: 8px; }
 .cfg-deduct-head { display: grid; grid-template-columns: 140px 120px; gap: 16px; margin: 4px 0 6px 42px; font-size: 12px; color: #4b5563; }
 .cfg-deduct-row { display: grid; grid-template-columns: 42px 70px 20px 70px 88px 28px; gap: 8px; align-items: center; margin-bottom: 8px; max-width: 360px; }
+.cfg-deduct-row-threshold { grid-template-columns: 42px 70px 12px 88px 28px; }
 .cfg-deduct-row .form-input, .cfg-deduct-row .form-select { height: 28px; }
 .cfg-note { margin-top: 12px; padding: 10px 12px; background: #f7faff; border: 1px solid #d8e4f6; color: #42526b; font-size: 12px; line-height: 1.7; }
 .cfg-action-row { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
