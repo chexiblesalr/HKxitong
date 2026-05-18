@@ -541,7 +541,7 @@ EnhancePages.renderClusterAlert = function (container) {
     var clusters = QualityClusterEngine.clusterBy(dim);
     var alerts = clusters.filter(function (c) { return c.isAlert; });
 
-    var dimLabels = { 'olt': 'OLT维度', 'pon': 'PON口维度', 'bras': 'BRAS维度', 'cell': '小区维度', 'city': '地市维度', 'area': '网格维度', 'tag': '标签维度', 'time': '时间段维度' };
+    var dimLabels = { 'olt': 'OLT维度', 'pon': 'PON端口维度', 'bras': 'BRAS维度', 'cell': '小区维度', 'city': '地市维度', 'area': '网格维度', 'tag': '标签维度', 'time': '时间段维度' };
     var dimOpts = '';
     Object.keys(dimLabels).forEach(function (k) {
         dimOpts += '<option value="' + k + '"' + (k === dim ? ' selected' : '') + '>' + dimLabels[k] + '</option>';
