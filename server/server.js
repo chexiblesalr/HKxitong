@@ -1054,7 +1054,7 @@ async function startServer() {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
             [woId, title, type||'用户申诉', parseInt(city_id), user_account||'-', status, priority||'中', assignee||'-', parseInt(deadline)||24, description||'', note||'']);
         saveDb();
-        execute(`INSERT INTO operation_logs (username, action, module, content, result, ip, created_at) VALUES ('admin','创建工单','工单管理','创建工单 ${woId}: ${title}','成功','10.168.1.100',datetime('now','localtime'))`);
+        execute(`INSERT INTO operation_logs (username, action, module, description, result, ip_address, created_at) VALUES ('admin','创建工单','工单管理','创建工单 ${woId}: ${title}','成功','10.168.1.100',datetime('now','localtime'))`);
         saveDb();
         res.json(ok({ id: woId, status }));
     });
@@ -1065,7 +1065,7 @@ async function startServer() {
         execute(`UPDATE work_orders SET assignee=?, status='处理中', dispatch_method=?, deadline_hours=?, dispatch_note=?, dispatched_at=datetime('now','localtime') WHERE order_id=?`,
             [assignee, method||'系统派单', parseInt(deadline)||24, note||'', woId]);
         saveDb();
-        execute(`INSERT INTO operation_logs (username, action, module, content, result, ip, created_at) VALUES ('admin','派发工单','工单管理','派发 ${woId} 至 ${assignee}','成功','10.168.1.100',datetime('now','localtime'))`);
+        execute(`INSERT INTO operation_logs (username, action, module, description, result, ip_address, created_at) VALUES ('admin','派发工单','工单管理','派发 ${woId} 至 ${assignee}','成功','10.168.1.100',datetime('now','localtime'))`);
         saveDb();
         res.json(ok({ id: woId, assignee, status: '处理中' }));
     });
@@ -1305,7 +1305,7 @@ async function startServer() {
         const { module, username, page, pageSize } = req.query;
         let w=' WHERE 1=1',p=[];
         if(module){w+=' AND module=?';p.push(module);}if(username){w+=" AND username LIKE '%'||?||'%'";p.push(username);}
-        res.json(ok(paginate(`SELECT * FROM operation_logs ${w} ORDER BY created_at DESC`,
+        res.json(ok(paginate(`SELECT *, ip_address AS ip, description AS content FROM operation_logs ${w} ORDER BY created_at DESC`,
             `SELECT COUNT(*) as total FROM operation_logs ${w}`, p, page, pageSize)));
     });
     app.get('/api/configs', (req, res) => {

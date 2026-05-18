@@ -2990,12 +2990,18 @@ var Pages = {
 
     // ========== 日志管理 (完整搜索/分页/导出) ==========
     _logPage: 1, _logModule: '', _logKeyword: '',
-    renderLogManagement: function(container, page) {
+    renderLogManagement: async function(container, page) {
         this._logPage = page || 1;
-        var logs = DataStore.load('logs', []);
-        // 筛选
-        if (this._logModule) logs = logs.filter(function(l) { return l.module === Pages._logModule; });
-        if (this._logKeyword) {
+        var useApi = window.API && API.logs;
+        var resp = useApi ? await API.logs({
+            page: this._logPage,
+            pageSize: 12,
+            module: this._logModule || '',
+            username: this._logKeyword || ''
+        }) : null;
+        var logs = resp && resp.data ? resp.data : DataStore.load('logs', []);
+        if (!useApi && this._logModule) logs = logs.filter(function(l) { return l.module === Pages._logModule; });
+        if (!useApi && this._logKeyword) {
             var kw = this._logKeyword.toLowerCase();
             logs = logs.filter(function(l) {
                 return (l.operator || '').toLowerCase().indexOf(kw) >= 0 ||
@@ -3003,10 +3009,14 @@ var Pages = {
                        (l.action || '').toLowerCase().indexOf(kw) >= 0;
             });
         }
-        var p = this.paginate(logs, this._logPage, 12);
-        var rows = p.data.map(function(r) {
+        var p = useApi && resp && resp.pagination ? resp.pagination : this.paginate(logs, this._logPage, 12);
+        var pageRows = useApi ? logs : p.data;
+        var rows = pageRows.map(function(r) {
             var resCls = r.result === '成功' ? 'status-normal' : 'status-error';
-            return '<tr><td>' + r.time + '</td><td>' + r.operator + '</td><td>' + (r.ip || '-') + '</td><td>' + r.module + '</td><td>' + r.action + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.content + '">' + r.content + '</td><td><span class="' + resCls + '">' + r.result + '</span></td></tr>';
+            var actor = r.operator || r.username || '-';
+            var ip = r.ip || r.ip_address || '-';
+            var content = r.content || r.description || '-';
+            return '<tr><td>' + (r.time || r.created_at || '-') + '</td><td>' + actor + '</td><td>' + ip + '</td><td>' + (r.module || '-') + '</td><td>' + (r.action || '-') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + content + '">' + content + '</td><td><span class="' + resCls + '">' + (r.result || '成功') + '</span></td></tr>';
         }).join('');
         var moduleOpts = '<option value="">全部模块</option>';
         ['远程操作','质量画像','工单管理','系统管理','用户管理','配置中心','质差识别','全景视图'].forEach(function(m) {
@@ -3020,7 +3030,7 @@ var Pages = {
             '<button class="btn btn-primary" onclick="Pages.searchLogs()">搜索</button>' +
             '<button class="btn" onclick="Pages.exportLogs()">导出</button>' +
             '<button class="btn" onclick="Pages.clearLogs()">清空日志</button></div></div>' +
-            '<div class="system-panel-body"><div style="margin-bottom:8px;font-size:12px;color:#999;">共 ' + logs.length + ' 条日志记录</div>' +
+            '<div class="system-panel-body"><div style="margin-bottom:8px;font-size:12px;color:#999;">共 ' + (p.total || logs.length) + ' 条日志记录</div>' +
             '<table class="data-table"><thead><tr><th>时间</th><th>操作人</th><th>IP地址</th><th>模块</th><th>操作类型</th><th>操作内容</th><th>结果</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderLogManagement.bind(Pages,document.getElementById("page-log-management"))') +
             '</div></div></div>';

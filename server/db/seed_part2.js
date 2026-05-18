@@ -327,15 +327,34 @@ db.transaction(() => {
 // ===== 20. 操作日志 (600条) =====
 console.log('插入操作日志...');
 const logInsert = db.prepare(`INSERT INTO operation_logs (username,ip_address,module,action,description,result,created_at) VALUES (?,?,?,?,?,?,?)`);
-const modules = ['全景视图','质量画像','质差定界','远程操作','工单管理','用户管理','系统管理','登录认证'];
-const actions = ['查询','导出','新增','编辑','删除','登录','登出','PING测试','网关重启','DPI抓包','工单派发','工单处理'];
+const logPairs = {
+    '全景视图': ['查询','导出'],
+    '质量画像': ['查询','导出','CEI查询'],
+    '质差定界': ['分析','定位','导出'],
+    '远程操作': ['PING测试','网关重启','ONT光功率查询'],
+    '工单管理': ['新增','编辑','工单派发','工单处理'],
+    '用户管理': ['查询','新增','编辑','密码重置','账号锁定'],
+    '系统管理': ['查询','编辑','配置变更'],
+    '登录认证': ['登录','登出']
+};
+const logContent = {
+    '全景视图': '查看全省网络质量全景指标',
+    '质量画像': '查询用户质量画像与CEI评分',
+    '质差定界': '执行质差定界定位分析',
+    '远程操作': '下发远程诊断操作',
+    '工单管理': '处理质差闭环工单',
+    '用户管理': '维护系统用户与权限',
+    '系统管理': '调整系统配置或查看系统状态',
+    '登录认证': '完成账号登录认证'
+};
+const modules = Object.keys(logPairs);
 
 db.transaction(() => {
     for (let i = 0; i < 600; i++) {
         const mod = pick(modules);
-        const act = pick(actions);
+        const act = pick(logPairs[mod]);
         logInsert.run(pick(['admin','zhangwei','cc_admin','jl_admin','sp_op1','ly_admin','th_op1','sy_admin']),
-            rip(), mod, act, mod+'-'+act+'-'+pick(['成功','完成','执行']),
+            rip(), mod, act, logContent[mod] + '：' + act,
             srand()>0.05?'成功':'失败',
             rdate('2025-11-16','2025-12-02')
         );

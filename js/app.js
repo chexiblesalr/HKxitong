@@ -649,7 +649,7 @@ var App = {
 // --- Page to group mapping for breadcrumb ---
 var PAGE_GROUP_MAP = {
     'broadband-quality': '全景视图', 'gis-view': '全景视图', 'kpi-view': '全景视图', 'con-analysis': '全景视图', 'pon-power': '全景视图', 'optical-test': '全景视图',
-    'cei-query': '质量画像', 'cei-cluster': '质量画像', 'quality-model': '质量画像', 'user-quality': '质量画像', 'quality-cluster': '质量画像', 'biz-quality': '质量画像', 'biz-cluster': '质量画像',
+    'cei-query': '质量画像', 'cei-cluster': '质量画像', 'quality-model': '质差识别', 'user-quality': '质差识别', 'quality-cluster': '质差识别', 'biz-quality': '质差识别', 'biz-cluster': '质差识别',
     'ce-location': '质差定界定位', 'biz-cei-boundary': '质差定界定位', 'biz-cei-locate': '质差定界定位', 'conn-cei-boundary': '质差定界定位', 'conn-cei-locate': '质差定界定位', 'dpi-capture': '质差定界定位', 'quality-location': '质差定界定位',
     'ping-test': '远程操作', 'ont-power': '远程操作', 'gateway-restart': '远程操作',
     'work-order': '工单闭环', 'work-order-eval': '工单闭环',
@@ -668,8 +668,8 @@ var PAGE_LABEL_MAP = {
     'home': '运营驾驶舱'
 };
 
-PAGE_GROUP_MAP['quality-tags'] = PAGE_GROUP_MAP['quality-cluster'];
-PAGE_GROUP_MAP['cluster-alert'] = PAGE_GROUP_MAP['quality-cluster'];
+PAGE_GROUP_MAP['quality-tags'] = '质差识别';
+PAGE_GROUP_MAP['cluster-alert'] = '质差识别';
 PAGE_GROUP_MAP['cei-comparison'] = PAGE_GROUP_MAP['work-order'];
 PAGE_GROUP_MAP['quality-loop'] = PAGE_GROUP_MAP['work-order'];
 PAGE_LABEL_MAP['quality-tags'] = '质差标签管理';
