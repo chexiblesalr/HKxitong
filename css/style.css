@@ -3039,3 +3039,23 @@ html, body {
   .cfg-rule-row, .cfg-rule-row-wide, .cfg-score-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cfg-check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.cei-query-table th,
+.cei-query-table td,
+.cei-kqi-table th,
+.cei-kqi-table td {
+    white-space: nowrap;
+}
+.cei-query-table .drill-link {
+    color: #2b7de9;
+    cursor: pointer;
+    font-weight: 600;
+}
+.cei-kqi-table td[rowspan] {
+    background: #f8fbff;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* Hide header clock to avoid mismatch with real-time test records */
+.header-clock { display: none !important; }
