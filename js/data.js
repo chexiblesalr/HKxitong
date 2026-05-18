@@ -543,18 +543,39 @@ var JilinData = {
 
         // ===== 业务质差记录 150条 =====
         this.bizQualityRecords = [];
+        var bizAppMap = {
+            '视频': ['腾讯视频', '爱奇艺', '优酷视频', '抖音', '快手', '哔哩哔哩'],
+            '游戏': ['王者荣耀', '和平精英', '英雄联盟手游', '原神', '穿越火线'],
+            '在线办公': ['企业微信', '钉钉', '腾讯会议', '飞书', 'WPS云文档'],
+            '网站/下载': ['百度网盘', '迅雷下载', '浏览器下载', '京东商城', '淘宝']
+        };
+        var bizQualityMap = {
+            '视频': ['视频高时延', '视频卡顿'],
+            '游戏': ['游戏高时延', '游戏卡顿'],
+            '在线办公': ['应用高时延', '应用卡顿'],
+            '网站/下载': ['应用高时延', '应用卡顿']
+        };
         for (var i = 0; i < 150; i++) {
             var city = SeededRandom.pick(cities);
+            var bizType = SeededRandom.pick(['视频', '游戏', '在线办公', '网站/下载']);
+            var relatedOlt = SeededRandom.pick(this.oltDevices.filter(function(o) { return o.city === city; }));
+            var startHour = SeededRandom.int(8, 21);
+            var level = SeededRandom.pick(['高', '中', '低']);
             this.bizQualityRecords.push({
-                bizType: SeededRandom.pick(['宽带上网', 'IPTV', '视频通话', '在线游戏', '云办公', '在线教育']),
+                bizType: bizType,
+                appName: SeededRandom.pick(bizAppMap[bizType]),
+                qualityType: SeededRandom.pick(bizQualityMap[bizType]),
                 city: city,
+                impactScope: SeededRandom.next() > 0.45 ? (city + (relatedOlt && relatedOlt.district ? relatedOlt.district : '城区')) : (relatedOlt ? relatedOlt.id : city + '城区'),
+                occurrenceTime: '2026-05-17 ' + String(startHour).padStart(2, '0') + ':00 ~ 2026-05-17 ' + String(Math.min(startHour + SeededRandom.int(1, 4), 23)).padStart(2, '0') + ':00',
                 affectedUsers: SeededRandom.int(10, 5000),
                 avgCei: SeededRandom.float(60, 88, 1),
                 avgLatency: SeededRandom.float(8, 60, 1),
                 avgSpeed: SeededRandom.float(30, 200, 1),
                 packetLoss: SeededRandom.float(0, 8, 2),
-                qualityLevel: SeededRandom.pick(['优', '良', '中', '差']),
-                reportTime: SeededRandom.date('2025-11-20', '2025-12-02')
+                qualityLevel: level,
+                severity: level,
+                reportTime: SeededRandom.date('2026-05-17', '2026-05-18')
             });
         }
 

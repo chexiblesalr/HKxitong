@@ -1921,37 +1921,114 @@ var Pages = {
 
     // ========== 业务质差 (增强：质差标签+影响范围) ==========
     _bqPage: 1, _bqCity: '', _bqType: '',
+    _bizQualityTypes: ['视频', '游戏', '在线办公', '网站/下载'],
+    _bizAppMap: {
+        '视频': ['腾讯视频', '爱奇艺', '优酷视频', '抖音', '快手', '哔哩哔哩'],
+        '游戏': ['王者荣耀', '和平精英', '英雄联盟手游', '原神', '穿越火线'],
+        '在线办公': ['企业微信', '钉钉', '腾讯会议', '飞书', 'WPS云文档'],
+        '网站/下载': ['百度网盘', '迅雷下载', '浏览器下载', '京东商城', '淘宝']
+    },
+    _bizQualityTypeMap: {
+        '视频': ['视频高时延', '视频卡顿'],
+        '游戏': ['游戏高时延', '游戏卡顿'],
+        '在线办公': ['应用高时延', '应用卡顿'],
+        '网站/下载': ['应用高时延', '应用卡顿']
+    },
+    _bizTagDefinitions: {
+        '视频高时延': [
+            ['TCP建连时延', '>=150ms 高；>100ms and <150ms 中；>60ms，<=100ms 低'],
+            ['HTTP平均响应时延', '>=180ms 高；>120ms and <180ms 中；>70ms，<=120ms 低']
+        ],
+        '视频卡顿': [
+            ['HTTP响应成功率', '<=90% 高；>90% and <95% 中；>95%，<99% 低'],
+            ['视频卡顿时长占比', '>1% 高；>0.5% and <1% 中；>0.1%，<0.5% 低'],
+            ['抖动', '>20ms 高；>12ms and <20ms 中；>5ms，<12ms 低'],
+            ['丢包率', '>2% 高；>1% and <2% 中；>0.1%，<1% 低'],
+            ['下载速率', '<1000Kbps 高；>1000Kbps and <5000Kbps 中；<8000Kbps，>5000Kbps 低']
+        ],
+        '游戏高时延': [
+            ['TCP建连时延', '>=150ms 高；>100ms and <150ms 中；>60ms，<=100ms 低'],
+            ['HTTP平均响应时延', '>=180ms 高；>120ms and <180ms 中；>70ms，<=120ms 低']
+        ],
+        '游戏卡顿': [
+            ['HTTP响应成功率', '<=90% 高；>90% and <95% 中；>95%，<99% 低'],
+            ['抖动', '>20ms 高；>12ms and <20ms 中；>5ms，<12ms 低'],
+            ['丢包率', '>2% 高；>1% and <2% 中；>0.1%，<1% 低'],
+            ['下载速率', '<1000Kbps 高；>1000Kbps and <5000Kbps 中；<8000Kbps，>5000Kbps 低']
+        ],
+        '应用高时延': [
+            ['TCP建连时延', '>=150ms 高；>100ms and <150ms 中；>60ms，<=100ms 低'],
+            ['HTTP平均响应时延', '>=180ms 高；>120ms and <180ms 中；>70ms，<=120ms 低']
+        ],
+        '应用卡顿': [
+            ['HTTP响应成功率', '<=90% 高；>90% and <95% 中；>95%，<99% 低'],
+            ['下载速率', '<1000Kbps 高；>1000Kbps and <5000Kbps 中；<8000Kbps，>5000Kbps 低'],
+            ['抖动', '>20ms 高；>12ms and <20ms 中；>5ms，<12ms 低'],
+            ['丢包率', '>2% 高；>1% and <2% 中；>0.1%，<1% 低'],
+            ['下载成功率', '<=90% 高；>90% and <95% 中；>95%，<99% 低']
+        ]
+    },
+    _normalizeBizQualityRecord: function(r, idx) {
+        var oldTypeMap = { 'IPTV': '视频', '视频通话': '视频', '在线游戏': '游戏', '云办公': '在线办公', '在线教育': '在线办公', '宽带上网': '网站/下载' };
+        var bizType = this._bizQualityTypes.indexOf(r.bizType) >= 0 ? r.bizType : (oldTypeMap[r.bizType] || this._bizQualityTypes[idx % this._bizQualityTypes.length]);
+        var qualityTypes = this._bizQualityTypeMap[bizType] || ['应用高时延'];
+        var cityOlts = (JilinData.oltDevices || []).filter(function(o) { return o.city === r.city; });
+        var olt = cityOlts.length ? cityOlts[idx % cityOlts.length] : null;
+        var level = r.severity || r.qualityLevel;
+        if (level === '差') level = '高';
+        if (level === '良' || level === '优') level = '低';
+        var startHour = 18 + (idx % 3);
+        return {
+            bizType: bizType,
+            appName: r.appName || this._bizAppMap[bizType][idx % this._bizAppMap[bizType].length],
+            qualityType: r.qualityType || qualityTypes[idx % qualityTypes.length],
+            impactScope: r.impactScope || (idx % 2 === 0 ? (r.city + (olt && olt.district ? olt.district : '城区')) : (olt ? olt.id : r.city + '城区')),
+            occurrenceTime: r.occurrenceTime || ('2026-05-17 ' + String(startHour).padStart(2, '0') + ':00 ~ 2026-05-17 ' + String(startHour + 2).padStart(2, '0') + ':00'),
+            severity: level || '中'
+        };
+    },
     renderBizQuality: function(container, page) {
         this._bqPage = page || 1;
         var data = JilinData.bizQualityRecords;
-        if (this._bqCity) data = data.filter(function(d) { return d.city === Pages._bqCity; });
-        if (this._bqType) data = data.filter(function(d) { return d.bizType === Pages._bqType; });
+        if (this._bqType) data = data.filter(function(d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
         var p = this.paginate(data, this._bqPage, 12);
-        var rows = p.data.map(function(r) {
-            var lvlCls = r.qualityLevel === '差' ? 'status-error' : (r.qualityLevel === '中' ? 'status-warning' : 'status-normal');
-            return '<tr><td><span class="badge badge-primary" style="font-size:10px;">' + r.bizType + '</span></td><td>' + r.city + '</td><td>' + r.affectedUsers + '</td><td>' + r.avgCei + '</td><td>' + r.avgLatency + 'ms</td><td>' + r.avgSpeed + 'Mbps</td><td>' + r.packetLoss + '%</td><td><span class="' + lvlCls + '">' + r.qualityLevel + '</span></td><td>' + r.reportTime + '</td></tr>';
+        var startIdx = (this._bqPage - 1) * 12;
+        var rows = p.data.map(function(r, i) {
+            var d = Pages._normalizeBizQualityRecord(r, startIdx + i);
+            var lvlCls = d.severity === '高' ? 'status-error' : (d.severity === '中' ? 'status-warning' : 'status-normal');
+            return '<tr><td><span class="badge badge-primary" style="font-size:10px;">' + d.bizType + '</span></td><td>' + d.appName + '</td><td><a style="color:#2b7de9;cursor:pointer;font-weight:600;" onclick="Pages.showBizQualityDefinition(\'' + d.bizType + '\',\'' + d.qualityType + '\')">' + d.qualityType + '</a></td><td>' + d.impactScope + '</td><td>' + d.occurrenceTime + '</td><td><span class="' + lvlCls + '">' + d.severity + '</span></td></tr>';
         }).join('');
         var bizOpts = '<option value="">全部业务</option>';
-        ['宽带上网', 'IPTV', '视频通话', '在线游戏', '云办公', '在线教育'].forEach(function(t) {
+        this._bizQualityTypes.forEach(function(t) {
             bizOpts += '<option value="' + t + '"' + (t === Pages._bqType ? ' selected' : '') + '>' + t + '</option>';
         });
         container.innerHTML =
             '<div class="page-content"><div class="remote-panel"><div class="remote-panel-title">业务质差分析</div>' +
-            '<div class="remote-form">' + this.cityFilterHtml('bqCityFilter', 'Pages._bqCity=this.value;Pages.renderBizQuality(document.getElementById("page-biz-quality"),1)', this._bqCity) +
-            '<div class="form-group"><label class="form-label">业务类型</label><select class="form-select" onchange="Pages._bqType=this.value;Pages.renderBizQuality(document.getElementById(\'page-biz-quality\'),1)">' + bizOpts + '</select></div>' +
+            '<div class="remote-form"><div class="form-group"><label class="form-label">业务类型</label><select class="form-select" onchange="Pages._bqType=this.value;Pages.renderBizQuality(document.getElementById(\'page-biz-quality\'),1)">' + bizOpts + '</select></div>' +
             '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;"><button class="btn btn-primary" onclick="Pages.renderBizQuality(document.getElementById(\'page-biz-quality\'),1)">查询</button><button class="btn" onclick="Pages.exportBizQuality()">导出</button></div></div></div>' +
-            '<div style="margin-bottom:8px;padding:8px 12px;background:#f0f5ff;border:1px solid #b8d4fe;border-radius:4px;font-size:12px;color:#1a5bb8;">业务质差标签说明：标签包含业务名称、质差类型、影响范围（区域/OLT）、发生时段、严重程度。如"游戏高时延"标签表示该业务在特定区域存在时延超标问题。</div>' +
-            '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>业务类型</th><th>地市</th><th>影响用户数</th><th>平均CEI</th><th>平均时延</th><th>平均速率</th><th>丢包率</th><th>质量等级</th><th>上报时间</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+            '<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>业务类型</th><th>业务名称</th><th>质差类型</th><th>影响范围</th><th>发生时段</th><th>严重程度</th></tr></thead><tbody>' + rows + '</tbody></table>' +
             this.paginationHtml(p, 'Pages.renderBizQuality.bind(Pages,document.getElementById("page-biz-quality"))') + '</div></div>';
+    },
+
+    showBizQualityDefinition: function(bizType, qualityType) {
+        var defs = this._bizTagDefinitions[qualityType] || [];
+        var rows = defs.map(function(d) {
+            return '<tr><td>' + bizType + '</td><td>' + qualityType + '</td><td>' + d[0] + '</td><td style="white-space:normal;line-height:1.7;">' + d[1] + '</td></tr>';
+        }).join('');
+        Modal.show('质差标签定义 - ' + qualityType,
+            '<table class="data-table"><thead><tr><th>业务类型</th><th>质差类型</th><th>质差标签</th><th>定义</th></tr></thead><tbody>' + rows + '</tbody></table>',
+            '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>',
+            '860px'
+        );
     },
 
     exportBizQuality: function() {
         var data = JilinData.bizQualityRecords;
-        if (this._bqCity) data = data.filter(function(d) { return d.city === Pages._bqCity; });
-        if (this._bqType) data = data.filter(function(d) { return d.bizType === Pages._bqType; });
-        var csv = '业务类型,地市,影响用户数,平均CEI,平均时延(ms),平均速率(Mbps),丢包率(%),质量等级,上报时间\n';
-        data.forEach(function(r) {
-            csv += [r.bizType, r.city, r.affectedUsers, r.avgCei, r.avgLatency, r.avgSpeed, r.packetLoss, r.qualityLevel, r.reportTime].join(',') + '\n';
+        if (this._bqType) data = data.filter(function(d, idx) { return Pages._normalizeBizQualityRecord(d, idx).bizType === Pages._bqType; });
+        var csv = '业务类型,业务名称,质差类型,影响范围,发生时段,严重程度\n';
+        data.forEach(function(r, idx) {
+            var d = Pages._normalizeBizQualityRecord(r, idx);
+            csv += [d.bizType, d.appName, d.qualityType, d.impactScope, d.occurrenceTime, d.severity].join(',') + '\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
@@ -1968,31 +2045,31 @@ var Pages = {
         var clusterEvents = [];
         for (var i = 0; i < 8; i++) {
             var city = SeededRandom.pick(JilinData.cities);
+            var cityOlts = (JilinData.oltDevices || []).filter(function(o) { return o.city === city; });
+            var relatedOlt = cityOlts.length ? cityOlts[i % cityOlts.length] : null;
             clusterEvents.push({
                 id: 'BC-' + String(i + 1).padStart(3, '0'),
-                bizType: SeededRandom.pick(['宽带上网', 'IPTV', '在线游戏', '视频通话']),
+                bizCount: SeededRandom.int(3, 8),
                 city: city,
-                oltId: 'OLT-' + city.substr(0, 1) + '-' + String(SeededRandom.int(1, 20)).padStart(4, '0'),
+                oltId: relatedOlt ? relatedOlt.id : 'JL-' + city + '-城区-城区站-OLT-01-HW-MA5800-X7',
                 affectedUsers: SeededRandom.int(50, 800),
-                timeRange: '2025-12-02 ' + SeededRandom.int(8, 18) + ':00 ~ ' + SeededRandom.int(19, 23) + ':00',
-                rootCause: SeededRandom.pick(['OLT上行拥塞', 'BRAS负载过高', '传输链路抖动', 'CDN节点异常', '光路衰减']),
+                timeRange: '2026-05-17 ' + SeededRandom.int(8, 18) + ':00 ~ 2026-05-17 ' + SeededRandom.int(19, 23) + ':00',
                 severity: SeededRandom.pick(['高', '中', '低'])
             });
         }
         var clusterRows = clusterEvents.map(function(e) {
             var sevCls = e.severity === '高' ? 'status-error' : (e.severity === '中' ? 'status-warning' : 'status-normal');
-            return '<tr><td>' + e.id + '</td><td>' + e.bizType + '</td><td>' + e.city + '</td><td>' + e.oltId + '</td><td>' + e.affectedUsers + '</td><td>' + e.timeRange + '</td><td style="color:#e74c3c;font-weight:600;">' + e.rootCause + '</td><td><span class="' + sevCls + '">' + e.severity + '</span></td></tr>';
+            return '<tr><td>' + e.id + '</td><td>' + e.bizCount + '</td><td>' + e.city + '</td><td>' + e.oltId + '</td><td>' + e.affectedUsers + '</td><td>' + e.timeRange + '</td><td><span class="' + sevCls + '">' + e.severity + '</span></td></tr>';
         }).join('');
 
         container.innerHTML =
             '<div class="page-content">' +
             '<div style="margin-bottom:8px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;font-size:12px;color:#c0392b;"><strong>聚类说明：</strong>系统自动将发生在同一时间段、同一OLT区域下的多个业务质差事件进行聚类分析，发现共性网络问题。</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+            '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">' +
                 '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">各业务质量等级分布</span></div><div class="chart-container" id="bcChart1"></div></div>' +
-                '<div class="chart-card" style="min-height:320px;"><div class="chart-card-header"><span class="chart-title">业务类型平均CEI对比</span></div><div class="chart-container" id="bcChart2"></div></div>' +
             '</div>' +
             '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">业务聚类质差事件（共性问题发现）</div>' +
-            '<table class="data-table"><thead><tr><th>聚类ID</th><th>业务类型</th><th>地市</th><th>关联OLT</th><th>影响用户</th><th>发生时段</th><th>根因分析</th><th>严重程度</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>';
+            '<table class="data-table"><thead><tr><th>聚类ID</th><th>业务数量</th><th>地市</th><th>关联OLT</th><th>影响用户</th><th>发生时段</th><th>严重程度</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>';
         var d1 = document.getElementById('bcChart1');
         if (d1) {
             var c1 = echarts.init(d1); App.chartInstances['bcChart1'] = c1;
@@ -2000,14 +2077,6 @@ var Pages = {
             var pd = []; for (var k in lvl) pd.push({ name: k, value: lvl[k] });
             c1.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' }, legend: { bottom: 5, textStyle: { fontSize: 10 } }, series: [{ type: 'pie', radius: ['30%', '58%'], center: ['50%', '45%'], data: pd, label: { fontSize: 10 }, itemStyle: { borderRadius: 4 } }] });
             window.addEventListener('resize', function() { c1.resize(); });
-        }
-        var d2 = document.getElementById('bcChart2');
-        if (d2) {
-            var c2 = echarts.init(d2); App.chartInstances['bcChart2'] = c2;
-            var bizMap = {}; JilinData.bizQualityRecords.forEach(function(r) { if (!bizMap[r.bizType]) bizMap[r.bizType] = { sum: 0, cnt: 0 }; bizMap[r.bizType].sum += r.avgCei; bizMap[r.bizType].cnt++; });
-            var bs = [], bv = []; for (var k in bizMap) { bs.push(k); bv.push(parseFloat((bizMap[k].sum / bizMap[k].cnt).toFixed(1))); }
-            c2.setOption({ grid: { top: 20, right: 20, bottom: 50, left: 40 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: bs, axisLabel: { fontSize: 10, rotate: 30 } }, yAxis: { type: 'value', min: 60, max: 90 }, series: [{ type: 'bar', data: bv.map(function(v) { return { value: v, itemStyle: { color: v >= 80 ? '#27ae60' : (v >= 70 ? '#f39c12' : '#e74c3c') } }; }), barWidth: '50%', label: { show: true, position: 'top', fontSize: 9 } }] });
-            window.addEventListener('resize', function() { c2.resize(); });
         }
     },
 
