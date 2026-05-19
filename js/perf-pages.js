@@ -1,0 +1,543 @@
+/**
+ * 性能分析模块
+ * 2.2.5 业务客流分析
+ * 2.2.6 网络质量分析
+ * 2.2.7 通滤波类分析
+ * 2.2.8 用户数分析
+ */
+
+// ============================================================
+// 工具：安全HTML转义
+// ============================================================
+function _ph(v) { return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================================
+// 1. 业务客流分析
+// ============================================================
+EnhancePages._btCity = '';
+EnhancePages._btBiz  = '';
+EnhancePages._btDate = '2026-05-17';
+
+EnhancePages.renderBizTraffic = function (container) {
+    var self = this;
+    var cities = JilinData.cities;
+
+    SeededRandom.reset(20260517);
+
+    // 时段客流（0-23h）
+    var hourLabels = [], todayData = [], yesterdayData = [];
+    for (var h = 0; h < 24; h++) {
+        hourLabels.push((h < 10 ? '0' : '') + h + ':00');
+        var base = (h >= 8 && h <= 22) ? SeededRandom.int(18000, 95000) : SeededRandom.int(2000, 18000);
+        todayData.push(base);
+        yesterdayData.push(Math.round(base * (0.86 + SeededRandom.next() * 0.22)));
+    }
+
+    // TOP10 热点应用
+    var appNames = ['抖音','腾讯视频','爱奇艺','王者荣耀','快手','哔哩哔哩','和平精英','腾讯会议','微信视频','百度网盘'];
+    var appCnts  = appNames.map(function() { return SeededRandom.int(40000, 260000); });
+    var appPairs = appNames.map(function(n,i){ return {name:n,cnt:appCnts[i]}; }).sort(function(a,b){return b.cnt-a.cnt;});
+
+    // 各地市明细
+    var cityRows = cities.map(function(c, ci) {
+        SeededRandom.reset(c.charCodeAt(0)*31+20260517);
+        var tu   = SeededRandom.int(80000, 650000);
+        var au   = Math.round(tu * (0.62 + SeededRandom.next() * 0.22));
+        var down = SeededRandom.float(1.2, 18.5, 2);
+        var up   = SeededRandom.float(0.3, 4.5, 2);
+        var peak = SeededRandom.int(8000, 85000);
+        var rtt  = SeededRandom.float(8.0, 28.0, 1);
+        var sc   = peak > 60000 ? 'status-error' : (peak > 40000 ? 'status-warning' : 'status-normal');
+        return '<tr>' +
+            '<td><strong>' + c + '</strong></td>' +
+            '<td>' + (tu/10000).toFixed(2) + ' 万</td>' +
+            '<td><span style="color:#2b7de9;font-weight:600;">' + (au/10000).toFixed(2) + ' 万</span></td>' +
+            '<td>' + down + ' TB</td><td>' + up + ' TB</td>' +
+            '<td><span class="' + sc + '">' + (peak/1000).toFixed(1) + ' Gbps</span></td>' +
+            '<td>' + rtt + ' ms</td></tr>';
+    }).join('');
+
+    var cityOpts = '<option value="">全部地市</option>' + cities.map(function(c){
+        return '<option value="'+c+'"'+(c===self._btCity?' selected':'')+'>'+c+'</option>';
+    }).join('');
+    var bizTypes = ['全部','视频','游戏','在线办公','网站/下载'];
+    var bizOpts  = bizTypes.map(function(b){
+        return '<option value="'+b+'"'+(b===(self._btBiz||'全部')?' selected':'')+'>'+b+'</option>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        // KPI 卡
+        '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:8px;">' +
+        '<div class="wo-stat-card"><div class="wo-stat-value">227.9<span style="font-size:11px;font-weight:400;">万</span></div><div class="wo-stat-label">用户总数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">154.2<span style="font-size:11px;font-weight:400;">万</span></div><div class="wo-stat-label">有流量用户</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">98.6<span style="font-size:11px;font-weight:400;">TB</span></div><div class="wo-stat-label">下行总流量</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">22.4<span style="font-size:11px;font-weight:400;">TB</span></div><div class="wo-stat-label">上行总流量</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">428.5<span style="font-size:11px;font-weight:400;">G</span></div><div class="wo-stat-label">峰值带宽</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">12.8<span style="font-size:11px;font-weight:400;">ms</span></div><div class="wo-stat-label">平均时延</div></div>' +
+        '</div>' +
+        // 查询栏
+        '<div class="remote-panel"><div class="remote-panel-title">业务客流分析（DPI-XDR接入 · 按业务/地市/时段分析用户流量行为）</div>' +
+        '<div class="remote-form">' +
+        '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="btCityF" onchange="EnhancePages._btCity=this.value;EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">'+cityOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">业务类型</label><select class="form-select" id="btBizF" onchange="EnhancePages._btBiz=this.value;EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">'+bizOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">统计日期</label><input class="form-input" type="date" id="btDateI" value="'+self._btDate+'"></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="EnhancePages._btDate=document.getElementById(\'btDateI\').value;EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">查询</button>' +
+        '<button class="btn" onclick="EnhancePages._btCity=\'\';EnhancePages._btBiz=\'\';EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">重置</button>' +
+        '<button class="btn" onclick="Modal.toast(\'客流报告已导出\',\'success\')">导出报告</button>' +
+        '</div></div></div>' +
+        // 图表双列
+        '<div style="display:grid;grid-template-columns:3fr 2fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">全天时段客流趋势（在线用户数 · 今日 vs 昨日）</span></div><div class="chart-container" id="btHourChart"></div></div>' +
+        '<div class="chart-card" style="min-height:300px;"><div class="chart-card-header"><span class="chart-title">TOP10 热点应用（日流量次数）</span></div><div class="chart-container" id="btAppChart"></div></div>' +
+        '</div>' +
+        // 明细表
+        '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市业务流量明细</div>' +
+        '<table class="data-table"><thead><tr><th>地市</th><th>用户总数</th><th>有流量用户</th><th>下行流量</th><th>上行流量</th><th>峰值带宽</th><th>平均时延</th></tr></thead>' +
+        '<tbody>'+cityRows+'</tbody></table></div></div>';
+
+    setTimeout(function () {
+        var d1 = document.getElementById('btHourChart');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['btHourChart'] = c1;
+            c1.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['今日','昨日'], bottom: 0, textStyle: { fontSize: 10 } },
+                grid: { top: 20, right: 20, bottom: 40, left: 60 },
+                xAxis: { type:'category', data: hourLabels, axisLabel: { fontSize: 9, interval: 2 } },
+                yAxis: { type:'value', name:'在线用户', splitLine:{lineStyle:{color:'#f0f2f5'}},
+                    axisLabel: { formatter: function(v){ return (v/10000).toFixed(0)+'万'; }, fontSize: 10 } },
+                series: [
+                    { name:'今日', type:'line', data: todayData, smooth:true, symbol:'none',
+                      lineStyle:{width:2,color:'#2b7de9'}, areaStyle:{color:'rgba(43,125,233,0.1)'} },
+                    { name:'昨日', type:'line', data: yesterdayData, smooth:true, symbol:'none',
+                      lineStyle:{width:1.5,type:'dashed',color:'#aaa'} }
+                ]
+            });
+            window.addEventListener('resize', function(){ c1.resize(); });
+        }
+        var d2 = document.getElementById('btAppChart');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['btAppChart'] = c2;
+            var clrs = ['#2b7de9','#27ae60','#f39c12','#9b59b6','#e74c3c','#1abc9c','#e67e22','#3498db','#8e44ad','#c0392b'];
+            var revApps = appPairs.slice().reverse();
+            c2.setOption({
+                tooltip: { trigger:'axis', formatter: function(p){ return p[0].name+'<br/>'+(p[0].value/10000).toFixed(1)+'万次'; } },
+                grid: { top:10, right:70, bottom:10, left:75 },
+                yAxis: { type:'category', data: revApps.map(function(a){return a.name;}), axisLabel:{fontSize:11} },
+                xAxis: { type:'value', axisLabel:{formatter:function(v){return (v/10000).toFixed(0)+'万';},fontSize:9} },
+                series: [{ type:'bar',
+                    data: revApps.map(function(a,i){ return {value:a.cnt,itemStyle:{color:clrs[revApps.length-1-i]}}; }),
+                    barWidth:'55%',
+                    label:{show:true,position:'right',formatter:function(p){return (p.value/10000).toFixed(1)+'万';},fontSize:10} }]
+            });
+            window.addEventListener('resize', function(){ c2.resize(); });
+        }
+    }, 50);
+};
+
+
+// ============================================================
+// 2. 网络质量分析
+// ============================================================
+EnhancePages._nqCity    = '';
+EnhancePages._nqDevice  = 'OLT';
+EnhancePages._nqDate    = '2026-05-17';
+
+EnhancePages.renderNetQuality = function (container) {
+    var self = this;
+    var cities = JilinData.cities;
+
+    SeededRandom.reset(20260517 + 2);
+
+    // 各地市断线/时延/丢包汇总
+    var cityQRows = cities.map(function(c) {
+        SeededRandom.reset(c.charCodeAt(0) * 17 + 20260517);
+        var disconn  = SeededRandom.int(50, 850);
+        var reconn   = SeededRandom.int(30, 700);
+        var avgRtt   = SeededRandom.float(8.2, 35.6, 1);
+        var pktLoss  = SeededRandom.float(0.01, 3.50, 2);
+        var downRate = SeededRandom.float(88.5, 99.8, 1);
+        var rttCls   = avgRtt > 25 ? 'status-error' : (avgRtt > 15 ? 'status-warning' : 'status-normal');
+        var plCls    = pktLoss > 1.5 ? 'status-error' : (pktLoss > 0.5 ? 'status-warning' : 'status-normal');
+        return '<tr><td><strong>'+c+'</strong></td>' +
+            '<td><span style="color:#e74c3c;font-weight:600;">'+disconn+'</span></td>' +
+            '<td>'+reconn+'</td>' +
+            '<td><span class="'+rttCls+'">'+avgRtt+' ms</span></td>' +
+            '<td><span class="'+plCls+'">'+pktLoss+'%</span></td>' +
+            '<td>'+downRate+'%</td>' +
+            '<td><a style="color:#2b7de9;cursor:pointer;" onclick="EnhancePages.showNqCityDetail(\''+c+'\')">下钻</a></td></tr>';
+    }).join('');
+
+    // KPI
+    SeededRandom.reset(20260517 + 3);
+    var totalDisconn = 4823, totalReconn = 4012, avgRttAll = 14.6, pktLossAll = 0.38;
+
+    // 每日趋势（近7天）
+    var dayLabels = ['05-11','05-12','05-13','05-14','05-15','05-16','05-17'];
+    var disconnTrend = dayLabels.map(function(){ return SeededRandom.int(3000,6500); });
+    var rttTrend     = dayLabels.map(function(){ return SeededRandom.float(11,22,1); });
+
+    var cityOpts = '<option value="">全部地市</option>'+cities.map(function(c){
+        return '<option value="'+c+'"'+(c===self._nqCity?' selected':'')+'>'+c+'</option>';
+    }).join('');
+    var devOpts = ['OLT','BRAS','固关','汇聚交换机'].map(function(d){
+        return '<option value="'+d+'"'+(d===self._nqDevice?' selected':'')+'>'+d+'</option>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">'+totalDisconn.toLocaleString()+'</div><div class="wo-stat-label">当日断线次数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">'+totalReconn.toLocaleString()+'</div><div class="wo-stat-label">重连成功次数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">'+avgRttAll+' ms</div><div class="wo-stat-label">全网平均时延</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">'+pktLossAll+'%</div><div class="wo-stat-label">平均丢包率</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">97.6%</div><div class="wo-stat-label">网络连通率</div></div>' +
+        '</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">网络质量分析（3A数据接入 · 断线/重连/时延/丢包多维度分析）</div>' +
+        '<div class="remote-form">' +
+        '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="nqCityF" onchange="EnhancePages._nqCity=this.value;EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">'+cityOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">分析设备</label><select class="form-select" id="nqDevF" onchange="EnhancePages._nqDevice=this.value;EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">'+devOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">统计日期</label><input class="form-input" type="date" id="nqDateI" value="'+self._nqDate+'"></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="EnhancePages._nqDate=document.getElementById(\'nqDateI\').value;EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">查询</button>' +
+        '<button class="btn" onclick="EnhancePages._nqCity=\'\';EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">重置</button>' +
+        '<button class="btn" onclick="Modal.toast(\'质量报告已导出\',\'success\')">导出</button>' +
+        '</div></div></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:290px;"><div class="chart-card-header"><span class="chart-title">近7日断线次数趋势</span></div><div class="chart-container" id="nqDisconnChart"></div></div>' +
+        '<div class="chart-card" style="min-height:290px;"><div class="chart-card-header"><span class="chart-title">近7日平均时延趋势（ms）</span></div><div class="chart-container" id="nqRttChart"></div></div>' +
+        '</div>' +
+        '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市网络质量明细</div>' +
+        '<table class="data-table"><thead><tr><th>地市</th><th>断线次数</th><th>重连次数</th><th>平均时延</th><th>丢包率</th><th>下载成功率</th><th>操作</th></tr></thead>' +
+        '<tbody>'+cityQRows+'</tbody></table></div></div>';
+
+    setTimeout(function(){
+        var d1 = document.getElementById('nqDisconnChart');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['nqDisconnChart'] = c1;
+            c1.setOption({
+                tooltip:{trigger:'axis'},
+                grid:{top:20,right:20,bottom:30,left:50},
+                xAxis:{type:'category',data:dayLabels,axisLabel:{fontSize:10}},
+                yAxis:{type:'value',name:'次数',splitLine:{lineStyle:{color:'#f0f2f5'}},axisLabel:{fontSize:10}},
+                series:[{type:'bar',data:disconnTrend.map(function(v){
+                    return {value:v,itemStyle:{color:v>5500?'#e74c3c':(v>4500?'#f39c12':'#5b8ff9')}};
+                }),barWidth:'55%',label:{show:true,position:'top',fontSize:9}}]
+            });
+            window.addEventListener('resize',function(){c1.resize();});
+        }
+        var d2 = document.getElementById('nqRttChart');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['nqRttChart'] = c2;
+            c2.setOption({
+                tooltip:{trigger:'axis'},
+                grid:{top:20,right:20,bottom:30,left:50},
+                xAxis:{type:'category',data:dayLabels,axisLabel:{fontSize:10}},
+                yAxis:{type:'value',name:'ms',splitLine:{lineStyle:{color:'#f0f2f5'}},axisLabel:{fontSize:10}},
+                series:[{type:'line',data:rttTrend,smooth:true,lineStyle:{width:2,color:'#27ae60'},
+                    areaStyle:{color:'rgba(39,174,96,0.08)'},symbol:'circle',symbolSize:5,
+                    markLine:{data:[{type:'average',label:{formatter:'均值:{c}ms',fontSize:10}}]}}]
+            });
+            window.addEventListener('resize',function(){c2.resize();});
+        }
+    }, 50);
+};
+
+EnhancePages.showNqCityDetail = function (city) {
+    SeededRandom.reset(city.charCodeAt(0)+20260517);
+    var olts = (JilinData.oltDevices||[]).filter(function(o){return o.city===city;}).slice(0,8);
+    var rows = olts.map(function(olt){
+        var disc = SeededRandom.int(5,120);
+        var rtt  = SeededRandom.float(8,35,1);
+        var pl   = SeededRandom.float(0,3,2);
+        var sc   = disc > 80 ? 'status-error' : (disc > 40 ? 'status-warning' : 'status-normal');
+        return '<tr><td style="font-size:11px;">'+olt.id+'</td><td><span class="'+sc+'">'+disc+'</span></td><td>'+rtt+' ms</td><td>'+pl+'%</td></tr>';
+    }).join('');
+    Modal.show('网络质量下钻 - '+city,
+        '<table class="data-table"><thead><tr><th>OLT设备</th><th>断线次数</th><th>平均时延</th><th>丢包率</th></tr></thead><tbody>'+rows+'</tbody></table>',
+        '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>','760px');
+};
+
+
+// ============================================================
+// 3. 通滤波类分析
+// ============================================================
+EnhancePages._faDevice  = 'OLT';
+EnhancePages._faCity    = '';
+EnhancePages._faSeverity= '';
+
+EnhancePages.renderFilterAnalysis = function (container) {
+    var self = this;
+    var cities = JilinData.cities;
+    SeededRandom.reset(20260517 + 5);
+
+    // 生成滤波告警列表
+    var dimDevices = {
+        'OLT':  (JilinData.oltDevices||[]).slice(0,30),
+        'BRAS': (JilinData.brasDevices||[]).slice(0,15),
+        '小区':  cities.map(function(c,i){ return {id:'小区-'+c+'-'+SeededRandom.int(1,50),city:c}; })
+    };
+    var devList = dimDevices[self._faDevice] || dimDevices['OLT'];
+    var filtered = self._faCity ? devList.filter(function(d){return d.city===self._faCity;}) : devList;
+
+    var alertRows = filtered.slice(0,25).map(function(dev, idx) {
+        SeededRandom.reset(idx * 7919 + 20260517);
+        var discCnt   = SeededRandom.int(2, 180);
+        var userCnt   = SeededRandom.int(10, 3000);
+        var duration  = SeededRandom.float(0.5, 48.0, 1);
+        var reconRate = SeededRandom.float(72, 99, 1);
+        var sev = discCnt > 100 ? '高' : (discCnt > 40 ? '中' : '低');
+        if (self._faSeverity && sev !== self._faSeverity) return '';
+        var sevCls = sev === '高' ? 'status-error' : (sev === '中' ? 'status-warning' : 'status-normal');
+        var period = '2026-05-17 ' + SeededRandom.int(0,22) + ':00~' + SeededRandom.int(1,23) + ':59';
+        return '<tr>' +
+            '<td style="font-size:11px;">' + (dev.id||dev.name||'-') + '</td>' +
+            '<td>' + (dev.city||'-') + '</td>' +
+            '<td><span style="color:#e74c3c;font-weight:600;">'+discCnt+'</span></td>' +
+            '<td>'+userCnt+'</td>' +
+            '<td>'+duration+' h</td>' +
+            '<td>'+reconRate+'%</td>' +
+            '<td><span class="'+sevCls+'">'+sev+'</span></td>' +
+            '<td style="font-size:11px;">'+period+'</td>' +
+            '<td><a style="color:#2b7de9;cursor:pointer;" onclick="Modal.toast(\'已生成质差月报\',\'success\')">输出月报</a></td>' +
+            '</tr>';
+    }).filter(Boolean).join('');
+
+    // 散点数据（断线次数 vs 影响用户数）
+    SeededRandom.reset(20260517 + 6);
+    var scatterData = [];
+    for (var i=0;i<50;i++) {
+        scatterData.push([SeededRandom.int(1,180), SeededRandom.int(5,2500), SeededRandom.pick(['OLT','BRAS','小区'])]);
+    }
+
+    var cityOpts = '<option value="">全部地市</option>'+cities.map(function(c){
+        return '<option value="'+c+'"'+(c===self._faCity?' selected':'')+'>'+c+'</option>';
+    }).join('');
+    var devOpts = ['OLT','BRAS','小区'].map(function(d){
+        return '<option value="'+d+'"'+(d===self._faDevice?' selected':'')+'>'+d+'维度</option>';
+    }).join('');
+    var sevOpts = '<option value="">全部等级</option>'+['高','中','低'].map(function(s){
+        return '<option value="'+s+'"'+(s===self._faSeverity?' selected':'')+'>'+s+'</option>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px;">' +
+        '<div class="wo-stat-card"><div class="wo-stat-value">'+filtered.slice(0,25).length+'</div><div class="wo-stat-label">分析设备数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">'+filtered.slice(0,25).filter(function(_,i){return i<8;}).length+'</div><div class="wo-stat-label">高频中断设备</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">4,823</div><div class="wo-stat-label">累计中断次数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">38,640</div><div class="wo-stat-label">受影响用户次</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">91.2%</div><div class="wo-stat-label">平均重连成功率</div></div>' +
+        '</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">通滤波类分析（按OLT/BRAS/小区维度聚类中断次数，输出质差日报/周报/月报）</div>' +
+        '<div class="remote-form">' +
+        '<div class="form-group"><label class="form-label">分析维度</label><select class="form-select" id="faDimF" onchange="EnhancePages._faDevice=this.value;EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">'+devOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="faCityF" onchange="EnhancePages._faCity=this.value;EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">'+cityOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">严重等级</label><select class="form-select" id="faSevF" onchange="EnhancePages._faSeverity=this.value;EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">'+sevOpts+'</select></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">重新分析</button>' +
+        '<button class="btn" onclick="EnhancePages._faCity=\'\';EnhancePages._faSeverity=\'\';EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">重置</button>' +
+        '<button class="btn" onclick="Modal.toast(\'质差月报已生成\',\'success\')">批量输出月报</button>' +
+        '</div></div></div>' +
+        '<div style="margin-bottom:8px;padding:10px 12px;background:#fef0f0;border:1px solid #f5c6c6;border-radius:4px;font-size:12px;color:#c0392b;">' +
+        '<strong>滤波说明：</strong>系统自动对各'+self._faDevice+'设备进行滑动窗口滤波，过滤偶发抖动，保留真实中断事件；' +
+        '当单设备24h内中断次数 &gt; 40次判定为<strong>中</strong>，&gt; 100次判定为<strong>高</strong>。' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">中断次数 vs 影响用户数（散点）</span></div><div class="chart-container" id="faScatterChart"></div></div>' +
+        '<div class="chart-card" style="min-height:280px;"><div class="chart-card-header"><span class="chart-title">高频中断设备 TOP10</span></div><div class="chart-container" id="faTopChart"></div></div>' +
+        '</div>' +
+        '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">'+self._faDevice+'维度中断聚类明细（按中断次数降序）</div>' +
+        '<table class="data-table"><thead><tr><th>设备ID</th><th>地市</th><th>中断次数</th><th>影响用户</th><th>持续时长</th><th>重连成功率</th><th>严重等级</th><th>发生时段</th><th>操作</th></tr></thead>' +
+        '<tbody>'+(alertRows||'<tr><td colspan="9" style="text-align:center;color:#999;padding:20px;">暂无数据</td></tr>')+'</tbody></table></div></div>';
+
+    setTimeout(function(){
+        // 散点图
+        var d1 = document.getElementById('faScatterChart');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['faScatterChart'] = c1;
+            c1.setOption({
+                tooltip:{formatter:function(p){return '中断:'+p.value[0]+'次<br/>影响:'+p.value[1]+'用户';}},
+                grid:{top:20,right:20,bottom:40,left:55},
+                xAxis:{type:'value',name:'中断次数',splitLine:{lineStyle:{color:'#f0f2f5'}},nameTextStyle:{fontSize:10}},
+                yAxis:{type:'value',name:'影响用户',splitLine:{lineStyle:{color:'#f0f2f5'}},nameTextStyle:{fontSize:10}},
+                series:[{type:'scatter',data:scatterData.map(function(d){return [d[0],d[1]];}),
+                    symbolSize:function(d){return Math.min(6+d[0]/12,20);},
+                    itemStyle:{color:'#2b7de9',opacity:0.7}}]
+            });
+            window.addEventListener('resize',function(){c1.resize();});
+        }
+        // TOP10柱图
+        var d2 = document.getElementById('faTopChart');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['faTopChart'] = c2;
+            SeededRandom.reset(20260517+7);
+            var topDevs=[]; for(var i=0;i<10;i++) topDevs.push({name:self._faDevice+'-TOP'+(i+1),val:SeededRandom.int(40,180)});
+            topDevs.sort(function(a,b){return a.val-b.val;});
+            c2.setOption({
+                tooltip:{trigger:'axis'},
+                grid:{top:10,right:60,bottom:10,left:90},
+                yAxis:{type:'category',data:topDevs.map(function(d){return d.name;}),axisLabel:{fontSize:9}},
+                xAxis:{type:'value',axisLabel:{fontSize:9}},
+                series:[{type:'bar',data:topDevs.map(function(d){
+                    return {value:d.val,itemStyle:{color:d.val>100?'#e74c3c':(d.val>60?'#f39c12':'#5b8ff9')}};
+                }),barWidth:'55%',label:{show:true,position:'right',fontSize:9}}]
+            });
+            window.addEventListener('resize',function(){c2.resize();});
+        }
+    },50);
+};
+
+
+// ============================================================
+// 4. 用户数分析
+// ============================================================
+EnhancePages._ucCity   = '';
+EnhancePages._ucDim    = 'city';
+EnhancePages._ucPeriod = 'day';
+
+EnhancePages.renderUserCountAnalysis = function (container) {
+    var self = this;
+    var cities = JilinData.cities;
+    SeededRandom.reset(20260517 + 10);
+
+    // 近7日全省用户数趋势
+    var dayLabels = ['05-11','05-12','05-13','05-14','05-15','05-16','05-17'];
+    var totalArr=[], activeArr=[], dpiActiveArr=[];
+    dayLabels.forEach(function(){
+        var t = SeededRandom.float(365.0, 366.5, 2);
+        var a = SeededRandom.float(215.0, 228.0, 2);
+        var d = SeededRandom.float(210.0, 226.0, 2);
+        totalArr.push(t); activeArr.push(a); dpiActiveArr.push(d);
+    });
+
+    // 各地市用户数明细
+    var cityRows = cities.map(function(c) {
+        SeededRandom.reset(c.charCodeAt(0)*53+20260517);
+        var dist = JilinData.cityGatewayDistribution[c] || {};
+        var gw   = dist.gateway   || SeededRandom.float(5, 80, 2);
+        var agw  = dist.activeGateway || SeededRandom.float(4, 78, 2);
+        var usr  = dist.users     || SeededRandom.float(8, 130, 2);
+        var dpi  = dist.activeDpi || SeededRandom.float(5, 80, 2);
+        var ratio= (dpi / usr * 100).toFixed(1);
+        var mom  = (SeededRandom.next() > 0.5 ? '+' : '-') + SeededRandom.float(0.1, 2.5, 2) + '%';
+        var momCls = mom[0]==='+' ? 'color:#27ae60;' : 'color:#e74c3c;';
+        return '<tr><td><strong>'+c+'</strong></td>' +
+            '<td>'+gw.toFixed(2)+' 万</td>' +
+            '<td>'+agw.toFixed(2)+' 万</td>' +
+            '<td>'+usr.toFixed(2)+' 万</td>' +
+            '<td><span style="color:#2b7de9;font-weight:600;">'+dpi.toFixed(2)+' 万</span></td>' +
+            '<td>'+ratio+'%</td>' +
+            '<td><span style="'+momCls+'font-weight:600;">'+mom+'</span></td>' +
+            '<td><a style="color:#2b7de9;cursor:pointer;" onclick="EnhancePages.showUcCityTrend(\''+c+'\')">趋势</a></td></tr>';
+    }).join('');
+
+    // 当日全省KPI
+    var kwTotal = 365.2, kwActive = 215.6, kwDpi = 227.9, kwRatio = 67.3;
+    var mom1 = '+0.12%', mom2 = '+0.38%';
+
+    var cityOpts = '<option value="">全部地市</option>'+cities.map(function(c){
+        return '<option value="'+c+'"'+(c===self._ucCity?' selected':'')+'>'+c+'</option>';
+    }).join('');
+    var dimOpts = [{v:'city',l:'地市维度'},{v:'district',l:'区县维度'},{v:'olt',l:'OLT维度'},{v:'bras',l:'BRAS维度'}].map(function(d){
+        return '<option value="'+d.v+'"'+(d.v===self._ucDim?' selected':'')+'>'+d.l+'</option>';
+    }).join('');
+    var periodOpts = ['day','week','month'].map(function(p){
+        var l = p==='day'?'天':p==='week'?'周':'月';
+        return '<option value="'+p+'"'+(p===self._ucPeriod?' selected':'')+'>'+l+'</option>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="page-content">' +
+        '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:8px;">' +
+        '<div class="wo-stat-card"><div class="wo-stat-value">'+kwTotal+'<span style="font-size:11px;font-weight:400;">万</span></div><div class="wo-stat-label">用户总数</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">'+kwActive+'<span style="font-size:11px;font-weight:400;">万</span></div><div class="wo-stat-label">有流量网关</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">'+kwDpi+'<span style="font-size:11px;font-weight:400;">万</span></div><div class="wo-stat-label">DPI有流量</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#f39c12;">'+kwRatio+'%</div><div class="wo-stat-label">活跃率</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;font-size:16px;">'+mom1+'</div><div class="wo-stat-label">用户数环比</div></div>' +
+        '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;font-size:16px;">'+mom2+'</div><div class="wo-stat-label">活跃用户环比</div></div>' +
+        '</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">用户数分析（按地市/区县/OLT/BRAS维度统计用户规模与活跃度趋势）</div>' +
+        '<div class="remote-form">' +
+        '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="ucCityF" onchange="EnhancePages._ucCity=this.value;EnhancePages.renderUserCountAnalysis(document.getElementById(\'page-user-count-analysis\'))">'+cityOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">分析维度</label><select class="form-select" id="ucDimF" onchange="EnhancePages._ucDim=this.value;EnhancePages.renderUserCountAnalysis(document.getElementById(\'page-user-count-analysis\'))">'+dimOpts+'</select></div>' +
+        '<div class="form-group"><label class="form-label">时间粒度</label><select class="form-select" id="ucPeriodF" onchange="EnhancePages._ucPeriod=this.value;EnhancePages.renderUserCountAnalysis(document.getElementById(\'page-user-count-analysis\'))">'+periodOpts+'</select></div>' +
+        '<div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">' +
+        '<button class="btn btn-primary" onclick="EnhancePages.renderUserCountAnalysis(document.getElementById(\'page-user-count-analysis\'))">查询</button>' +
+        '<button class="btn" onclick="EnhancePages._ucCity=\'\';EnhancePages.renderUserCountAnalysis(document.getElementById(\'page-user-count-analysis\'))">重置</button>' +
+        '<button class="btn" onclick="Modal.toast(\'用户数报告已导出\',\'success\')">导出</button>' +
+        '</div></div></div>' +
+        '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="chart-card" style="min-height:290px;"><div class="chart-card-header"><span class="chart-title">近7日用户数趋势（万）</span></div><div class="chart-container" id="ucTrendChart"></div></div>' +
+        '<div class="chart-card" style="min-height:290px;"><div class="chart-card-header"><span class="chart-title">用户活跃度分布</span></div><div class="chart-container" id="ucPieChart"></div></div>' +
+        '</div>' +
+        '<div class="data-table-wrapper"><div style="padding:10px 16px;font-weight:600;font-size:13px;border-bottom:1px solid #e0e4e8;">各地市用户规模明细</div>' +
+        '<table class="data-table"><thead><tr><th>地市</th><th>网关总数</th><th>有流量网关</th><th>用户总数</th><th>DPI活跃用户</th><th>活跃率</th><th>环比</th><th>操作</th></tr></thead>' +
+        '<tbody>'+cityRows+'</tbody></table></div></div>';
+
+    setTimeout(function(){
+        // 趋势折线
+        var d1 = document.getElementById('ucTrendChart');
+        if (d1) {
+            var c1 = echarts.init(d1); App.chartInstances['ucTrendChart'] = c1;
+            c1.setOption({
+                tooltip:{trigger:'axis'},
+                legend:{data:['用户总数','有流量网关','DPI活跃'],bottom:0,textStyle:{fontSize:10}},
+                grid:{top:20,right:20,bottom:40,left:55},
+                xAxis:{type:'category',data:dayLabels,axisLabel:{fontSize:10}},
+                yAxis:{type:'value',name:'万',splitLine:{lineStyle:{color:'#f0f2f5'}},axisLabel:{fontSize:10}},
+                series:[
+                    {name:'用户总数',type:'line',data:totalArr,smooth:true,lineStyle:{width:2,color:'#2b7de9'},symbol:'circle',symbolSize:5},
+                    {name:'有流量网关',type:'line',data:activeArr,smooth:true,lineStyle:{width:2,color:'#27ae60'},symbol:'circle',symbolSize:5},
+                    {name:'DPI活跃',type:'line',data:dpiActiveArr,smooth:true,lineStyle:{width:2,color:'#f39c12'},symbol:'circle',symbolSize:5}
+                ]
+            });
+            window.addEventListener('resize',function(){c1.resize();});
+        }
+        // 活跃度饼图
+        var d2 = document.getElementById('ucPieChart');
+        if (d2) {
+            var c2 = echarts.init(d2); App.chartInstances['ucPieChart'] = c2;
+            c2.setOption({
+                tooltip:{trigger:'item',formatter:'{b}: {c}万 ({d}%)'},
+                legend:{bottom:0,textStyle:{fontSize:10}},
+                series:[{type:'pie',radius:['35%','62%'],center:['50%','45%'],
+                    data:[
+                        {name:'DPI活跃',value:227.9,itemStyle:{color:'#2b7de9'}},
+                        {name:'网关有流量',value:215.6,itemStyle:{color:'#27ae60'}},
+                        {name:'无流量用户',value:137.3,itemStyle:{color:'#e0e4e8'}}
+                    ],
+                    label:{fontSize:10},itemStyle:{borderRadius:4}}]
+            });
+            window.addEventListener('resize',function(){c2.resize();});
+        }
+    }, 50);
+};
+
+EnhancePages.showUcCityTrend = function (city) {
+    SeededRandom.reset(city.charCodeAt(0)+20260517+100);
+    var days = ['05-11','05-12','05-13','05-14','05-15','05-16','05-17'];
+    var dist = JilinData.cityGatewayDistribution[city] || {users:10};
+    var base = dist.users;
+    var trend = days.map(function(){ return parseFloat((base * (0.98 + SeededRandom.next()*0.04)).toFixed(2)); });
+    Modal.show('用户数趋势 - '+city,
+        '<div class="chart-container" id="ucCityTrendChart" style="height:260px;"></div>',
+        '<button class="btn btn-primary" onclick="Modal.close()">关闭</button>','560px');
+    setTimeout(function(){
+        var d = document.getElementById('ucCityTrendChart');
+        if (d) {
+            var c = echarts.init(d);
+            c.setOption({
+                tooltip:{trigger:'axis'},
+                grid:{top:20,right:20,bottom:30,left:55},
+                xAxis:{type:'category',data:days},
+                yAxis:{type:'value',name:'万',axisLabel:{fontSize:10}},
+                series:[{type:'line',data:trend,smooth:true,lineStyle:{width:2,color:'#2b7de9'},
+                    areaStyle:{color:'rgba(43,125,233,0.1)'},symbol:'circle',symbolSize:5,
+                    label:{show:true,position:'top',fontSize:9,formatter:function(p){return p.value+'万';}}}]
+            });
+        }
+    },100);
+};

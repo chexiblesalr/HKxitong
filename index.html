@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="家宽网络质量分析平台 - 吉林省宽带网络质量监控与分析系统">
     <title>智慧优享 - 家宽网络质量分析平台</title>
-    <link rel="stylesheet" href="css/style.css?v=20260518-1">
+    <link rel="stylesheet" href="css/style.css?v=20260519-1">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -81,6 +81,24 @@
                             </div>
                             <div class="menu-item" data-page="optical-test" onclick="handleMenuClick(this)">光路测试上下线
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 性能分析 -->
+                    <div class="menu-group">
+                        <div class="menu-group-title">
+                            <span class="menu-group-icon"><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
+                                </svg></span>
+                            <span>性能分析</span>
+                            <span class="menu-group-arrow">&#9654;</span>
+                        </div>
+                        <div class="menu-children">
+                            <div class="menu-item" data-page="biz-traffic" onclick="handleMenuClick(this)">业务客流分析</div>
+                            <div class="menu-item" data-page="net-quality" onclick="handleMenuClick(this)">网络质量分析</div>
+                            <div class="menu-item" data-page="filter-analysis" onclick="handleMenuClick(this)">通滤波类分析</div>
+                            <div class="menu-item" data-page="user-count-analysis" onclick="handleMenuClick(this)">用户数分析</div>
                         </div>
                     </div>
 
@@ -350,6 +368,10 @@
                 <div class="page-container" id="page-permission-center"></div>
                 <div class="page-container" id="page-audit-center"></div>
                 <div class="page-container" id="page-home"></div>
+                <div class="page-container" id="page-biz-traffic"></div>
+                <div class="page-container" id="page-net-quality"></div>
+                <div class="page-container" id="page-filter-analysis"></div>
+                <div class="page-container" id="page-user-count-analysis"></div>
             </div>
         </div>
     </div>
@@ -373,15 +395,16 @@
 
     <script src="js/data.js?v=20260518-1"></script>
     <script src="js/store.js?v=20260518-1"></script>
-    <script src="js/pages.js?v=20260518-1"></script>
+    <script src="js/pages.js?v=20260519-1"></script>
     <script src="js/enhance.js?v=20260518-1"></script>
-    <script src="js/enhance-pages.js?v=20260518-1"></script>
-    <script src="js/app.js?v=20260518-1"></script>
+    <script src="js/enhance-pages.js?v=20260519-1"></script>
+    <script src="js/app.js?v=20260519-1"></script>
     <script src="js/mapdata.js?v=20260518-1"></script>
     <script src="js/map.js?v=20260518-1"></script>
     <script src="js/gis-drill.js?v=20260518-1"></script>
     <script src="js/cei-cluster.js?v=20260518-1"></script>
     <script src="js/user-quality.js?v=20260518-1"></script>
+    <script src="js/perf-pages.js?v=20260519-1"></script>
 
     <script>
         // Menu click handler
@@ -460,7 +483,11 @@
                 'ai-model-center': function () { (window.EnhancePages && EnhancePages.renderAiModelCenter) ? EnhancePages.renderAiModelCenter(container) : Pages.renderModulePlaceholder(container, 'ai model center'); },
                 'report-center': function () { (window.EnhancePages && EnhancePages.renderReportCenter) ? EnhancePages.renderReportCenter(container) : Pages.renderModulePlaceholder(container, 'report center'); },
                 'permission-center': function () { (window.EnhancePages && EnhancePages.renderPermissionCenter) ? EnhancePages.renderPermissionCenter(container) : Pages.renderModulePlaceholder(container, 'permission center'); },
-                'audit-center': function () { (window.EnhancePages && EnhancePages.renderAuditCenter) ? EnhancePages.renderAuditCenter(container) : Pages.renderModulePlaceholder(container, 'audit center'); }
+                'audit-center': function () { (window.EnhancePages && EnhancePages.renderAuditCenter) ? EnhancePages.renderAuditCenter(container) : Pages.renderModulePlaceholder(container, 'audit center'); },
+                'biz-traffic': function () { (window.EnhancePages && EnhancePages.renderBizTraffic) ? EnhancePages.renderBizTraffic(container) : Pages.renderModulePlaceholder(container, '业务客流分析'); },
+                'net-quality': function () { (window.EnhancePages && EnhancePages.renderNetQuality) ? EnhancePages.renderNetQuality(container) : Pages.renderModulePlaceholder(container, '网络质量分析'); },
+                'filter-analysis': function () { (window.EnhancePages && EnhancePages.renderFilterAnalysis) ? EnhancePages.renderFilterAnalysis(container) : Pages.renderModulePlaceholder(container, '通滤波类分析'); },
+                'user-count-analysis': function () { (window.EnhancePages && EnhancePages.renderUserCountAnalysis) ? EnhancePages.renderUserCountAnalysis(container) : Pages.renderModulePlaceholder(container, '用户数分析'); }
             };
 
             // Update breadcrumb FIRST (before renderer, so it always updates even if renderer errors)

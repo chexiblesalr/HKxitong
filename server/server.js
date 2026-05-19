@@ -33,6 +33,21 @@ function localDate(offsetDays) {
     return d.toISOString().slice(0, 10);
 }
 
+function ceiKqiDrill(row) {
+    const business = asNumber(row.business_cei, 0);
+    const network = asNumber(row.network_cei, 0);
+    const overall = asNumber(row.overall_cei, 0);
+    const latency = asNumber(row.latency, 0);
+    const loss = asNumber(row.packet_loss, 0);
+    const download = asNumber(row.download_speed, 0);
+    return [
+        { kqi_code: 'KQI_DOWNLOAD_SPEED', kqi_name: 'Download speed', value: download, unit: 'Mbps', cei_impact: Math.max(0, Math.round((100 - business) * 0.35 * 10) / 10) },
+        { kqi_code: 'KQI_LATENCY', kqi_name: 'Latency', value: latency, unit: 'ms', cei_impact: Math.max(0, Math.round((100 - business) * 0.25 * 10) / 10) },
+        { kqi_code: 'KQI_PACKET_LOSS', kqi_name: 'Packet loss', value: loss, unit: '%', cei_impact: Math.max(0, Math.round((100 - network) * 0.3 * 10) / 10) },
+        { kqi_code: 'KQI_NETWORK_STABILITY', kqi_name: 'Network stability', value: overall, unit: 'score', cei_impact: Math.max(0, Math.round((100 - overall) * 0.1 * 10) / 10) }
+    ];
+}
+
 function mockOnuId(prefix) {
     const vendor = prefix || ['HWTC', 'ZTEG', 'FHTT', 'ALCL'][Math.floor(Math.random() * 4)];
     const hex = '0123456789ABCDEF';
@@ -512,12 +527,13 @@ async function startServer() {
 
     // ====== 宽带用户/CEI查询 ======
     app.get('/api/broadband-users', (req, res) => {
-        const { city_id, product_type, is_quality_issue, account, page, pageSize } = req.query;
+        const { city_id, product_type, is_quality_issue, account, time, page, pageSize } = req.query;
         let w = ' WHERE 1=1', p = [];
         if (city_id) { w += ' AND u.city_id=?'; p.push(parseInt(city_id)); }
         if (product_type) { w += ' AND u.product_type=?'; p.push(product_type); }
         if (is_quality_issue !== undefined && is_quality_issue !== '') { w += ' AND u.is_quality_issue=?'; p.push(parseInt(is_quality_issue)); }
         if (account) { w += " AND u.user_account LIKE '%'||?||'%'"; p.push(account); }
+        if (time) { w += ' AND date(COALESCE(u.updated_at,u.created_at))=date(?)'; p.push(time); }
         res.json(ok(paginate(`SELECT u.user_account, u.user_name, c.city_name, u.overall_cei, u.business_cei, u.network_cei,
             u.download_speed, u.upload_speed, u.latency, u.packet_loss, u.product_type, u.bandwidth, u.ont_status, u.quality_issue_type
             FROM broadband_users u JOIN cities c ON u.city_id=c.id ${w} ORDER BY u.overall_cei ASC`,
@@ -1333,26 +1349,52 @@ async function startServer() {
     });
 
     app.get('/api/cei-users', (req, res) => {
-        const { city_id, account, product_type, page, pageSize } = req.query;
+        const { city_id, account, product_type, min_cei, max_cei, page, pageSize } = req.query;
         let w = ' WHERE 1=1', p = [];
         if(city_id){w+=' AND u.city_id=?';p.push(parseInt(city_id));}
         if(account){w+=" AND u.user_account LIKE '%'||?||'%'";p.push(account);}
         if(product_type){w+=' AND u.product_type=?';p.push(product_type);}
-        res.json(ok(paginate(`SELECT u.id,u.user_account,u.user_name,c.city_name,u.overall_cei,u.business_cei,u.network_cei,
+        if(min_cei){w+=' AND u.overall_cei>=?';p.push(asNumber(min_cei, 0));}
+        if(max_cei){w+=' AND u.overall_cei<=?';p.push(asNumber(max_cei, 100));}
+        const result = paginate(`SELECT u.id,u.user_account,u.user_name,c.city_name,u.overall_cei,u.business_cei,u.network_cei,
             u.download_speed,u.upload_speed,u.latency,u.packet_loss,u.product_type,u.bandwidth,u.quality_issue_type
             FROM broadband_users u JOIN cities c ON u.city_id=c.id ${w} ORDER BY u.overall_cei ASC`,
-            `SELECT COUNT(*) as total FROM broadband_users u ${w}`, p, page, pageSize)));
+            `SELECT COUNT(*) as total FROM broadband_users u ${w}`, p, page, pageSize);
+        result.data = result.data.map(r => Object.assign({}, r, { kqi_drill: ceiKqiDrill(r) }));
+        res.json(ok(result));
+    });
+    app.get('/api/biz-cei', (req, res) => {
+        const { city_id, biz_type, min_cei, max_cei, page, pageSize } = req.query;
+        let w = ' WHERE 1=1', p = [];
+        if(city_id){w+=' AND b.city_id=?';p.push(parseInt(city_id));}
+        if(biz_type){w+=' AND b.biz_type=?';p.push(biz_type);}
+        if(min_cei){w+=' AND b.avg_cei>=?';p.push(asNumber(min_cei, 0));}
+        if(max_cei){w+=' AND b.avg_cei<=?';p.push(asNumber(max_cei, 100));}
+        const result = paginate(`SELECT b.id,b.biz_type,c.city_name,b.affected_users,b.avg_cei as business_cei,
+            b.avg_latency,b.avg_speed,b.packet_loss,b.quality_level,b.description,b.report_time
+            FROM biz_quality_issues b JOIN cities c ON b.city_id=c.id ${w} ORDER BY b.avg_cei ASC, b.affected_users DESC`,
+            `SELECT COUNT(*) as total FROM biz_quality_issues b ${w}`, p, page, pageSize);
+        result.data = result.data.map(r => Object.assign({}, r, {
+            kqi_drill: [
+                { kqi_code: 'KQI_APP_LATENCY', kqi_name: 'Application latency', value: asNumber(r.avg_latency, 0), unit: 'ms' },
+                { kqi_code: 'KQI_APP_SPEED', kqi_name: 'Application speed', value: asNumber(r.avg_speed, 0), unit: 'Mbps' },
+                { kqi_code: 'KQI_APP_PACKET_LOSS', kqi_name: 'Application packet loss', value: asNumber(r.packet_loss, 0), unit: '%' }
+            ]
+        }));
+        res.json(ok(result));
     });
     app.get('/api/cei-cluster-analysis', (req, res) => {
         const dimension = req.query.dimension || 'city';
+        const cityId = parseInt(req.query.city_id);
+        const cityWhere = cityId ? ' WHERE u.city_id=' + cityId : '';
         const city = queryAll(`SELECT c.city_name as name, COUNT(*) as users, ROUND(AVG(u.overall_cei),1) as cei,
             SUM(CASE WHEN u.is_quality_issue=1 THEN 1 ELSE 0 END) as quality_users
-            FROM broadband_users u JOIN cities c ON u.city_id=c.id GROUP BY u.city_id ORDER BY quality_users DESC`);
+            FROM broadband_users u JOIN cities c ON u.city_id=c.id ${cityWhere} GROUP BY u.city_id ORDER BY quality_users DESC`);
         const product = queryAll(`SELECT product_type as name, COUNT(*) as users, ROUND(AVG(overall_cei),1) as cei,
-            SUM(CASE WHEN is_quality_issue=1 THEN 1 ELSE 0 END) as quality_users FROM broadband_users GROUP BY product_type`);
+            SUM(CASE WHEN is_quality_issue=1 THEN 1 ELSE 0 END) as quality_users FROM broadband_users u ${cityWhere} GROUP BY product_type`);
         const olt = queryAll(`SELECT COALESCE(o.device_id,'未知OLT') as name, COUNT(*) as users, ROUND(AVG(u.overall_cei),1) as cei,
             SUM(CASE WHEN u.is_quality_issue=1 THEN 1 ELSE 0 END) as quality_users
-            FROM broadband_users u LEFT JOIN olt_devices o ON u.olt_id=o.id GROUP BY u.olt_id ORDER BY quality_users DESC LIMIT 20`);
+            FROM broadband_users u LEFT JOIN olt_devices o ON u.olt_id=o.id ${cityWhere} GROUP BY u.olt_id ORDER BY quality_users DESC LIMIT 20`);
         res.json(ok({ dimension, city, product, olt, current: dimension === 'olt' ? olt : (dimension === 'product' ? product : city) }));
     });
     app.get('/api/tasks', (req, res) => { res.json(ok(queryAll('SELECT * FROM scheduled_tasks ORDER BY id'))); });

@@ -113,6 +113,7 @@ var API = {
     saveConfig(p)      { return this.post('/configs', p || {}); },
     deleteConfig(key)  { return this.delete('/configs/' + encodeURIComponent(key)); },
     ceiUsers(p)        { return this.get('/cei-users', p); },
+    bizCei(p)          { return this.get('/biz-cei', p); },
     ceiClusterAnalysis(p){ return this.get('/cei-cluster-analysis', p); },
     performanceKqi()   { return this.get('/performance-kqi'); },
     qualityPortraitStats(){ return this.get('/quality-portrait-stats'); },
