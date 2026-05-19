@@ -689,8 +689,8 @@ var PAGE_LABEL_MAP = {
     'ai-model-center': 'AI模型中心', 'report-center': '报告中心',
     'permission-center': '权限管理', 'audit-center': '操作日志审计',
     'log-management': '日志管理', 'config-center': '配置中心',
-    'biz-traffic': '业务客流分析', 'net-quality': '网络质量分析',
-    'filter-analysis': '通滤波类分析', 'user-count-analysis': '用户数分析',
+    'biz-traffic': '业务聚类分析', 'net-quality': '网络通断分析',
+    'filter-analysis': '通滤波聚类分析', 'user-count-analysis': '用户数分析',
     'home': '运营驾驶舱'
 };
 

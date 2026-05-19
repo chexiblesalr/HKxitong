@@ -77,7 +77,7 @@ EnhancePages.renderBizTraffic = function (container) {
         '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#e74c3c;">12.8<span style="font-size:11px;font-weight:400;">ms</span></div><div class="wo-stat-label">平均时延</div></div>' +
         '</div>' +
         // 查询栏
-        '<div class="remote-panel"><div class="remote-panel-title">业务客流分析（DPI-XDR接入 · 按业务/地市/时段分析用户流量行为）</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">业务聚类分析（DPI-XDR接入 · 按用户、应用大小类、时段等维度KQI指标聚类分）</div>' +
         '<div class="remote-form">' +
         '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="btCityF" onchange="EnhancePages._btCity=this.value;EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">'+cityOpts+'</select></div>' +
         '<div class="form-group"><label class="form-label">业务类型</label><select class="form-select" id="btBizF" onchange="EnhancePages._btBiz=this.value;EnhancePages.renderBizTraffic(document.getElementById(\'page-biz-traffic\'))">'+bizOpts+'</select></div>' +
@@ -195,7 +195,7 @@ EnhancePages.renderNetQuality = function (container) {
         '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">'+pktLossAll+'%</div><div class="wo-stat-label">平均丢包率</div></div>' +
         '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#2b7de9;">97.6%</div><div class="wo-stat-label">网络连通率</div></div>' +
         '</div>' +
-        '<div class="remote-panel"><div class="remote-panel-title">网络质量分析（3A数据接入 · 断线/重连/时延/丢包多维度分析）</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">网络通断分析（接入3A数据 · 进行用户粒度中断时长、中断次数分析）</div>' +
         '<div class="remote-form">' +
         '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="nqCityF" onchange="EnhancePages._nqCity=this.value;EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">'+cityOpts+'</select></div>' +
         '<div class="form-group"><label class="form-label">分析设备</label><select class="form-select" id="nqDevF" onchange="EnhancePages._nqDevice=this.value;EnhancePages.renderNetQuality(document.getElementById(\'page-net-quality\'))">'+devOpts+'</select></div>' +
@@ -331,7 +331,7 @@ EnhancePages.renderFilterAnalysis = function (container) {
         '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#9b59b6;">38,640</div><div class="wo-stat-label">受影响用户次</div></div>' +
         '<div class="wo-stat-card"><div class="wo-stat-value" style="color:#27ae60;">91.2%</div><div class="wo-stat-label">平均重连成功率</div></div>' +
         '</div>' +
-        '<div class="remote-panel"><div class="remote-panel-title">通滤波类分析（按OLT/BRAS/小区维度聚类中断次数，输出质差日报/周报/月报）</div>' +
+        '<div class="remote-panel"><div class="remote-panel-title">通滤波聚类分析（按小区、OLT、BRAS等维度进行中断次数聚类，输出质差日报/周报/月报）</div>' +
         '<div class="remote-form">' +
         '<div class="form-group"><label class="form-label">分析维度</label><select class="form-select" id="faDimF" onchange="EnhancePages._faDevice=this.value;EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">'+devOpts+'</select></div>' +
         '<div class="form-group"><label class="form-label">地市</label><select class="form-select" id="faCityF" onchange="EnhancePages._faCity=this.value;EnhancePages.renderFilterAnalysis(document.getElementById(\'page-filter-analysis\'))">'+cityOpts+'</select></div>' +
